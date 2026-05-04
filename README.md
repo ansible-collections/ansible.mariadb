@@ -9,11 +9,12 @@ The Ansible `community.mysql` collection goals are to produce and maintain simpl
 flexible, and powerful open-source software for automating MySQL and MariaDB related tasks
 providing good documentation for easy deployment and use.
 
-## Code of Conduct
+## Community standards
 
-We follow the [Ansible Code of Conduct](https://docs.ansible.com/ansible/latest/community/code_of_conduct.html) in all our interactions within this project.
+This project abides by the following policies:
 
-If you encounter abusive behavior violating the [Ansible Code of Conduct](https://docs.ansible.com/ansible/latest/community/code_of_conduct.html), please refer to the [policy violations](https://docs.ansible.com/ansible/latest/community/code_of_conduct.html#policy-violations) section of the Code of Conduct for information on how to raise a complaint.
+* [Ansible Code of Conduct](https://docs.ansible.com/projects/ansible/devel/community/code_of_conduct.html)
+* [Ansible Community Policy for AI-Assisted Contributions](https://docs.ansible.com/projects/ansible/devel/community/ai_policy.html)
 
 ## Communication
 
