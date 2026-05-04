@@ -6,7 +6,7 @@ __metaclass__ = type
 
 import pytest
 
-from ansible_collections.community.mysql.plugins.module_utils.implementations.mysql.replication import uses_replica_terminology
+from ansible_collections.ansible.mysql.plugins.module_utils.implementations.mysql.replication import uses_replica_terminology
 from ..utils import dummy_cursor_class
 
 

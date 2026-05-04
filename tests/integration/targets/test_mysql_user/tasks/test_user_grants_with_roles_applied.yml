@@ -1,5 +1,5 @@
 ---
-# https://github.com/ansible-collections/community.mysql/issues/231
+# https://github.com/ansible-collections/ansible.mysql/issues/231
 - vars:
     mysql_parameters: &mysql_params
       login_user: '{{ mysql_user }}'

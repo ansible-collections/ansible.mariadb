@@ -1,6 +1,6 @@
 ---
 # Test sql_log_bin parameter for mysql_role module
-# https://github.com/ansible-collections/community.mysql/issues/742
+# https://github.com/ansible-collections/ansible.mysql/issues/742
 
 - name: Sql_log_bin | Set show_master_status variable
   ansible.builtin.set_fact:
@@ -19,7 +19,7 @@
   register: bin_log_position_1
 
 - name: Sql_log_bin | Create role with sql_log_bin enabled
-  community.mysql.mysql_role:
+  ansible.mysql.mysql_role:
     login_user: '{{ mysql_user }}'
     login_password: '{{ mysql_password }}'
     login_host: '{{ mysql_host }}'
@@ -34,7 +34,7 @@
   failed_when: bin_log_position_1.stdout_lines[2] == bin_log_position_2.stdout_lines[2]
 
 - name: Sql_log_bin | Remove role with sql_log_bin enabled
-  community.mysql.mysql_role:
+  ansible.mysql.mysql_role:
     login_user: '{{ mysql_user }}'
     login_password: '{{ mysql_password }}'
     login_host: '{{ mysql_host }}'
@@ -56,7 +56,7 @@
   register: bin_log_position_4
 
 - name: Sql_log_bin | Create role with sql_log_bin disabled
-  community.mysql.mysql_role:
+  ansible.mysql.mysql_role:
     login_user: '{{ mysql_user }}'
     login_password: '{{ mysql_password }}'
     login_host: '{{ mysql_host }}'
@@ -71,7 +71,7 @@
   failed_when: bin_log_position_4.stdout_lines[2] != bin_log_position_5.stdout_lines[2]
 
 - name: Sql_log_bin | Remove role with sql_log_bin disabled
-  community.mysql.mysql_role:
+  ansible.mysql.mysql_role:
     login_user: '{{ mysql_user }}'
     login_password: '{{ mysql_password }}'
     login_host: '{{ mysql_host }}'

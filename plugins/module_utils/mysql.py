@@ -35,7 +35,7 @@ mysql_driver_fail_msg = ('A MySQL module is required: for Python 2.7 either PyMy
                          'Consider setting ansible_python_interpreter to use '
                          'the intended Python version.')
 
-from ansible_collections.community.mysql.plugins.module_utils.database import mysql_quote_identifier
+from ansible_collections.ansible.mysql.plugins.module_utils.database import mysql_quote_identifier
 
 
 def get_connector_name(connector):
@@ -156,7 +156,7 @@ def mysql_connect(module, login_user=None, login_password=None, config_file='', 
         # In case of MySQLdb driver
 
         # Will be deprecated and dropped
-        # https://github.com/ansible-collections/community.mysql/issues/654
+        # https://github.com/ansible-collections/ansible.mysql/issues/654
         module.warn('Support of mysqlcline/MySQLdb connector is deprecated. '
                     'We\'ll stop testing against it in collection version 4.0.0 '
                     'and remove the related code in 5.0.0. Use PyMySQL connector instead.')

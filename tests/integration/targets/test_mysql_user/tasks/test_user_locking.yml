@@ -11,7 +11,7 @@
 
     # ========================= Prepare =======================================
     - name: Mysql_user Lock user | Create a test database
-      community.mysql.mysql_db:
+      ansible.mysql.mysql_db:
         <<: *mysql_params
         name: mysql_lock_user_test
         state: present
@@ -19,7 +19,7 @@
     # ========================== Tests ========================================
 
     - name: Mysql_user Lock user | create locked | Create test user
-      community.mysql.mysql_user:
+      ansible.mysql.mysql_user:
         <<: *mysql_params
         name: mysql_locked_user
         password: 'msandbox'
@@ -28,7 +28,7 @@
           'mysql_lock_user_test.*': 'SELECT'
 
     - name: Mysql_user Lock user | create locked | Assert that test user is locked
-      community.mysql.mysql_query:
+      ansible.mysql.mysql_query:
         <<: *mysql_params
         query:
           - SHOW CREATE USER 'mysql_locked_user'@'localhost'
@@ -38,7 +38,7 @@
 
     - name: 'Mysql_user Lock user | create locked | Idempotence check'
       check_mode: true
-      community.mysql.mysql_user:
+      ansible.mysql.mysql_user:
         <<: *mysql_params
         name: mysql_locked_user
         locked: true
@@ -49,7 +49,7 @@
 
     - name: 'Mysql_user Lock user | create locked | Check that absense of locked does not unlock the user'
       check_mode: true
-      community.mysql.mysql_user:
+      ansible.mysql.mysql_user:
         <<: *mysql_params
         name: mysql_locked_user
         priv:
@@ -59,7 +59,7 @@
 
     - name: 'Mysql_user Lock user | create locked | Unlock test user check_mode: true'
       check_mode: true
-      community.mysql.mysql_user:
+      ansible.mysql.mysql_user:
         <<: *mysql_params
         name: mysql_locked_user
         locked: false
@@ -67,7 +67,7 @@
           'mysql_lock_user_test.*': 'SELECT'
 
     - name: Mysql_user Lock user | create locked | Assert that test user is locked
-      community.mysql.mysql_query:
+      ansible.mysql.mysql_query:
         <<: *mysql_params
         query:
           - SHOW CREATE USER 'mysql_locked_user'@'localhost'
@@ -76,7 +76,7 @@
         - locked_user_creation.query_result[0][0] is not search('ACCOUNT LOCK')
 
     - name: Mysql_user Lock user | create locked | Unlock test user
-      community.mysql.mysql_user:
+      ansible.mysql.mysql_user:
         <<: *mysql_params
         name: mysql_locked_user
         locked: false
@@ -84,7 +84,7 @@
           'mysql_lock_user_test.*': 'SELECT'
 
     - name: Mysql_user Lock user | create locked | Assert that test user is not locked
-      community.mysql.mysql_query:
+      ansible.mysql.mysql_query:
         <<: *mysql_params
         query:
           - SHOW CREATE USER 'mysql_locked_user'@'localhost'
@@ -93,13 +93,13 @@
         - locked_user_creation.query_result[0][0] is search('ACCOUNT LOCK')
 
     - name: Mysql_user Lock user | create locked | Remove test user
-      community.mysql.mysql_user:
+      ansible.mysql.mysql_user:
         <<: *mysql_params
         name: mysql_locked_user
         state: absent
         
     - name: Mysql_user Lock user | create unlocked | Create test user
-      community.mysql.mysql_user:
+      ansible.mysql.mysql_user:
         <<: *mysql_params
         name: mysql_locked_user
         password: 'msandbox'
@@ -108,7 +108,7 @@
           'mysql_lock_user_test.*': 'SELECT'
 
     - name: Mysql_user Lock user | create unlocked | Assert that test user is not locked
-      community.mysql.mysql_query:
+      ansible.mysql.mysql_query:
         <<: *mysql_params
         query:
           - SHOW CREATE USER 'mysql_locked_user'@'localhost'
@@ -118,7 +118,7 @@
 
     - name: 'Mysql_user Lock user | create unlocked | Idempotence check'
       check_mode: true
-      community.mysql.mysql_user:
+      ansible.mysql.mysql_user:
         <<: *mysql_params
         name: mysql_locked_user
         locked: false
@@ -129,7 +129,7 @@
 
     - name: 'Mysql_user Lock user | create unlocked | Lock test user check_mode: true'
       check_mode: true
-      community.mysql.mysql_user:
+      ansible.mysql.mysql_user:
         <<: *mysql_params
         name: mysql_locked_user
         locked: true
@@ -137,7 +137,7 @@
           'mysql_lock_user_test.*': 'SELECT'
 
     - name: Mysql_user Lock user | create unlocked | Assert that test user is not locked
-      community.mysql.mysql_query:
+      ansible.mysql.mysql_query:
         <<: *mysql_params
         query:
           - SHOW CREATE USER 'mysql_locked_user'@'localhost'
@@ -146,7 +146,7 @@
         - locked_user_creation.query_result[0][0] is search('ACCOUNT LOCK')
 
     - name: Mysql_user Lock user | create unlocked | Lock test user
-      community.mysql.mysql_user:
+      ansible.mysql.mysql_user:
         <<: *mysql_params
         name: mysql_locked_user
         locked: true
@@ -154,7 +154,7 @@
           'mysql_lock_user_test.*': 'SELECT'
 
     - name: Mysql_user Lock user | create unlocked | Assert that test user is locked
-      community.mysql.mysql_query:
+      ansible.mysql.mysql_query:
         <<: *mysql_params
         query:
           - SHOW CREATE USER 'mysql_locked_user'@'localhost'
@@ -163,13 +163,13 @@
         - locked_user_creation.query_result[0][0] is not search('ACCOUNT LOCK')
 
     - name: Mysql_user Lock user | create unlocked | Remove test user
-      community.mysql.mysql_user:
+      ansible.mysql.mysql_user:
         <<: *mysql_params
         name: mysql_locked_user
         state: absent
 
     - name: Mysql_user Lock user | create default | Create test user
-      community.mysql.mysql_user:
+      ansible.mysql.mysql_user:
         <<: *mysql_params
         name: mysql_locked_user
         password: 'msandbox'
@@ -177,7 +177,7 @@
           'mysql_lock_user_test.*': 'SELECT'
 
     - name: Mysql_user Lock user | create default | Assert that test user is not locked
-      community.mysql.mysql_query:
+      ansible.mysql.mysql_query:
         <<: *mysql_params
         query:
           - SHOW CREATE USER 'mysql_locked_user'@'localhost'
@@ -186,7 +186,7 @@
         - locked_user_creation.query_result[0][0] is search('ACCOUNT LOCK')
 
     - name: Mysql_user Lock user | create default | Remove test user
-      community.mysql.mysql_user:
+      ansible.mysql.mysql_user:
         <<: *mysql_params
         name: mysql_locked_user
         state: absent
@@ -194,7 +194,7 @@
     # ========================= Teardown ======================================
 
     - name: Mysql_user Lock user | Delete test database
-      community.mysql.mysql_db:
+      ansible.mysql.mysql_db:
         <<: *mysql_params
         name: mysql_lock_user_test
         state: absent

@@ -170,10 +170,10 @@ options:
     default: true
 
 seealso:
-- module: community.mysql.mysql_info
-- module: community.mysql.mysql_variables
-- module: community.mysql.mysql_user
-- module: community.mysql.mysql_replication
+- module: ansible.mysql.mysql_info
+- module: ansible.mysql.mysql_variables
+- module: ansible.mysql.mysql_user
+- module: ansible.mysql.mysql_replication
 - name: MySQL command-line client reference
   description: Complete reference of the MySQL command-line client documentation.
   link: https://dev.mysql.com/doc/refman/8.0/en/mysql.html
@@ -203,20 +203,20 @@ attributes:
     details:
       - The module is not idempotent when O(state=import) or when O(state=dump).
 extends_documentation_fragment:
-- community.mysql.mysql
+- ansible.mysql.mysql
 '''
 
 EXAMPLES = r'''
 # If you encounter the "Please explicitly state intended protocol" error,
 # use the login_unix_socket argument
 - name: Create a new database with name 'bobdata'
-  community.mysql.mysql_db:
+  ansible.mysql.mysql_db:
     name: bobdata
     state: present
     login_unix_socket: /run/mysqld/mysqld.sock
 
 - name: Create new databases with names 'foo' and 'bar'
-  community.mysql.mysql_db:
+  ansible.mysql.mysql_db:
     name:
       - foo
       - bar
@@ -229,26 +229,26 @@ EXAMPLES = r'''
     dest: /tmp
 
 - name: Restore database
-  community.mysql.mysql_db:
+  ansible.mysql.mysql_db:
     name: my_db
     state: import
     target: /tmp/dump.sql.bz2
 
 - name: Restore database ignoring errors
-  community.mysql.mysql_db:
+  ansible.mysql.mysql_db:
     name: my_db
     state: import
     target: /tmp/dump.sql.bz2
     force: true
 
 - name: Dump multiple databases
-  community.mysql.mysql_db:
+  ansible.mysql.mysql_db:
     state: dump
     name: db_1,db_2
     target: /tmp/dump.sql
 
 - name: Dump multiple databases
-  community.mysql.mysql_db:
+  ansible.mysql.mysql_db:
     state: dump
     name:
       - db_1
@@ -256,13 +256,13 @@ EXAMPLES = r'''
     target: /tmp/dump.sql
 
 - name: Dump all databases to hostname.sql
-  community.mysql.mysql_db:
+  ansible.mysql.mysql_db:
     state: dump
     name: all
     target: /tmp/dump.sql
 
 - name: Dump all databases to hostname.sql including master data
-  community.mysql.mysql_db:
+  ansible.mysql.mysql_db:
     state: dump
     name: all
     target: /tmp/dump.sql
@@ -272,7 +272,7 @@ EXAMPLES = r'''
 - name: >
     Import dump.sql with specific latin1 encoding,
     similar to mysql -u <username> --default-character-set=latin1 -p <password> < dump.sql
-  community.mysql.mysql_db:
+  ansible.mysql.mysql_db:
     state: import
     name: all
     encoding: latin1
@@ -282,19 +282,19 @@ EXAMPLES = r'''
 - name: >
     Dump of Databse with specific latin1 encoding,
     similar to mysqldump -u <username> --default-character-set=latin1 -p <password> <database>
-  community.mysql.mysql_db:
+  ansible.mysql.mysql_db:
     state: dump
     name: db_1
     encoding: latin1
     target: /tmp/dump.sql
 
 - name: Delete database with name 'bobdata'
-  community.mysql.mysql_db:
+  ansible.mysql.mysql_db:
     name: bobdata
     state: absent
 
 - name: Make sure there is neither a database with name 'foo', nor one with name 'bar'
-  community.mysql.mysql_db:
+  ansible.mysql.mysql_db:
     name:
       - foo
       - bar
@@ -303,14 +303,14 @@ EXAMPLES = r'''
 # Dump database with argument not directly supported by this module
 # using dump_extra_args parameter
 - name: Dump databases without including triggers
-  community.mysql.mysql_db:
+  ansible.mysql.mysql_db:
     state: dump
     name: foo
     target: /tmp/dump.sql
     dump_extra_args: --skip-triggers
 
 - name: Try to create database as root/nopassword first. If not allowed, pass the credentials
-  community.mysql.mysql_db:
+  ansible.mysql.mysql_db:
     check_implicit_admin: true
     login_user: bob
     login_password: 123456
@@ -318,7 +318,7 @@ EXAMPLES = r'''
     state: present
 
 - name: Dump a database with compression and catch errors from mysqldump with bash pipefail
-  community.mysql.mysql_db:
+  ansible.mysql.mysql_db:
     state: dump
     name: foo
     target: /tmp/dump.sql.gz
@@ -350,8 +350,8 @@ import traceback
 import shlex
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.community.mysql.plugins.module_utils.database import mysql_quote_identifier
-from ansible_collections.community.mysql.plugins.module_utils.mysql import (
+from ansible_collections.ansible.mysql.plugins.module_utils.database import mysql_quote_identifier
+from ansible_collections.ansible.mysql.plugins.module_utils.mysql import (
     mysql_connect,
     mysql_driver,
     mysql_driver_fail_msg,
@@ -359,7 +359,7 @@ from ansible_collections.community.mysql.plugins.module_utils.mysql import (
     get_server_implementation,
     get_server_version,
 )
-from ansible_collections.community.mysql.plugins.module_utils.version import LooseVersion
+from ansible_collections.ansible.mysql.plugins.module_utils.version import LooseVersion
 from ansible.module_utils.common.text.converters import to_native
 
 executed_commands = []

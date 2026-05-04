@@ -2,7 +2,7 @@
 
 In this guide, you will find information relevant for code contributions, though any other kinds of contribution mentioned in the [Ansible Contributing guidelines](https://docs.ansible.com/projects/ansible/devel/community/index.html) are equally appreciated and valuable.
 
-If you have any questions after reading, please contact the community via one or more of the [available channels](https://github.com/ansible-collections/community.mysql#communication). Any feedback on this guide is very welcome.
+If you have any questions after reading, please contact the community via one or more of the [available channels](https://github.com/ansible-collections/ansible.mysql#communication). Any feedback on this guide is very welcome.
 
 ## Using AI tools for assistance
 
@@ -11,7 +11,7 @@ We follow the [Ansible Community Policy for AI-Assisted Contributions](https://d
 - The use of AI tools SHOULD be explicitly disclosed by you when a significant part of the contribution is taken from the AI tool's output without significant changes. Grammar, spelling, and stylistic corrections do not require disclosure.
 - Any autonomous contributions submitted by AI tools MAY be rejected by resource maintainers without prior justification.
 
-We recommend using the [AGENTS.md](https://github.com/ansible-collections/community.mysql/blob/main/AGENTS.md) file and [skills](https://github.com/ansible-collections/community.mysql/tree/main/.agents/skills) provided in this repository when contributing with AI tools.
+We recommend using the [AGENTS.md](https://github.com/ansible-collections/ansible.mysql/blob/main/AGENTS.md) file and [skills](https://github.com/ansible-collections/ansible.mysql/tree/main/.agents/skills) provided in this repository when contributing with AI tools.
 
 ## Reviewing open issue and pull requests
 
@@ -52,14 +52,14 @@ If you think the failure does not relate to your changes, put a comment about it
 
 ## CI testing
 
-The jobs are launched automatically by GitHub Actions in every PR based on the [matrix](https://github.com/ansible-collections/community.mysql/blob/main/.github/workflows/ansible-test-plugins.yml).
+The jobs are launched automatically by GitHub Actions in every PR based on the [matrix](https://github.com/ansible-collections/ansible.mysql/blob/main/.github/workflows/ansible-test-plugins.yml).
 
 As the project is included in `ansible` community package, it is a requirement for us to test against all supported `ansible-core` versions and corresponding Python versions.
 To keep the matrix relevant, we are subscribed to the [news-for-maintainers](https://github.com/ansible-collections/news-for-maintainers) repository and the [Collection maintainers & contributors](https://forum.ansible.com/g/CollectionMaintainer) forum group to track announcements affecting CI.
 
 If our matrix is permanently outdated, for example, when supported `ansible-core` versions are missed, the collections can get excluded from the package, so keep it updated!
 
-Read more about our CI implementation in the [TESTING.md](https://github.com/ansible-collections/community.mysql/blob/main/TESTING.md) file.
+Read more about our CI implementation in the [TESTING.md](https://github.com/ansible-collections/ansible.mysql/blob/main/TESTING.md) file.
 
 ## Adding tests
 
@@ -85,7 +85,7 @@ $ ansible-test sanity path/to/changed_file.py --docker -v
 
 ### Integration tests
 
-See the [TESTING.md](https://github.com/ansible-collections/community.mysql/blob/main/TESTING.md) file to learn how to run integration tests against different server/connector versions.
+See the [TESTING.md](https://github.com/ansible-collections/ansible.mysql/blob/main/TESTING.md) file to learn how to run integration tests against different server/connector versions.
 
 ### Unit tests
 

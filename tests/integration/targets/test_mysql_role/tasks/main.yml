@@ -11,7 +11,7 @@
     - db_engine == 'mysql'
 
 # Test that subtract_privs will only revoke the grants given by priv
-# (https://github.com/ansible-collections/community.mysql/issues/331)
+# (https://github.com/ansible-collections/ansible.mysql/issues/331)
 - include_tasks: test_priv_subtract.yml
   vars:
     enable_check_mode: no
@@ -24,7 +24,7 @@
     file: test_column_case_sensitive.yml
 
 # Test sql_log_bin parameter
-# (https://github.com/ansible-collections/community.mysql/issues/742)
+# (https://github.com/ansible-collections/ansible.mysql/issues/742)
 - name: Test sql_log_bin parameter
   ansible.builtin.include_tasks: test_sql_log_bin.yml
   when:

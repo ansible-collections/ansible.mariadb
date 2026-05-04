@@ -8,14 +8,14 @@
 
   block:
     - name: Issue-710 | Create user with DEFAULT privileges
-      community.mysql.mysql_user:
+      ansible.mysql.mysql_user:
         <<: *mysql_params
         name: "{{ user_name_1 }}"
         password: "{{ user_password_1 }}"
         state: present
 
     - name: Issue-710 | Create role to use as default
-      community.mysql.mysql_role:
+      ansible.mysql.mysql_role:
         <<: *mysql_params
         name: developers
         state: present
@@ -24,13 +24,13 @@
         - "{{ user_name_1 }}@localhost"
 
     - name: Issue-710 | Set default role for db_user1
-      community.mysql.mysql_query:
+      ansible.mysql.mysql_query:
         <<: *mysql_params
         query: >-
           SET DEFAULT ROLE developers {{ (db_engine == 'mysql') | ternary('TO', 'FOR') }} {{ user_name_1 }}@localhost
 
     - name: Issue-710 | Ensure db_user1 can still be altered
-      community.mysql.mysql_user:
+      ansible.mysql.mysql_user:
         <<: *mysql_params
         name: "{{ user_name_1 }}"
         password: "{{ user_password_1 }}"
@@ -38,6 +38,6 @@
         state: present
 
     - name: Issue-710 | Ensure mysql_info can still be executed
-      community.mysql.mysql_info:
+      ansible.mysql.mysql_info:
         <<: *mysql_params
         filter: users_info

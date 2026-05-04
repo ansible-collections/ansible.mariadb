@@ -1,5 +1,5 @@
 ---
-namespace: community
+namespace: ansible
 name: mysql
 version: 4.2.1
 readme: README.md
@@ -11,7 +11,7 @@ tags:
   - database
   - mysql
   - mariadb
-repository: https://github.com/ansible-collections/community.mysql
-documentation: https://github.com/ansible-collections/community.mysql
-homepage: https://github.com/ansible-collections/community.mysql
-issues: https://github.com/ansible-collections/community.mysql/issues
+repository: https://github.com/ansible-collections/ansible.mysql
+documentation: https://github.com/ansible-collections/ansible.mysql
+homepage: https://github.com/ansible-collections/ansible.mysql
+issues: https://github.com/ansible-collections/ansible.mysql/issues

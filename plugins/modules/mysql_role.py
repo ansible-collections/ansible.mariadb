@@ -45,7 +45,7 @@ options:
         by permission (C(SELECT(col1,col2)) instead of C(SELECT(col1),SELECT(col2))).
       - Can be passed as a dictionary (see the examples).
       - Supports GRANTs for procedures and functions
-        (see the examples for the M(community.mysql.mysql_user) module).
+        (see the examples for the M(ansible.mysql.mysql_user) module).
     type: raw
 
   append_privs:
@@ -153,7 +153,7 @@ attributes:
     support: full
 
 seealso:
-  - module: community.mysql.mysql_user
+  - module: ansible.mysql.mysql_user
   - name: MySQL role reference
     description: Complete reference of the MySQL role documentation.
     link: https://dev.mysql.com/doc/refman/8.0/en/create-role.html
@@ -165,7 +165,7 @@ author:
   - Laurent Indermühle (@laurent-indermuehle)
 
 extends_documentation_fragment:
-  - community.mysql.mysql
+  - ansible.mysql.mysql
 '''
 
 EXAMPLES = r'''
@@ -183,16 +183,16 @@ EXAMPLES = r'''
 #   'anotherdb.*': 'SELECT'
 #   'yetanotherdb.*': 'ALL'
 #
-# You can also use the string format like in the community.mysql.mysql_user module, for example
+# You can also use the string format like in the ansible.mysql.mysql_user module, for example
 # mydb.*:INSERT,UPDATE/anotherdb.*:SELECT/yetanotherdb.*:ALL
 #
-# For more examples on how to specify privileges, refer to the community.mysql.mysql_user module
+# For more examples on how to specify privileges, refer to the ansible.mysql.mysql_user module
 
 # Create a role developers with all database privileges
 # and add alice and bob as members.
 # The statement 'SET DEFAULT ROLE ALL' to them will be run.
 - name: Create role developers, add members
-  community.mysql.mysql_role:
+  ansible.mysql.mysql_role:
     name: developers
     state: present
     priv: '*.*:ALL'
@@ -201,7 +201,7 @@ EXAMPLES = r'''
       - 'bob@%'
 
 - name: Same as above but do not run SET DEFAULT ROLE ALL TO each member
-  community.mysql.mysql_role:
+  ansible.mysql.mysql_role:
     name: developers
     state: present
     priv: '*.*:ALL'
@@ -213,7 +213,7 @@ EXAMPLES = r'''
 # Assuming that the role developers exists,
 # add john to the current members
 - name: Add members to an existing role
-  community.mysql.mysql_role:
+  ansible.mysql.mysql_role:
     name: developers
     state: present
     append_members: true
@@ -223,7 +223,7 @@ EXAMPLES = r'''
 # Create role readers with the SELECT privilege
 # on all tables in the fiction database
 - name: Create role developers, add members
-  community.mysql.mysql_role:
+  ansible.mysql.mysql_role:
     name: readers
     state: present
     priv: 'fiction.*:SELECT'
@@ -231,14 +231,14 @@ EXAMPLES = r'''
 # Assuming that the role readers exists,
 # add the UPDATE privilege to the role on all tables in the fiction database
 - name: Create role developers, add members
-  community.mysql.mysql_role:
+  ansible.mysql.mysql_role:
     name: readers
     state: present
     priv: 'fiction.*:UPDATE'
     append_privs: true
 
 - name: Create role with the 'SELECT' and 'UPDATE' privileges in db1 and db2
-  community.mysql.mysql_role:
+  ansible.mysql.mysql_role:
     state: present
     name: foo
     priv:
@@ -246,7 +246,7 @@ EXAMPLES = r'''
       'db2.*': 'SELECT,UPDATE'
 
 - name: Remove joe from readers
-  community.mysql.mysql_role:
+  ansible.mysql.mysql_role:
     state: present
     name: readers
     members:
@@ -254,12 +254,12 @@ EXAMPLES = r'''
     detach_members: true
 
 - name: Remove the role readers if exists
-  community.mysql.mysql_role:
+  ansible.mysql.mysql_role:
     state: absent
     name: readers
 
 - name: Example of using login_unix_socket to connect to the server
-  community.mysql.mysql_role:
+  ansible.mysql.mysql_role:
     name: readers
     state: present
     login_unix_socket: /var/run/mysqld/mysqld.sock
@@ -269,20 +269,20 @@ EXAMPLES = r'''
 # To change members, you need to run a separate task using the admin
 # of the role as the login_user.
 - name: On MariaDB, create the role readers with alice as its admin
-  community.mysql.mysql_role:
+  ansible.mysql.mysql_role:
     state: present
     name: readers
     admin: 'alice@%'
 
 - name: Create the role business, add the role marketing to members
-  community.mysql.mysql_role:
+  ansible.mysql.mysql_role:
     state: present
     name: business
     members:
       - marketing
 
 - name: Ensure the role foo does not have the DELETE privilege
-  community.mysql.mysql_role:
+  ansible.mysql.mysql_role:
     state: present
     name: foo
     subtract_privs: true
@@ -290,7 +290,7 @@ EXAMPLES = r'''
       'db1.*': DELETE
 
 - name: Add some members to a role and skip not-existent users
-  community.mysql.mysql_role:
+  ansible.mysql.mysql_role:
     state: present
     name: foo
     append_members: true
@@ -300,7 +300,7 @@ EXAMPLES = r'''
       - 'not_existing_user@localhost'
 
 - name: Detach some members from a role and ignore not-existent users
-  community.mysql.mysql_role:
+  ansible.mysql.mysql_role:
     state: present
     name: foo
     detach_members: true
@@ -310,7 +310,7 @@ EXAMPLES = r'''
       - 'not_existing_user@localhost'
 
 - name: Create role without binary logging
-  community.mysql.mysql_role:
+  ansible.mysql.mysql_role:
     name: readers
     state: present
     priv: 'fiction.*:SELECT'
@@ -320,13 +320,13 @@ EXAMPLES = r'''
 RETURN = '''#'''
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.community.mysql.plugins.module_utils.mysql import (
+from ansible_collections.ansible.mysql.plugins.module_utils.mysql import (
     mysql_connect,
     mysql_driver,
     mysql_driver_fail_msg,
     mysql_common_argument_spec
 )
-from ansible_collections.community.mysql.plugins.module_utils.user import (
+from ansible_collections.ansible.mysql.plugins.module_utils.user import (
     convert_priv_dict_to_str,
     get_user_implementation,
     get_mode,
@@ -428,9 +428,9 @@ class DbServer():
         self.cursor.execute("SELECT VERSION()")
 
         if 'mariadb' in self.cursor.fetchone()[0].lower():
-            import ansible_collections.community.mysql.plugins.module_utils.implementations.mariadb.role as role_impl
+            import ansible_collections.ansible.mysql.plugins.module_utils.implementations.mariadb.role as role_impl
         else:
-            import ansible_collections.community.mysql.plugins.module_utils.implementations.mysql.role as role_impl
+            import ansible_collections.ansible.mysql.plugins.module_utils.implementations.mysql.role as role_impl
 
         return role_impl
 

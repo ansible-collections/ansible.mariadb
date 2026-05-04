@@ -39,7 +39,7 @@
           - "'GRANT SELECT ON `data1`.*' in result.stdout"
           - "'GRANT SELECT ON `data2`.*' in result.stdout"
 
-    # Issue https://github.com/ansible-collections/community.mysql/issues/99
+    # Issue https://github.com/ansible-collections/ansible.mysql/issues/99
     - name: Priv dict | Create test table test_table_issue99
       mysql_query:
         <<: *mysql_params

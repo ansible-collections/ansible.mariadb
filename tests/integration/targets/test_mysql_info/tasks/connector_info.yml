@@ -1,6 +1,6 @@
 ---
 # Added in 3.6.0 in
-# https://github.com/ansible-collections/community.mysql/pull/497
+# https://github.com/ansible-collections/ansible.mysql/pull/497
 
 - name: Connector info | Assert connector_name exists and has expected values
   ansible.builtin.assert:

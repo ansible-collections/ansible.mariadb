@@ -1487,7 +1487,7 @@
   # TODO it must be changed. The module uses user_mod function
   # taken from mysql_user module. It's a bug / expected behavior
   # because I added a similar tasks to mysql_user tests
-  # https://github.com/ansible-collections/community.mysql/issues/50#issuecomment-871216825
+  # https://github.com/ansible-collections/ansible.mysql/issues/50#issuecomment-871216825
   # and it's also failed. Create an issue after the module is merged to avoid conflicts.
   # TODO Fix this after user_mod is fixed.
   - name: Assert that append privs again in check_mode is changed

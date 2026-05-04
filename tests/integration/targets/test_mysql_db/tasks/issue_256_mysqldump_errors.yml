@@ -4,52 +4,52 @@
 # dump produced was empty or worse, only contained `DROP TABLE IF EXISTS...`
 
 - module_defaults:
-    community.mysql.mysql_db: &mysql_defaults
+    ansible.mysql.mysql_db: &mysql_defaults
       login_user: '{{ mysql_user }}'
       login_password: '{{ mysql_password }}'
       login_host: '{{ mysql_host }}'
       login_port: '{{ mysql_primary_port }}'
-    community.mysql.mysql_query: *mysql_defaults
+    ansible.mysql.mysql_query: *mysql_defaults
 
   block:
 
     - name: Dumps errors | Setup test | Create 2 schemas
-      community.mysql.mysql_db:
+      ansible.mysql.mysql_db:
         name:
           - "db1"
           - "db2"
         state: present
 
     - name: Dumps errors | Setup test | Create 2 tables
-      community.mysql.mysql_query:
+      ansible.mysql.mysql_query:
         query:
           - "CREATE TABLE db1.t1 (id int)"
           - "CREATE TABLE db1.t2 (id int)"
           - "CREATE VIEW db2.v1 AS SELECT id from db1.t1"
 
     - name: Dumps errors | Full dump without compression
-      community.mysql.mysql_db:
+      ansible.mysql.mysql_db:
         state: dump
         name: all
         target: /tmp/full-dump.sql
       register: full_dump
 
     - name: Dumps errors | Full dump with gunzip
-      community.mysql.mysql_db:
+      ansible.mysql.mysql_db:
         state: dump
         name: all
         target: /tmp/full-dump.sql.gz
       register: full_dump_gz
 
     - name: Dumps errors | Distinct dump without compression
-      community.mysql.mysql_db:
+      ansible.mysql.mysql_db:
         state: dump
         name: db2
         target: /tmp/dump-db2.sql
       register: dump_db2
 
     - name: Dumps errors | Distinct dump with gunzip
-      community.mysql.mysql_db:
+      ansible.mysql.mysql_db:
         state: dump
         name: db2
         target: /tmp/dump-db2.sql.gz
@@ -63,12 +63,12 @@
 
     # Now db2.v1 targets an inexistant table so mysqldump will fail
     - name: Dumps errors | Drop t1
-      community.mysql.mysql_query:
+      ansible.mysql.mysql_query:
         query:
           - "DROP TABLE db1.t1"
 
     - name: Dumps errors | Full dump after drop t1 without compression
-      community.mysql.mysql_db:
+      ansible.mysql.mysql_db:
         state: dump
         name: all
         target: /tmp/full-dump-without-t1.sql
@@ -78,7 +78,7 @@
       ignore_errors: true
 
     - name: Dumps errors | Full dump after drop t1 with gzip without the fix
-      community.mysql.mysql_db:
+      ansible.mysql.mysql_db:
         state: dump
         name: all
         target: /tmp/full-dump-without-t1.sql.gz
@@ -87,7 +87,7 @@
       ignore_errors: true
 
     - name: Dumps errors | Full dump after drop t1 with gzip with the fix
-      community.mysql.mysql_db:
+      ansible.mysql.mysql_db:
         state: dump
         name: all
         target: /tmp/full-dump-without-t1.sql.gz
@@ -107,7 +107,7 @@
               'references invalid table')
 
     - name: Dumps errors | Distinct dump after drop t1 without compression
-      community.mysql.mysql_db:
+      ansible.mysql.mysql_db:
         state: dump
         name: db2
         target: /tmp/dump-db2-without_t1.sql
@@ -116,7 +116,7 @@
       ignore_errors: true
 
     - name: Dumps errors | Distinct dump after drop t1 with gzip without the fix
-      community.mysql.mysql_db:
+      ansible.mysql.mysql_db:
         state: dump
         name: db2
         target: /tmp/dump-db2-without_t1.sql.gz
@@ -125,7 +125,7 @@
       ignore_errors: true
 
     - name: Dumps errors | Distinct dump after drop t1 with gzip with the fix
-      community.mysql.mysql_db:
+      ansible.mysql.mysql_db:
         state: dump
         name: db2
         target: /tmp/dump-db2-without_t1.sql.gz
@@ -144,7 +144,7 @@
           - dump_db2_without_t1_gz_with_fix.msg is search(
               'references invalid table')
     - name: Dumps errors | Cleanup
-      community.mysql.mysql_db:
+      ansible.mysql.mysql_db:
         name:
           - "db1"
           - "db2"

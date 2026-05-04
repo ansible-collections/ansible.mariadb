@@ -1,29 +1,29 @@
 ---
 
 - module_defaults:
-    community.mysql.mysql_db: &mysql_defaults
+    ansible.mysql.mysql_db: &mysql_defaults
       login_user: "{{ mysql_user }}"
       login_password: "{{ mysql_password }}"
       login_host: "{{ mysql_host }}"
       login_port: "{{ mysql_primary_port }}"
-    community.mysql.mysql_query: *mysql_defaults
-    community.mysql.mysql_info: *mysql_defaults
-    community.mysql.mysql_user: *mysql_defaults
+    ansible.mysql.mysql_query: *mysql_defaults
+    ansible.mysql.mysql_info: *mysql_defaults
+    ansible.mysql.mysql_user: *mysql_defaults
 
   block:
 
     # ================================ Prepare ==============================
     - name: Mysql_info databases | Prepare | Create databases
-      community.mysql.mysql_db:
+      ansible.mysql.mysql_db:
         name:
           - db_tables_count_empty
           - db_tables_count_1
           - db_tables_count_2
-          - db_only_views  # https://github.com/ansible-Getions/community.mysql/issues/204
+          - db_only_views  # https://github.com/ansible-Getions/ansible.mysql/issues/204
         state: present
 
     - name: Mysql_info databases | Prepare | Create tables
-      community.mysql.mysql_query:
+      ansible.mysql.mysql_query:
         query:
           - >-
             CREATE TABLE IF NOT EXISTS db_tables_count_1.t1
@@ -40,7 +40,7 @@
     # ================================== Tests ==============================
 
     - name: Mysql_info databases | Get all non-empty databases fields
-      community.mysql.mysql_info:
+      ansible.mysql.mysql_info:
         filter:
           - databases
       register: result
@@ -56,7 +56,7 @@
           | map(attribute='key')
 
     - name: Mysql_info databases | Get all dbs fields except db_size
-      community.mysql.mysql_info:
+      ansible.mysql.mysql_info:
         filter:
           - databases
         exclude_fields:
@@ -77,7 +77,7 @@
     # won't break anything (will be ignored regarding to the module's
     # documentation).
     - name: Mysql_info databases | Get all dbs fields with unsupported value
-      community.mysql.mysql_info:
+      ansible.mysql.mysql_info:
         filter:
           - databases
         exclude_fields:
@@ -96,7 +96,7 @@
           | map(attribute='key')
 
     - name: Mysql_info databases | Get all dbs fields except tables
-      community.mysql.mysql_info:
+      ansible.mysql.mysql_info:
         filter:
           - databases
         exclude_fields:
@@ -114,7 +114,7 @@
           | map(attribute='key')
 
     - name: Mysql_info databases | Get all dbs even empty ones
-      community.mysql.mysql_info:
+      ansible.mysql.mysql_info:
         filter:
           - databases
         return_empty_dbs: true
@@ -131,7 +131,7 @@
           result.databases['db_tables_count_empty'].tables != 0
 
     - name: Mysql_info databases | Get all dbs even empty ones without size
-      community.mysql.mysql_info:
+      ansible.mysql.mysql_info:
         filter:
           - databases
         exclude_fields:
@@ -152,7 +152,7 @@
     # ================================== Cleanup ============================
 
     - name: Mysql_info databases | Cleanup databases
-      community.mysql.mysql_db:
+      ansible.mysql.mysql_db:
         name:
           - db_tables_count_empty
           - db_tables_count_1

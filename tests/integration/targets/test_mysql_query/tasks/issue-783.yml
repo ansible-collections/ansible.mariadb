@@ -1,5 +1,5 @@
 ---
-# Test for https://github.com/ansible-collections/community.mysql/issues/783
+# Test for https://github.com/ansible-collections/ansible.mysql/issues/783
 # mysql_query must not fail when query results contain non-JSON-serializable
 # types such as decimal.Decimal or datetime.
 
@@ -13,12 +13,12 @@
   block:
 
     - name: issue-783 | Create test database
-      community.mysql.mysql_query:
+      ansible.mysql.mysql_query:
         <<: *mysql_params
         query: 'CREATE DATABASE issue783'
 
     - name: issue-783 | Create table with DECIMAL and DATETIME columns
-      community.mysql.mysql_query:
+      ansible.mysql.mysql_query:
         <<: *mysql_params
         login_db: issue783
         query: >
@@ -30,13 +30,13 @@
           )
 
     - name: issue-783 | Insert a row
-      community.mysql.mysql_query:
+      ansible.mysql.mysql_query:
         <<: *mysql_params
         login_db: issue783
         query: "INSERT INTO t VALUES (1, 18.51, '2024-01-15 10:30:00', '2024-01-15')"
 
     - name: issue-783 | Query row with DECIMAL and DATETIME columns (must not fail)
-      community.mysql.mysql_query:
+      ansible.mysql.mysql_query:
         <<: *mysql_params
         login_db: issue783
         query: 'SELECT id, price, created_at, active_date FROM t WHERE id = 1'
@@ -58,6 +58,6 @@
   always:
 
     - name: issue-783 | Drop test database
-      community.mysql.mysql_query:
+      ansible.mysql.mysql_query:
         <<: *mysql_params
         query: 'DROP DATABASE IF EXISTS issue783'

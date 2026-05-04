@@ -17,7 +17,7 @@
 
   block:
     - name: Issue-671| test setup | drop database
-      community.mysql.mysql_db:
+      ansible.mysql.mysql_db:
         <<: *mysql_params
         name: "{{ item }}"
         state: absent
@@ -26,7 +26,7 @@
         - bar
 
     - name: Issue-671| test setup | create database
-      community.mysql.mysql_db:
+      ansible.mysql.mysql_db:
         <<: *mysql_params
         name: "{{ item }}"
         state: present
@@ -35,7 +35,7 @@
         - bar
 
     - name: Issue-671| test setup | get value of GLOBAL.sql_mode
-      community.mysql.mysql_query:
+      ansible.mysql.mysql_query:
         <<: *mysql_params
         query: 'select @@GLOBAL.sql_mode AS sql_mode'
       register: sql_mode_orig
@@ -46,7 +46,7 @@
           - sql_mode_orig.query_result[0][0].sql_mode != None  
 
     - name: Issue-671| enable sql_mode ANSI_QUOTES
-      community.mysql.mysql_variables:
+      ansible.mysql.mysql_variables:
         <<: *mysql_params
         variable: sql_mode
         value: '{{ sql_mode_orig.query_result[0][0].sql_mode }},ANSI_QUOTES'
@@ -69,7 +69,7 @@
         cmd: "{{ mysql_command }} < {{ remote_tmp_dir }}/create-procedure.sql"
 
     - name: Issue-671| Create user with FUNCTION and PROCEDURE privileges
-      community.mysql.mysql_user:
+      ansible.mysql.mysql_user:
         <<: *mysql_params
         name: '{{ user_name_2 }}'
         password: '{{ user_password_2 }}'
@@ -77,7 +77,7 @@
         priv: 'FUNCTION foo.function:EXECUTE/foo.*:SELECT/PROCEDURE bar.procedure:EXECUTE'
 
     - name: Issue-671| Grant the privileges again, remove ANSI_QUOTES from the session variable
-      community.mysql.mysql_user:
+      ansible.mysql.mysql_user:
         <<: *mysql_params
         session_vars:
           sql_mode: ""
@@ -90,7 +90,7 @@
         - result is failed or result is changed
 
     - name: Issue-671| Test teardown | cleanup databases
-      community.mysql.mysql_db:
+      ansible.mysql.mysql_db:
         <<: *mysql_params
         name: "{{ item }}"
         state: absent
@@ -99,7 +99,7 @@
         - bar
 
     - name: Issue-671| set sql_mode back to original value
-      community.mysql.mysql_variables:
+      ansible.mysql.mysql_variables:
         <<: *mysql_params
         variable: sql_mode
         value: '{{ sql_mode_orig.query_result[0][0].sql_mode }}'

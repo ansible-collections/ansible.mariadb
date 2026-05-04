@@ -1,5 +1,5 @@
 ---
-# Test for https://github.com/ansible-collections/community.mysql/issues/664
+# Test for https://github.com/ansible-collections/ansible.mysql/issues/664
 # Issue 744: Bug revoking 'WITH GRANT OPTION'
 # The issue occurs when a user has only USAGE with GRANT OPTION on a database
 # and we try to modify their permissions. The revoke logic fails because it
@@ -14,20 +14,20 @@
 
   block:
     - name: Issue-744 | Create test database
-      community.mysql.mysql_db:
+      ansible.mysql.mysql_db:
         <<: *mysql_params
         name: issue744_testdb
         state: present
 
     - name: Issue-744 | Create user with USAGE privileges only
-      community.mysql.mysql_user:
+      ansible.mysql.mysql_user:
         <<: *mysql_params
         name: "{{ user_name_1 }}"
         password: "{{ user_password_1 }}"
         state: present
 
     - name: Issue-744 | Grant USAGE with GRANT OPTION on specific database
-      community.mysql.mysql_user:
+      ansible.mysql.mysql_user:
         <<: *mysql_params
         name: "{{ user_name_1 }}"
         password: "{{ user_password_1 }}"
@@ -35,7 +35,7 @@
         state: present
 
     - name: Issue-744 | Show grants to verify USAGE with GRANT OPTION
-      community.mysql.mysql_query:
+      ansible.mysql.mysql_query:
         <<: *mysql_params
         query: "SHOW GRANTS FOR '{{ user_name_1 }}'@'localhost'"
       register: show_grants_result
@@ -48,7 +48,7 @@
 
     # With the fix, this should now succeed
     - name: Issue-744 | Modify user permissions (this should now succeed with the fix)
-      community.mysql.mysql_user:
+      ansible.mysql.mysql_user:
         <<: *mysql_params
         name: "{{ user_name_1 }}"
         password: "{{ user_password_1 }}"
@@ -70,7 +70,7 @@
 
     # Verify the final state is correct
     - name: Issue-744 | Show final grants to verify SELECT privilege
-      community.mysql.mysql_query:
+      ansible.mysql.mysql_query:
         <<: *mysql_params
         query: "SHOW GRANTS FOR '{{ user_name_1 }}'@'localhost'"
       register: final_grants_result
@@ -84,14 +84,14 @@
 
   always:
     - name: Issue-744 | Cleanup - Remove test user
-      community.mysql.mysql_user:
+      ansible.mysql.mysql_user:
         <<: *mysql_params
         name: "{{ user_name_1 }}"
         state: absent
       ignore_errors: true
 
     - name: Issue-744 | Cleanup - Remove test database
-      community.mysql.mysql_db:
+      ansible.mysql.mysql_db:
         <<: *mysql_params
         name: issue744_testdb
         state: absent

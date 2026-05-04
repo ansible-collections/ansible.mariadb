@@ -137,6 +137,6 @@ python run_all_tests.py
 
 ### Add a new Connector or Database version
 
-New components version should be added to this file: [.github/workflows/ansible-test-plugins.yml](https://github.com/ansible-collections/community.mysql/tree/main/.github/workflows)
+New components version should be added to this file: [.github/workflows/ansible-test-plugins.yml](https://github.com/ansible-collections/ansible.mysql/tree/main/.github/workflows)
 
 Be careful to not add too much tests. The matrix creates an exponential number of virtual machines!

@@ -15,11 +15,11 @@ import string
 import json
 import re
 
-from ansible_collections.community.mysql.plugins.module_utils.mysql import (
+from ansible_collections.ansible.mysql.plugins.module_utils.mysql import (
     mysql_driver,
     get_server_implementation,
 )
-from ansible_collections.community.mysql.plugins.module_utils.implementations.mysql.hash import (
+from ansible_collections.ansible.mysql.plugins.module_utils.implementations.mysql.hash import (
     mysql_sha256_password_hash,
     mysql_sha256_password_hash_hex,
 )
@@ -165,7 +165,7 @@ def get_existing_authentication(cursor, user, host=None):
 
     # 'plugin_auth_string' contains the hash string.
     # Removed from mysql_info output in c.mysql 4.0.0
-    # See https://github.com/ansible-collections/community.mysql/pull/629
+    # See https://github.com/ansible-collections/ansible.mysql/pull/629
     for r in rows:
         existing_auth_list.append({
             'plugin': r[0],
@@ -496,7 +496,7 @@ def user_mod(cursor, user, host, host_all, password, encrypted,
                     # Only revoke grant option if it exists and absence is requested
                     #
                     # For more details
-                    # https://github.com/ansible-collections/community.mysql/issues/77#issuecomment-1209693807
+                    # https://github.com/ansible-collections/ansible.mysql/issues/77#issuecomment-1209693807
                     grant_option = 'GRANT' in revoke_privs and 'GRANT' not in grant_privs
 
                 if grant_privs == ['GRANT']:
@@ -1198,8 +1198,8 @@ def attributes_get(cursor, user, host):
 def get_user_implementation(cursor):
     db_engine = get_server_implementation(cursor)
     if db_engine == 'mariadb':
-        from ansible_collections.community.mysql.plugins.module_utils.implementations.mariadb import user as mariauser
+        from ansible_collections.ansible.mysql.plugins.module_utils.implementations.mariadb import user as mariauser
         return mariauser
     else:
-        from ansible_collections.community.mysql.plugins.module_utils.implementations.mysql import user as mysqluser
+        from ansible_collections.ansible.mysql.plugins.module_utils.implementations.mysql import user as mysqluser
         return mysqluser

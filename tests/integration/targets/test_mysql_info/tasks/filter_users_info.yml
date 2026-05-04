@@ -1,20 +1,20 @@
 ---
 
 - module_defaults:
-    community.mysql.mysql_db: &mysql_defaults
+    ansible.mysql.mysql_db: &mysql_defaults
       login_user: "{{ mysql_user }}"
       login_password: "{{ mysql_password }}"
       login_host: "{{ mysql_host }}"
       login_port: "{{ mysql_primary_port }}"
-    community.mysql.mysql_query: *mysql_defaults
-    community.mysql.mysql_info: *mysql_defaults
-    community.mysql.mysql_user: *mysql_defaults
+    ansible.mysql.mysql_query: *mysql_defaults
+    ansible.mysql.mysql_info: *mysql_defaults
+    ansible.mysql.mysql_user: *mysql_defaults
 
   block:
 
     # ================================ Prepare ==============================
     - name: Mysql_info users_info | Create databases
-      community.mysql.mysql_db:
+      ansible.mysql.mysql_db:
         name:
           - users_info_db
           - users_info_db2
@@ -22,7 +22,7 @@
         state: present
 
     - name: Mysql_info users_info | Create tables
-      community.mysql.mysql_query:
+      ansible.mysql.mysql_query:
         query:
           - >-
             CREATE TABLE IF NOT EXISTS users_info_db.t1
@@ -36,7 +36,7 @@
     # grant defined for user 'PUBLIC' on host'%'" if the PUBLIC role is not
     # handled properly by our module.
     - name: Mysql_info users_info | Grant to PUBLIC for MariaDB 10.11+
-      community.mysql.mysql_query:
+      ansible.mysql.mysql_query:
         query:
           - >-
             GRANT SELECT,INSERT,UPDATE,DELETE on users_info_db.* TO PUBLIC
@@ -44,7 +44,7 @@
         - db_engine == 'mariadb'
         - db_version is version('10.11.1', '>=')
 
-    # I failed to create a procedure using community.mysql.mysql_query.
+    # I failed to create a procedure using ansible.mysql.mysql_query.
     # Maybe it's because we must changed the delimiter.
     - name: Mysql_info users_info | Create procedure SQL file
       ansible.builtin.template:
@@ -55,7 +55,7 @@
         mode: '0700'
 
     - name: Mysql_info users_info | Create a procedure
-      community.mysql.mysql_db:
+      ansible.mysql.mysql_db:
         name: all
         state: import
         target: /root/create_procedure.sql
@@ -63,7 +63,7 @@
     # Use a query instead of mysql_user, because we want to catch differences
     # at the end and a bug in mysql_user would be invisible to this tests
     - name: Mysql_info users_info | Prepare common tests users
-      community.mysql.mysql_query:
+      ansible.mysql.mysql_query:
         query:
           - >-
             CREATE USER users_info_adm@'users_info.com' IDENTIFIED WITH
@@ -224,7 +224,7 @@
             TO users_info_tls_sub_issu_ciph@'host'
 
     - name: Mysql_info users_info | Prepare tests users for MariaDB
-      community.mysql.mysql_query:
+      ansible.mysql.mysql_query:
         query:
           - >-
             CREATE USER users_info_socket@'users_info.com' IDENTIFIED WITH
@@ -234,7 +234,7 @@
         - db_engine == 'mariadb'
 
     - name: Mysql_info users_info | Prepare tests users for MySQL
-      community.mysql.mysql_query:
+      ansible.mysql.mysql_query:
         query:
           - >-
             CREATE USER users_info_sha256@'users_info.com' IDENTIFIED WITH
@@ -244,7 +244,7 @@
         - db_engine == 'mysql'
 
     - name: Mysql_info users_info | Prepare tests users for MySQL 8+
-      community.mysql.mysql_query:
+      ansible.mysql.mysql_query:
         query:
           - >-
             CREATE USER users_info_caching_sha2@'users_info.com' IDENTIFIED WITH
@@ -257,13 +257,13 @@
     # ================================== Tests ==============================
 
     - name: Mysql_info users_info | Collect users_info
-      community.mysql.mysql_info:
+      ansible.mysql.mysql_info:
         filter:
           - users_info
       register: result
 
     - name: Mysql_info users_info | Recreate users from mysql_info result
-      community.mysql.mysql_user:
+      ansible.mysql.mysql_user:
         name: "{{ item.name }}"
         host: "{{ item.host }}"
         plugin: "{{ item.plugin | default(omit) }}"
@@ -295,7 +295,7 @@
     # ================================== Cleanup ============================
 
     - name: Mysql_info users_info | Cleanup users_info
-      community.mysql.mysql_user:
+      ansible.mysql.mysql_user:
         name: "{{ item }}"
         host_all: true
         column_case_sensitive: true
@@ -321,7 +321,7 @@
         - users_info_tls_sub_issu_ciph
 
     - name: Mysql_info users_info | Cleanup databases
-      community.mysql.mysql_db:
+      ansible.mysql.mysql_db:
         name:
           - users_info_db
           - users_info_db2

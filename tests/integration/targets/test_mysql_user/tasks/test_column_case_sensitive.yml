@@ -12,7 +12,7 @@
     # ========================= Prepare =======================================
     # We use query to prevent our module of changing the case
     - name: Mysql_user Column case sensitive | Create a test table
-      community.mysql.mysql_query:
+      ansible.mysql.mysql_query:
         <<: *mysql_params
         query:
           - CREATE DATABASE mysql_user_column_case
@@ -26,7 +26,7 @@
     # ================= Reproduce failure =====================================
 
     - name: Mysql_user Column case sensitive | Create test user
-      community.mysql.mysql_user:
+      ansible.mysql.mysql_user:
         <<: *mysql_params
         name: column_case_sensitive
         host: '%'
@@ -36,7 +36,7 @@
         column_case_sensitive: false
 
     - name: Mysql_user Column case sensitive | Assert user privileges are all caps
-      community.mysql.mysql_query:
+      ansible.mysql.mysql_query:
         <<: *mysql_params
         query:
           - SHOW GRANTS FOR column_case_sensitive@'%'
@@ -54,7 +54,7 @@
           is not search("DD", ignorecase=false)
 
     - name: Mysql_user Column case sensitive | Assert 1 column is accessible on MySQL 5.7
-      community.mysql.mysql_query:
+      ansible.mysql.mysql_query:
         <<: *mysql_params
         login_user: column_case_sensitive
         query:
@@ -66,7 +66,7 @@
         - db_engine == 'mysql' and db_version is version('5.7', '<=')
 
     - name: Mysql_user Column case sensitive | Assert 4 column are accessible on MariaDB and MySQL 8+
-      community.mysql.mysql_query:
+      ansible.mysql.mysql_query:
         <<: *mysql_params
         login_user: column_case_sensitive
         query:
@@ -82,7 +82,7 @@
     # ======================== Test fix  ======================================
 
     - name: Mysql_user Column case sensitive | Create users with case sensitive
-      community.mysql.mysql_user:
+      ansible.mysql.mysql_user:
         <<: *mysql_params
         name: column_case_sensitive
         host: '%'
@@ -92,7 +92,7 @@
         column_case_sensitive: true
 
     - name: Mysql_user Column case sensitive | Assert user privileges are case sensitive
-      community.mysql.mysql_query:
+      ansible.mysql.mysql_query:
         <<: *mysql_params
         query:
           - SHOW GRANTS FOR column_case_sensitive@'%'
@@ -110,7 +110,7 @@
           is not search("Dd", ignorecase=false)
 
     - name: Mysql_user Column case sensitive | Assert 4 columns are accessible
-      community.mysql.mysql_query:
+      ansible.mysql.mysql_query:
         <<: *mysql_params
         login_user: column_case_sensitive
         query:
@@ -122,14 +122,14 @@
     # ========================= Teardown ======================================
 
     - name: Mysql_user Column case sensitive | Delete test users
-      community.mysql.mysql_user:
+      ansible.mysql.mysql_user:
         <<: *mysql_params
         name: column_case_sensitive
         host_all: true
         state: absent
 
     - name: Mysql_user Column case sensitive | Delete test database
-      community.mysql.mysql_db:
+      ansible.mysql.mysql_db:
         <<: *mysql_params
         name: mysql_user_column_case
         state: absent

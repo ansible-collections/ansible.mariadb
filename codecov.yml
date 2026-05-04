@@ -1,2 +1,2 @@
 fixes:
-   - "/ansible_collections/community/mysql/::"
+   - "/ansible_collections/ansible/mysql/::"

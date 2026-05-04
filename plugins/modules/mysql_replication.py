@@ -25,13 +25,13 @@ options:
   mode:
     description:
     - Module operating mode. Could be
-      C(changeprimary) (CHANGE MASTER TO) - also works for MySQL 8.0.23 and later since community.mysql 3.10.0,
+      C(changeprimary) (CHANGE MASTER TO) - also works for MySQL 8.0.23 and later since ansible.mysql 3.10.0,
       C(changereplication) (CHANGE REPLICATION SOURCE TO) - only supported in MySQL 8.0.23 and later,
       C(getprimary) (SHOW MASTER STATUS),
       C(getreplica) (SHOW REPLICA STATUS),
       C(startreplica) (START REPLICA),
       C(stopreplica) (STOP REPLICA),
-      C(resetprimary) (RESET MASTER) - supported since community.mysql 0.1.0,
+      C(resetprimary) (RESET MASTER) - supported since ansible.mysql 0.1.0,
       C(resetreplica) (RESET REPLICA),
       C(resetreplicaall) (RESET REPLICA ALL).
     type: str
@@ -139,7 +139,7 @@ options:
     description:
     - Same as C(MASTER_SSL_VERIFY_SERVER_CERT) MySQL/MariaDB variable.
     - The module switch automatically to C(SOURCE_SSL_VERIFY_SERVER_CERT) for MySQL 8.0.23 and later.
-    - Prior to community.mysql 3.14.0 C(false) had no effect.
+    - Prior to ansible.mysql 3.14.0 C(false) had no effect.
     type: bool
     version_added: '3.5.0'
   primary_auto_position:
@@ -205,10 +205,10 @@ attributes:
       - The module is not idempotent for O(mode=resetprimary), O(mode=resetreplica), and O(mode=resetreplicaall).
 
 extends_documentation_fragment:
-- community.mysql.mysql
+- ansible.mysql.mysql
 
 seealso:
-- module: community.mysql.mysql_info
+- module: ansible.mysql.mysql_info
 - name: MySQL replication reference
   description: Complete reference of the MySQL replication documentation.
   link: https://dev.mysql.com/doc/refman/8.0/en/replication.html
@@ -224,69 +224,69 @@ EXAMPLES = r'''
 # If you encounter the "Please explicitly state intended protocol" error,
 # use the login_unix_socket argument
 - name: Stop mysql replica thread
-  community.mysql.mysql_replication:
+  ansible.mysql.mysql_replication:
     mode: stopreplica
     login_unix_socket: /run/mysqld/mysqld.sock
 
 - name: Get primary binlog file name and binlog position
-  community.mysql.mysql_replication:
+  ansible.mysql.mysql_replication:
     mode: getprimary
 
 - name: Change primary to primary server 192.0.2.1 and use binary log 'mysql-bin.000009' with position 4578
-  community.mysql.mysql_replication:
+  ansible.mysql.mysql_replication:
     mode: changeprimary
     primary_host: 192.0.2.1
     primary_log_file: mysql-bin.000009
     primary_log_pos: 4578
 
 - name: Change replication source to replica server 192.0.2.1 and use binary log 'mysql-bin.000009' with position 4578
-  community.mysql.mysql_replication:
+  ansible.mysql.mysql_replication:
     mode: changereplication
     primary_host: 192.0.2.1
     primary_log_file: mysql-bin.000009
     primary_log_pos: 4578
 
 - name: Check replica status using port 3308
-  community.mysql.mysql_replication:
+  ansible.mysql.mysql_replication:
     mode: getreplica
     login_host: ansible.example.com
     login_port: 3308
 
 - name: On MariaDB change primary to use GTID current_pos
-  community.mysql.mysql_replication:
+  ansible.mysql.mysql_replication:
     mode: changeprimary
     primary_use_gtid: current_pos
 
 - name: Change primary to use replication delay 3600 seconds
-  community.mysql.mysql_replication:
+  ansible.mysql.mysql_replication:
     mode: changeprimary
     primary_host: 192.0.2.1
     primary_delay: 3600
 
 - name: Start MariaDB replica with connection name primary-1
-  community.mysql.mysql_replication:
+  ansible.mysql.mysql_replication:
     mode: startreplica
     connection_name: primary-1
 
 - name: Stop replication in channel primary-1
-  community.mysql.mysql_replication:
+  ansible.mysql.mysql_replication:
     mode: stopreplica
     channel: primary-1
 
 - name: >
     Run RESET MASTER command which will delete all existing binary log files
     and reset the binary log index file on the primary
-  community.mysql.mysql_replication:
+  ansible.mysql.mysql_replication:
     mode: resetprimary
 
 - name: Run start replica and fail the task on errors
-  community.mysql.mysql_replication:
+  ansible.mysql.mysql_replication:
     mode: startreplica
     connection_name: primary-1
     fail_on_error: true
 
 - name: Change primary and fail on error (like when replica thread is running)
-  community.mysql.mysql_replication:
+  ansible.mysql.mysql_replication:
     mode: changeprimary
     fail_on_error: true
 '''
@@ -304,10 +304,10 @@ import os
 import warnings
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.community.mysql.plugins.module_utils.command_resolver import (
+from ansible_collections.ansible.mysql.plugins.module_utils.command_resolver import (
     CommandResolver
 )
-from ansible_collections.community.mysql.plugins.module_utils.mysql import (
+from ansible_collections.ansible.mysql.plugins.module_utils.mysql import (
     get_server_version,
     get_server_implementation,
     mysql_connect,
@@ -570,9 +570,9 @@ def main():
     command_resolver = CommandResolver(server_implementation, server_version)
     cursor.execute("SELECT VERSION()")
     if server_implementation == 'mariadb':
-        from ansible_collections.community.mysql.plugins.module_utils.implementations.mariadb import replication as impl
+        from ansible_collections.ansible.mysql.plugins.module_utils.implementations.mariadb import replication as impl
     else:
-        from ansible_collections.community.mysql.plugins.module_utils.implementations.mysql import replication as impl
+        from ansible_collections.ansible.mysql.plugins.module_utils.implementations.mysql import replication as impl
 
     # Since MySQL 8.0.22 and MariaDB 10.5.1,
     # "REPLICA" must be used instead of "SLAVE"

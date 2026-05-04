@@ -162,7 +162,7 @@ options:
   session_vars:
     description:
       - "Dictionary of session variables in form of C(variable: value) to set at the beginning of module execution."
-      - Cannot be used to set global variables, use the M(community.mysql.mysql_variables) module instead.
+      - Cannot be used to set global variables, use the M(ansible.mysql.mysql_variables) module instead.
     type: dict
     version_added: '3.6.0'
   password_expire:
@@ -224,7 +224,7 @@ attributes:
     support: full
 
 seealso:
-- module: community.mysql.mysql_info
+- module: ansible.mysql.mysql_info
 - name: MySQL access control and account management reference
   description: Complete reference of the MySQL access control and account management documentation.
   link: https://dev.mysql.com/doc/refman/8.0/en/access-control.html
@@ -241,34 +241,34 @@ author:
 - E.S. Rosenberg (@Keeper-of-the-Keys)
 
 extends_documentation_fragment:
-- community.mysql.mysql
+- ansible.mysql.mysql
 '''
 
 EXAMPLES = r'''
 # If you encounter the "Please explicitly state intended protocol" error,
 # use the login_unix_socket argument
 - name: Removes anonymous user account for localhost
-  community.mysql.mysql_user:
+  ansible.mysql.mysql_user:
     name: ''
     host: localhost
     state: absent
     login_unix_socket: /run/mysqld/mysqld.sock
 
 - name: Removes all anonymous user accounts
-  community.mysql.mysql_user:
+  ansible.mysql.mysql_user:
     name: ''
     host_all: true
     state: absent
 
 - name: Create database user with name 'bob' and password '12345' with all database privileges
-  community.mysql.mysql_user:
+  ansible.mysql.mysql_user:
     name: bob
     password: 12345
     priv: '*.*:ALL'
     state: present
 
 - name: Create database user using hashed password with all database privileges
-  community.mysql.mysql_user:
+  ansible.mysql.mysql_user:
     name: bob
     password: '*EE0D72C1085C46C5278932678FBE2C6A782821B4'
     encrypted: true
@@ -277,7 +277,7 @@ EXAMPLES = r'''
 
 # Set session var wsrep_on=off before creating the user
 - name: Create database user with password and all database privileges and 'WITH GRANT OPTION'
-  community.mysql.mysql_user:
+  ansible.mysql.mysql_user:
     name: bob
     password: 12345
     priv: '*.*:ALL,GRANT'
@@ -286,7 +286,7 @@ EXAMPLES = r'''
       wsrep_on: 'off'
 
 - name: Create user with password, all database privileges and 'WITH GRANT OPTION' in db1 and db2
-  community.mysql.mysql_user:
+  ansible.mysql.mysql_user:
     state: present
     name: bob
     password: 12345dd
@@ -296,7 +296,7 @@ EXAMPLES = r'''
 
 # Use 'PROCEDURE' instead of 'FUNCTION' to apply GRANTs for a MySQL procedure instead.
 - name: Grant a user the right to execute a function
-  community.mysql.mysql_user:
+  ansible.mysql.mysql_user:
     name: readonly
     password: 12345
     priv:
@@ -304,33 +304,33 @@ EXAMPLES = r'''
     state: present
 
 - name: Modify user attributes, creating the attribute 'foo' and removing the attribute 'bar'
-  community.mysql.mysql_user:
+  ansible.mysql.mysql_user:
     name: bob
     attributes:
       foo: "foo"
       bar: null
 
 - name: Modify user to require TLS connection with a valid client certificate
-  community.mysql.mysql_user:
+  ansible.mysql.mysql_user:
     name: bob
     tls_requires:
       x509:
     state: present
 
 - name: Modify user to require TLS connection with a specific client certificate and cipher
-  community.mysql.mysql_user:
+  ansible.mysql.mysql_user:
     name: bob
     tls_requires:
       subject: '/CN=alice/O=MyDom, Inc./C=US/ST=Oregon/L=Portland'
       cipher: 'ECDHE-ECDSA-AES256-SHA384'
 
 - name: Modify user to no longer require SSL
-  community.mysql.mysql_user:
+  ansible.mysql.mysql_user:
     name: bob
     tls_requires:
 
 - name: Ensure no user named 'sally'@'localhost' exists, also passing in the auth credentials
-  community.mysql.mysql_user:
+  ansible.mysql.mysql_user:
     login_user: root
     login_password: 123456
     name: sally
@@ -341,7 +341,7 @@ EXAMPLES = r'''
     Ensure no user named 'sally'@'localhost' exists, also passing in the auth credentials.
     If mysql allows root/nopassword login, try it without the credentials first.
     If it's not allowed, pass the credentials
-  community.mysql.mysql_user:
+  ansible.mysql.mysql_user:
     check_implicit_admin: true
     login_user: root
     login_password: 123456
@@ -349,20 +349,20 @@ EXAMPLES = r'''
     state: absent
 
 - name: Ensure no user named 'sally' exists at all
-  community.mysql.mysql_user:
+  ansible.mysql.mysql_user:
     name: sally
     host_all: true
     state: absent
 
 - name: Specify grants composed of more than one word
-  community.mysql.mysql_user:
+  ansible.mysql.mysql_user:
     name: replication
     password: 12345
     priv: "*.*:REPLICATION CLIENT"
     state: present
 
 - name: Revoke all privileges for user 'bob' and password '12345'
-  community.mysql.mysql_user:
+  ansible.mysql.mysql_user:
     name: bob
     password: 12345
     priv: "*.*:USAGE"
@@ -372,13 +372,13 @@ EXAMPLES = r'''
 # mydb.*:INSERT,UPDATE/anotherdb.*:SELECT/yetanotherdb.*:ALL
 
 - name: Example using login_unix_socket to connect to server
-  community.mysql.mysql_user:
+  ansible.mysql.mysql_user:
     name: root
     password: abc123
     login_unix_socket: /var/run/mysqld/mysqld.sock
 
 - name: Example of skipping binary logging while adding user 'bob'
-  community.mysql.mysql_user:
+  ansible.mysql.mysql_user:
     name: bob
     password: 12345
     priv: "*.*:USAGE"
@@ -386,7 +386,7 @@ EXAMPLES = r'''
     sql_log_bin: false
 
 - name: Create user 'bob' authenticated with plugin 'AWSAuthenticationPlugin'
-  community.mysql.mysql_user:
+  ansible.mysql.mysql_user:
     name: bob
     plugin: AWSAuthenticationPlugin
     plugin_hash_string: RDS
@@ -394,28 +394,28 @@ EXAMPLES = r'''
     state: present
 
 - name: Create user 'bob' authenticated with plugin 'caching_sha2_password' and static salt
-  community.mysql.mysql_user:
+  ansible.mysql.mysql_user:
     name: bob
     plugin: caching_sha2_password
     plugin_auth_string: password
     salt: 1234567890abcdefghij
 
 - name: Limit bob's resources to 10 queries per hour and 5 connections per hour
-  community.mysql.mysql_user:
+  ansible.mysql.mysql_user:
     name: bob
     resource_limits:
       MAX_QUERIES_PER_HOUR: 10
       MAX_CONNECTIONS_PER_HOUR: 5
 
 - name: Ensure bob does not have the DELETE privilege
-  community.mysql.mysql_user:
+  ansible.mysql.mysql_user:
     name: bob
     subtract_privs: true
     priv:
       'db1.*': DELETE
 
 - name: Create locked user to act as a definer on procedures
-  community.mysql.mysql_user:
+  ansible.mysql.mysql_user:
     name: readonly_procedures_locked
     locked: true
     priv:
@@ -430,15 +430,15 @@ EXAMPLES = r'''
 RETURN = '''#'''
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.community.mysql.plugins.module_utils.database import SQLParseError
-from ansible_collections.community.mysql.plugins.module_utils.mysql import (
+from ansible_collections.ansible.mysql.plugins.module_utils.database import SQLParseError
+from ansible_collections.ansible.mysql.plugins.module_utils.mysql import (
     mysql_connect,
     mysql_driver,
     mysql_driver_fail_msg,
     mysql_common_argument_spec,
     set_session_vars,
 )
-from ansible_collections.community.mysql.plugins.module_utils.user import (
+from ansible_collections.ansible.mysql.plugins.module_utils.user import (
     convert_priv_dict_to_str,
     get_mode,
     InvalidPrivsError,
@@ -465,7 +465,7 @@ def main():
             {
                 'name': 'user',
                 'version': '5.0.0',
-                'collection_name': 'community.mysql',
+                'collection_name': 'ansible.mysql',
             }],
         ),
         password=dict(type='str', no_log=True),

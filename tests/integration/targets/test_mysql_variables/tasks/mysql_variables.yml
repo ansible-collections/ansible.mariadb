@@ -280,7 +280,7 @@
         var_value: '{{set_value}}'
 
     #=========================================================================
-    # Bugfix https://github.com/ansible-collections/community.mysql/issues/652
+    # Bugfix https://github.com/ansible-collections/ansible.mysql/issues/652
 
     - name: Get server version
       mysql_info:

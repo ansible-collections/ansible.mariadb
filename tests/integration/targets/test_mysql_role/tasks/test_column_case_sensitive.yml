@@ -12,7 +12,7 @@
     # ========================= Prepare =======================================
     # We use query to prevent our module of changing the case
     - name: Mysql_role Column case sensitive | Create a test table
-      community.mysql.mysql_query:
+      ansible.mysql.mysql_query:
         <<: *mysql_params
         query:
           - CREATE DATABASE mysql_role_column_case
@@ -24,7 +24,7 @@
             (a, B, cC, Dd) VALUES (1,2,3,4)
 
     - name: Mysql_role Column case sensitive | Create users
-      community.mysql.mysql_user:
+      ansible.mysql.mysql_user:
         <<: *mysql_params
         name: column_case_sensitive
         host: '%'
@@ -34,7 +34,7 @@
     # ================= Reproduce failure =====================================
 
     - name: Mysql_role Column case sensitive | Create role
-      community.mysql.mysql_role:
+      ansible.mysql.mysql_role:
         <<: *mysql_params
         name: 'role_column_case_sensitive'
         state: present
@@ -45,7 +45,7 @@
         column_case_sensitive: false
 
     - name: Mysql_role Column case sensitive | Assert role privileges are all caps
-      community.mysql.mysql_query:
+      ansible.mysql.mysql_query:
         <<: *mysql_params
         query:
           - SHOW GRANTS FOR role_column_case_sensitive
@@ -63,7 +63,7 @@
           is not search("DD", ignorecase=false)
 
     - name: Mysql_role Column case sensitive | Assert 1 column is accessible on MySQL
-      community.mysql.mysql_query:
+      ansible.mysql.mysql_query:
         <<: *mysql_params
         login_user: column_case_sensitive
         query:
@@ -75,7 +75,7 @@
         - db_engine == 'mysql'
 
     - name: Mysql_role Column case sensitive | Assert 4 column are accessible on MariaDB
-      community.mysql.mysql_query:
+      ansible.mysql.mysql_query:
         <<: *mysql_params
         login_user: column_case_sensitive
         query:
@@ -90,7 +90,7 @@
     # ====================== Test the fix =====================================
 
     - name: Mysql_role Column case sensitive | Recreate role with case sensitive
-      community.mysql.mysql_role:
+      ansible.mysql.mysql_role:
         <<: *mysql_params
         name: 'role_column_case_sensitive'
         state: present
@@ -101,7 +101,7 @@
         column_case_sensitive: true
 
     - name: Mysql_role Column case sensitive | Assert role privileges are case sensitive
-      community.mysql.mysql_query:
+      ansible.mysql.mysql_query:
         <<: *mysql_params
         query:
           - SHOW GRANTS FOR role_column_case_sensitive
@@ -119,7 +119,7 @@
           is not search("Dd", ignorecase=false)
 
     - name: Mysql_role Column case sensitive | Assert 4 columns are accessible
-      community.mysql.mysql_query:
+      ansible.mysql.mysql_query:
         <<: *mysql_params
         login_user: column_case_sensitive
         query:
@@ -132,20 +132,20 @@
     # ========================= Teardown ======================================
 
     - name: Mysql_role Column case sensitive | Delete test users
-      community.mysql.mysql_user:
+      ansible.mysql.mysql_user:
         <<: *mysql_params
         name: column_case_sensitive
         host_all: true
         state: absent
 
     - name: Mysql_role Column case sensitive | Delete role
-      community.mysql.mysql_role:
+      ansible.mysql.mysql_role:
         <<: *mysql_params
         name: 'role_column_case_sensitive'
         state: absent
 
     - name: Mysql_role Column case sensitive | Delete test database
-      community.mysql.mysql_db:
+      ansible.mysql.mysql_db:
         <<: *mysql_params
         name: mysql_role_column_case
         state: absent

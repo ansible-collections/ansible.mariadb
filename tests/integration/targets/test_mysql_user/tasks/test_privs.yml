@@ -212,7 +212,7 @@
           - result is changed
 
     - name: Privs | Collect user info by host
-      community.mysql.mysql_info:
+      ansible.mysql.mysql_info:
         <<: *mysql_params
         filter: "users"
       register: mysql_info_about_users
@@ -238,7 +238,7 @@
           - result is not changed
 
     - name: Privs | Collect user info by host
-      community.mysql.mysql_info:
+      ansible.mysql.mysql_info:
         <<: *mysql_params
         filter: "users"
       register: mysql_info_about_users

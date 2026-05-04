@@ -24,7 +24,7 @@
     #
 
     - name: Plugin auth | Create user with plugin auth (with hash string)
-      community.mysql.mysql_user:
+      ansible.mysql.mysql_user:
         <<: *mysql_params
         name: '{{ test_user_name }}'
         host: '%'
@@ -55,7 +55,7 @@
         priv: "{{ test_default_priv_type }}"
 
     - name: Plugin auth | Get the MySQL version using the newly created creds
-      community.mysql.mysql_info:
+      ansible.mysql.mysql_info:
         login_user: '{{ test_user_name }}'
         login_password: '{{ test_plugin_auth_string }}'
         login_host: '{{ mysql_host }}'
@@ -69,7 +69,7 @@
           - result is succeeded
 
     - name: Plugin auth | Update the user with a different hash
-      community.mysql.mysql_user:
+      ansible.mysql.mysql_user:
         <<: *mysql_params
         name: '{{ test_user_name }}'
         host: '%'
@@ -89,7 +89,7 @@
         priv: "{{ test_default_priv_type }}"
 
     - name: Plugin auth | Getting the MySQL info with the new password should work
-      community.mysql.mysql_info:
+      ansible.mysql.mysql_info:
         login_user: '{{ test_user_name }}'
         login_password: '{{ test_plugin_new_auth_string }}'
         login_host: '{{ mysql_host }}'
@@ -112,7 +112,7 @@
     #
 
     - name: Plugin auth | Create user with plugin auth (with hash string)
-      community.mysql.mysql_user:
+      ansible.mysql.mysql_user:
         <<: *mysql_params
         name: '{{ test_user_name }}'
         host: '%'
@@ -143,7 +143,7 @@
         priv: "{{ test_default_priv_type }}"
 
     - name: Plugin auth | Get the MySQL version using the newly created creds
-      community.mysql.mysql_info:
+      ansible.mysql.mysql_info:
         login_user: '{{ test_user_name }}'
         login_password: '{{ test_plugin_auth_string }}'
         login_host: '{{ mysql_host }}'
@@ -157,7 +157,7 @@
           - result is succeeded
 
     - name: Plugin auth | Update the user with the same hash (no change expected)
-      community.mysql.mysql_user:
+      ansible.mysql.mysql_user:
         <<: *mysql_params
         name: '{{ test_user_name }}'
         host: '%'
@@ -179,7 +179,7 @@
         priv: "{{ test_default_priv_type }}"
 
     - name: Plugin auth | Change the user using the same plugin, but switch to the same auth string in plaintext form
-      community.mysql.mysql_user:
+      ansible.mysql.mysql_user:
         <<: *mysql_params
         name: '{{ test_user_name }}'
         host: '%'
@@ -194,7 +194,7 @@
           - result is changed
 
     - name: Plugin auth | Getting the MySQL info should still work
-      community.mysql.mysql_info:
+      ansible.mysql.mysql_info:
         login_user: '{{ test_user_name }}'
         login_password: '{{ test_plugin_auth_string }}'
         login_host: '{{ mysql_host }}'
@@ -217,7 +217,7 @@
     #
 
     - name: Plugin auth | Create user with plugin auth (with auth string)
-      community.mysql.mysql_user:
+      ansible.mysql.mysql_user:
         <<: *mysql_params
         name: '{{ test_user_name }}'
         host: '%'
@@ -248,7 +248,7 @@
         priv: "{{ test_default_priv_type }}"
 
     - name: Plugin auth | Get the MySQL version using the newly created creds
-      community.mysql.mysql_info:
+      ansible.mysql.mysql_info:
         login_user: '{{ test_user_name }}'
         login_password: '{{ test_plugin_auth_string }}'
         login_host: '{{ mysql_host }}'
@@ -262,7 +262,7 @@
           - result is succeeded
 
     - name: Plugin auth | Update the user with the same auth string
-      community.mysql.mysql_user:
+      ansible.mysql.mysql_user:
         <<: *mysql_params
         name: '{{ test_user_name }}'
         host: '%'
@@ -284,7 +284,7 @@
         priv: "{{ test_default_priv_type }}"
 
     - name: Plugin auth | Change the user using the same plugin, but switch to the same auth string in hash form
-      community.mysql.mysql_user:
+      ansible.mysql.mysql_user:
         <<: *mysql_params
         name: '{{ test_user_name }}'
         host: '%'
@@ -298,7 +298,7 @@
           - result is not changed
 
     - name: Plugin auth | Get the MySQL version using the newly created creds
-      community.mysql.mysql_info:
+      ansible.mysql.mysql_info:
         login_user: '{{ test_user_name }}'
         login_password: '{{ test_plugin_auth_string }}'
         login_host: '{{ mysql_host }}'
@@ -321,7 +321,7 @@
     #
 
     - name: Plugin auth | Create user with plugin auth (empty auth string)
-      community.mysql.mysql_user:
+      ansible.mysql.mysql_user:
         <<: *mysql_params
         name: '{{ test_user_name }}'
         host: '%'
@@ -351,7 +351,7 @@
         priv: "{{ test_default_priv_type }}"
 
     - name: Plugin auth | Get the MySQL version using an empty password for the newly created user
-      community.mysql.mysql_info:
+      ansible.mysql.mysql_info:
         login_user: '{{ test_user_name }}'
         login_password: ''
         login_host: '{{ mysql_host }}'
@@ -366,7 +366,7 @@
           - result is succeeded
 
     - name: Plugin auth | Get the MySQL version using an non-empty password (should fail)
-      community.mysql.mysql_info:
+      ansible.mysql.mysql_info:
         login_user: '{{ test_user_name }}'
         login_password: 'some_password'
         login_host: '{{ mysql_host }}'
@@ -381,7 +381,7 @@
           - result is failed
 
     - name: Plugin auth | Update the user without changing the auth mechanism
-      community.mysql.mysql_user:
+      ansible.mysql.mysql_user:
         <<: *mysql_params
         name: '{{ test_user_name }}'
         host: '%'
@@ -415,7 +415,7 @@
       block:
 
         - name: Plugin auth | Create user with plugin auth (empty auth string)
-          community.mysql.mysql_user:
+          ansible.mysql.mysql_user:
             <<: *mysql_params
             name: '{{ test_user_name }}'
             plugin: '{{ test_plugin_type }}'
@@ -444,7 +444,7 @@
             priv: "{{ test_default_priv_type }}"
 
         - name: Plugin auth | Switch user to sha256_password auth plugin
-          community.mysql.mysql_user:
+          ansible.mysql.mysql_user:
             <<: *mysql_params
             name: '{{ test_user_name }}'
             plugin: sha256_password
@@ -481,7 +481,7 @@
     # Test plugin auth with a salt
     #
     - name: Plugin auth | Create user with plugin auth and salt
-      community.mysql.mysql_user:
+      ansible.mysql.mysql_user:
         <<: *mysql_params
         name: "{{ test_user_name }}"
         host: "%"
@@ -494,7 +494,7 @@
       ansible.builtin.command: '{{ mysql_command }} -u {{ test_user_name }} -p{{ test_plugin_auth_string }} -e "SELECT 1"'
 
     - name: Plugin auth | Alter user with same plugin auth and same salt
-      community.mysql.mysql_user:
+      ansible.mysql.mysql_user:
         <<: *mysql_params
         name: "{{ test_user_name }}"
         host: "%"
@@ -511,7 +511,7 @@
         user_name: "{{ test_user_name }}"
 
     - name: Plugin auth | Create user with too short salt (should fail)
-      community.mysql.mysql_user:
+      ansible.mysql.mysql_user:
         <<: *mysql_params
         name: "{{ test_user_name }}"
         host: "%"
@@ -523,7 +523,7 @@
       failed_when: result is success
 
     - name: Plugin auth | Create user with salt and no plugin auth string (should fail)
-      community.mysql.mysql_user:
+      ansible.mysql.mysql_user:
         <<: *mysql_params
         name: "{{ test_user_name }}"
         host: "%"
@@ -534,7 +534,7 @@
       failed_when: result is success
 
     - name: Plugin auth | Create user with salt and plugin not handled by internal hash generation (should fail)
-      community.mysql.mysql_user:
+      ansible.mysql.mysql_user:
         <<: *mysql_params
         name: "{{ test_user_name }}"
         host: "%"
@@ -565,7 +565,7 @@
             user_name: "{{ test_user_name }}"
 
         - name: Plugin auth | Create user with mysql_native_password
-          community.mysql.mysql_user:
+          ansible.mysql.mysql_user:
             <<: *mysql_params
             name: "{{ test_user_name }}"
             host: "%"
@@ -584,7 +584,7 @@
           changed_when: false
 
         - name: Plugin auth | Change auth user plugin in check mode
-          community.mysql.mysql_user:
+          ansible.mysql.mysql_user:
             <<: *mysql_params
             name: "{{ test_user_name }}"
             host: '%'
@@ -603,7 +603,7 @@
             plugin_type: "{{ test_plugin_type }}"
 
         - name: Plugin auth | Change auth user plugin
-          community.mysql.mysql_user:
+          ansible.mysql.mysql_user:
             <<: *mysql_params
             name: "{{ test_user_name }}"
             host: '%'
@@ -621,7 +621,7 @@
             plugin_type: caching_sha2_password
 
         - name: Plugin auth | Change auth user plugin again (should not change)
-          community.mysql.mysql_user:
+          ansible.mysql.mysql_user:
             <<: *mysql_params
             name: "{{ test_user_name }}"
             host: '%'

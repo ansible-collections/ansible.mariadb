@@ -1,13 +1,13 @@
 ---
 name: run-tests
-description: Runs and writes tests (sanity, unit, integration) for the community.mysql Ansible collection using ansible-test. Use when asked to run, check, or write tests for a module or utility. Do not use for PR reviews or questions unrelated to testing.
+description: Runs and writes tests (sanity, unit, integration) for the ansible.mysql Ansible collection using ansible-test. Use when asked to run, check, or write tests for a module or utility. Do not use for PR reviews or questions unrelated to testing.
 ---
 
 # Skill: run-tests
 
 ## Purpose
 
-Run and write tests for the `community.mysql` Ansible collection. Covers sanity, unit, and integration tests using `ansible-test`.
+Run and write tests for the `ansible.mysql` Ansible collection. Covers sanity, unit, and integration tests using `ansible-test`.
 
 ## When to Invoke
 
@@ -22,7 +22,7 @@ DO NOT TRIGGER when:
 
 ## Test Infrastructure
 
-All tests run inside Docker/Podman via `ansible-test --docker`. No local package installation is needed. The collection must be installed at `ansible_collections/community/mysql/` (relative to a directory on `ANSIBLE_COLLECTIONS_PATHS`) for imports to resolve correctly.
+All tests run inside Docker/Podman via `ansible-test --docker`. No local package installation is needed. The collection must be installed at `ansible_collections/ansible/mysql/` (relative to a directory on `ANSIBLE_COLLECTIONS_PATHS`) for imports to resolve correctly.
 
 ---
 
@@ -95,13 +95,13 @@ Every integration test target must follow this sequence:
 
 1. Call the module under test → `register: result`
 2. Assert on `result` using `ansible.builtin.assert`
-3. Verify the resulting database state by querying via `community.mysql.mysql_query` → `register: result` → `ansible.builtin.assert`
+3. Verify the resulting database state by querying via `ansible.mysql.mysql_query` → `register: result` → `ansible.builtin.assert`
 4. This must be done in `check_mode: true` as well
 
 ```yaml
 - name: Create database in check mode
   check_mode: true
-  community.mysql.mysql_db:
+  ansible.mysql.mysql_db:
     name: testdb
     state: present
   register: result
@@ -112,7 +112,7 @@ Every integration test target must follow this sequence:
       - result is changed
 
 - name: Verify DB does not exist yet
-  community.mysql.mysql_query:
+  ansible.mysql.mysql_query:
     query: "SHOW DATABASES LIKE 'testdb'"
   register: result
 
@@ -122,7 +122,7 @@ Every integration test target must follow this sequence:
       - result.query_result[0] | length == 0
 
 - name: Create database in real mode
-  community.mysql.mysql_db:
+  ansible.mysql.mysql_db:
     name: testdb
     state: present
   register: result
@@ -133,7 +133,7 @@ Every integration test target must follow this sequence:
       - result is changed
 
 - name: Verify DB exists
-  community.mysql.mysql_query:
+  ansible.mysql.mysql_query:
     query: "SHOW DATABASES LIKE 'testdb'"
   register: result
 

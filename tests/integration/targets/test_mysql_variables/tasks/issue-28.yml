@@ -25,7 +25,7 @@
       delegate_to: localhost
 
     - name: Drop mysql user if exists
-      community.mysql.mysql_user:
+      ansible.mysql.mysql_user:
         <<: *mysql_params
         name: '{{ user_name_1 }}'
         host_all: true
@@ -33,7 +33,7 @@
       ignore_errors: true
 
     - name: create user with ssl requirement
-      community.mysql.mysql_user:
+      ansible.mysql.mysql_user:
         <<: *mysql_params
         name: "{{ user_name_1 }}"
         host: '%'
@@ -43,7 +43,7 @@
           SSL:
 
     - name: attempt connection with newly created user (expect failure)
-      community.mysql.mysql_variables:
+      ansible.mysql.mysql_variables:
         variable: '{{ set_name }}'
         login_user: '{{ user_name_1 }}'
         login_password: '{{ user_password_1 }}'
@@ -61,7 +61,7 @@
         - connector_name == 'pymysql'
 
     - name: attempt connection with newly created user ignoring hostname
-      community.mysql.mysql_variables:
+      ansible.mysql.mysql_variables:
         variable: '{{ set_name }}'
         login_user: '{{ user_name_1 }}'
         login_password: '{{ user_password_1 }}'
@@ -75,7 +75,7 @@
         - result is failed or 'pymysql >= 0.7.11 is required' not in result.msg
 
     - name: Drop mysql user
-      community.mysql.mysql_user:
+      ansible.mysql.mysql_user:
         <<: *mysql_params
         name: '{{ user_name_1 }}'
         host_all: true

@@ -59,10 +59,10 @@ attributes:
     support: full
 
 seealso:
-- module: community.mysql.mysql_variables
-- module: community.mysql.mysql_db
-- module: community.mysql.mysql_user
-- module: community.mysql.mysql_replication
+- module: ansible.mysql.mysql_variables
+- module: ansible.mysql.mysql_db
+- module: ansible.mysql.mysql_user
+- module: ansible.mysql.mysql_replication
 
 author:
 - Andrew Klychkov (@Andersson007)
@@ -70,7 +70,7 @@ author:
 - Laurent Indermühle (@laurent-indermuehle)
 
 extends_documentation_fragment:
-- community.mysql.mysql
+- ansible.mysql.mysql
 '''
 
 EXAMPLES = r'''
@@ -92,32 +92,32 @@ EXAMPLES = r'''
 # If you encounter the "Please explicitly state intended protocol" error,
 # use the login_unix_socket argument
 - name: Collect all possible information using passwordless root access
-  community.mysql.mysql_info:
+  ansible.mysql.mysql_info:
     login_user: root
     login_unix_socket: /run/mysqld/mysqld.sock
 
 - name: Get MySQL version with non-default credentials
-  community.mysql.mysql_info:
+  ansible.mysql.mysql_info:
     login_user: mysuperuser
     login_password: mysuperpass
     filter: version
 
 - name: Collect all info except settings and users by root
-  community.mysql.mysql_info:
+  ansible.mysql.mysql_info:
     login_user: root
     login_password: rootpass
     filter: "!settings,!users"
 
 - name: Collect info about databases and version using ~/.my.cnf as a credential file
   become: true
-  community.mysql.mysql_info:
+  ansible.mysql.mysql_info:
     filter:
       - databases
       - version
 
 - name: Collect info about databases and version using ~alice/.my.cnf as a credential file
   become: true
-  community.mysql.mysql_info:
+  ansible.mysql.mysql_info:
     config_file: /home/alice/.my.cnf
     filter:
       - databases
@@ -125,7 +125,7 @@ EXAMPLES = r'''
 
 - name: Collect info about databases including empty and excluding their sizes
   become: true
-  community.mysql.mysql_info:
+  ansible.mysql.mysql_info:
     config_file: /home/alice/.my.cnf
     filter:
       - databases
@@ -137,7 +137,7 @@ EXAMPLES = r'''
     # Step 1
     - name: Fetch information from a source server
       delegate_to: server_source
-      community.mysql.mysql_info:
+      ansible.mysql.mysql_info:
         filter:
           - users_info
       register: result
@@ -145,7 +145,7 @@ EXAMPLES = r'''
     # Step 2
     # Don't work with sha256_password and cache_sha2_password
     - name: Clone users fetched in a previous task to a target server
-      community.mysql.mysql_user:
+      ansible.mysql.mysql_user:
         name: "{{ item.name }}"
         host: "{{ item.host }}"
         plugin: "{{ item.plugin | default(omit) }}"
@@ -243,14 +243,14 @@ users:
 users_info:
   description:
     - Information about users accounts.
-    - The output can be used as an input of the M(community.mysql.mysql_user) plugin.
+    - The output can be used as an input of the M(ansible.mysql.mysql_user) plugin.
     - Useful when migrating accounts to another server or to create an inventory.
     - Does not support proxy privileges. If an account has proxy privileges, they won't appear in the output.
     - Causes issues with authentications plugins C(sha256_password) and C(caching_sha2_password).
-      If the output is fed to M(community.mysql.mysql_user), the
+      If the output is fed to M(ansible.mysql.mysql_user), the
       ``plugin_hash_string`` will most likely be unreadable due to non-binary
       characters.
-    - The "locked" field was aded in ``community.mysql`` 3.13.
+    - The "locked" field was aded in ``ansible.mysql`` 3.13.
   returned: if not excluded by filter
   type: dict
   sample:
@@ -306,10 +306,10 @@ connector_version:
 from decimal import Decimal
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.community.mysql.plugins.module_utils.command_resolver import (
+from ansible_collections.ansible.mysql.plugins.module_utils.command_resolver import (
     CommandResolver
 )
-from ansible_collections.community.mysql.plugins.module_utils.mysql import (
+from ansible_collections.ansible.mysql.plugins.module_utils.mysql import (
     mysql_connect,
     mysql_common_argument_spec,
     mysql_driver,
@@ -320,7 +320,7 @@ from ansible_collections.community.mysql.plugins.module_utils.mysql import (
     get_server_version,
 )
 
-from ansible_collections.community.mysql.plugins.module_utils.user import (
+from ansible_collections.ansible.mysql.plugins.module_utils.user import (
     privileges_get,
     get_resource_limits,
     get_existing_authentication,
@@ -660,7 +660,7 @@ class MySQL_Info(object):
             authentications = get_existing_authentication(self.cursor, user, host)
             if authentications:
                 output_dict.update(authentications[0])
-                # https://github.com/ansible-collections/community.mysql/pull/629
+                # https://github.com/ansible-collections/ansible.mysql/pull/629
                 output_dict.pop('plugin_auth_string', None)
 
             if line.get('is_role') and line['is_role'] == 'N':

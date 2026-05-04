@@ -55,7 +55,7 @@ attributes:
       - When setting a value, the module is idempotent.
 
 seealso:
-- module: community.mysql.mysql_info
+- module: ansible.mysql.mysql_info
 - name: MySQL SET command reference
   description: Complete reference of the MySQL SET command documentation.
   link: https://dev.mysql.com/doc/refman/8.0/en/set-statement.html
@@ -64,19 +64,19 @@ notes:
    - Compatible with MariaDB or MySQL.
 
 extends_documentation_fragment:
-- community.mysql.mysql
+- ansible.mysql.mysql
 '''
 
 EXAMPLES = r'''
 # If you encounter the "Please explicitly state intended protocol" error,
 # use the login_unix_socket argument
 - name: Check for sync_binlog setting
-  community.mysql.mysql_variables:
+  ansible.mysql.mysql_variables:
     variable: sync_binlog
     login_unix_socket: /run/mysqld/mysqld.sock
 
 - name: Set read_only variable to 1 persistently
-  community.mysql.mysql_variables:
+  ansible.mysql.mysql_variables:
     variable: read_only
     value: 1
     mode: persist
@@ -101,8 +101,8 @@ import warnings
 from re import match
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.community.mysql.plugins.module_utils.database import SQLParseError, mysql_quote_identifier
-from ansible_collections.community.mysql.plugins.module_utils.mysql import mysql_connect, mysql_driver, mysql_driver_fail_msg, mysql_common_argument_spec
+from ansible_collections.ansible.mysql.plugins.module_utils.database import SQLParseError, mysql_quote_identifier
+from ansible_collections.ansible.mysql.plugins.module_utils.mysql import mysql_connect, mysql_driver, mysql_driver_fail_msg, mysql_common_argument_spec
 from ansible.module_utils.common.text.converters import to_native
 
 executed_queries = []

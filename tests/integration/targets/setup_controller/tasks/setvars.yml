@@ -15,27 +15,27 @@
     connector_name_lookup: >-
       {{ lookup(
         'file',
-        '/root/ansible_collections/community/mysql/tests/integration/connector_name'
+        '/root/ansible_collections/ansible/mysql/tests/integration/connector_name'
       ) }}
     connector_version_lookup: >-
       {{ lookup(
         'file',
-        '/root/ansible_collections/community/mysql/tests/integration/connector_version'
+        '/root/ansible_collections/ansible/mysql/tests/integration/connector_version'
       ) }}
     db_engine_name_lookup: >-
       {{ lookup(
         'file',
-        '/root/ansible_collections/community/mysql/tests/integration/db_engine_name'
+        '/root/ansible_collections/ansible/mysql/tests/integration/db_engine_name'
       ) }}
     db_engine_version_lookup: >-
       {{ lookup(
         'file',
-        '/root/ansible_collections/community/mysql/tests/integration/db_engine_version'
+        '/root/ansible_collections/ansible/mysql/tests/integration/db_engine_version'
       ) }}
     ansible_version_lookup: >-
       {{ lookup(
         'file',
-        '/root/ansible_collections/community/mysql/tests/integration/ansible'
+        '/root/ansible_collections/ansible/mysql/tests/integration/ansible'
       ) }}
 
 - name: "{{ role_name }} | Setvars | Set Fact using above facts"

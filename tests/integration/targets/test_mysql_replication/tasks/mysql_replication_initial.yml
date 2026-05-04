@@ -129,7 +129,7 @@
     # primary_ssl_ca will be set as '' to check the module's behaviour for #23976,
     # must be converted to an empty string
     - name: Test changeprimary mode with empty primary_ssl_ca
-      community.mysql.mysql_replication:
+      ansible.mysql.mysql_replication:
         <<: *mysql_params
         login_port: '{{ mysql_replica1_port }}'
         mode: changeprimary
@@ -324,7 +324,7 @@
         - connector_version is version('0.10.0', '<')
 
     # master / slave related choices were removed in 3.0.0
-    # https://github.com/ansible-collections/community.mysql/pull/252
+    # https://github.com/ansible-collections/ansible.mysql/pull/252
     - name: Test invoking the module with unsupported choice
       mysql_replication:
         <<: *mysql_params

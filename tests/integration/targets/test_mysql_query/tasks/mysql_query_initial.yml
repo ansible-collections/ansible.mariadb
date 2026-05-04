@@ -376,7 +376,7 @@
         - result is changed
         - result.rowcount == [2]
 
-  # Issue https://github.com/ansible-collections/community.mysql/issues/268
+  # Issue https://github.com/ansible-collections/ansible.mysql/issues/268
   - name: Create table
     mysql_query:
       <<: *mysql_params
@@ -384,7 +384,7 @@
       query: "CREATE TABLE issue268 (id int)"
       single_transaction: yes
 
-  # Issue https://github.com/ansible-collections/community.mysql/issues/268
+  # Issue https://github.com/ansible-collections/ansible.mysql/issues/268
   - name: Create table with IF NOT EXISTS
     mysql_query:
       <<: *mysql_params
@@ -393,7 +393,7 @@
       single_transaction: yes
     register: result
 
-  # Issue https://github.com/ansible-collections/community.mysql/issues/268
+  # Issue https://github.com/ansible-collections/ansible.mysql/issues/268
   - name: Assert that create table IF NOT EXISTS is not changed with pymysql
     assert:
       that:
@@ -403,7 +403,7 @@
       - connector_name == 'pymysql'
       - connector_version is version('0.10.0', '<')
 
-  # Issue https://github.com/ansible-collections/community.mysql/issues/268
+  # Issue https://github.com/ansible-collections/ansible.mysql/issues/268
   - name: Assert that create table IF NOT EXISTS is changed
     assert:
       that:

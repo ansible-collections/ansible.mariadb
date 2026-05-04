@@ -5,7 +5,7 @@ __metaclass__ = type
 
 import pytest
 
-from ansible_collections.community.mysql.plugins.module_utils.implementations.mariadb.user import (
+from ansible_collections.ansible.mysql.plugins.module_utils.implementations.mariadb.user import (
     supports_identified_by_password,
 )
 from ..utils import dummy_cursor_class

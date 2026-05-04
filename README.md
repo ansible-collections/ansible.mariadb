@@ -1,11 +1,11 @@
 # MySQL and MariaDB collection for Ansible
-[![Plugins CI](https://github.com/ansible-collections/community.mysql/workflows/Plugins%20CI/badge.svg?event=push)](https://github.com/ansible-collections/community.mysql/actions?query=workflow%3A"Plugins+CI") [![Codecov](https://img.shields.io/codecov/c/github/ansible-collections/community.mysql)](https://codecov.io/gh/ansible-collections/community.mysql) [![Discuss on Matrix at #mysql:ansible.com](https://img.shields.io/matrix/mysql:ansible.com.svg?server_fqdn=ansible-accounts.ems.host&label=Discuss%20on%20Matrix%20at%20%23mysql:ansible.com&logo=matrix)](https://matrix.to/#/#mysql:ansible.com)
+[![Plugins CI](https://github.com/ansible-collections/ansible.mysql/workflows/Plugins%20CI/badge.svg?event=push)](https://github.com/ansible-collections/ansible.mysql/actions?query=workflow%3A"Plugins+CI") [![Codecov](https://img.shields.io/codecov/c/github/ansible-collections/ansible.mysql)](https://codecov.io/gh/ansible-collections/ansible.mysql) [![Discuss on Matrix at #mysql:ansible.com](https://img.shields.io/matrix/mysql:ansible.com.svg?server_fqdn=ansible-accounts.ems.host&label=Discuss%20on%20Matrix%20at%20%23mysql:ansible.com&logo=matrix)](https://matrix.to/#/#mysql:ansible.com)
 
 This collection is a part of the Ansible package.
 
 ## Our mission
 
-The Ansible `community.mysql` collection goals are to produce and maintain simple,
+The Ansible `ansible.mysql` collection goals are to produce and maintain simple,
 flexible, and powerful open-source software for automating MySQL and MariaDB related tasks
 providing good documentation for easy deployment and use.
 
@@ -34,19 +34,19 @@ For more information about communication, see the [Ansible communication guide](
 
 ## Contributing
 
-The content of this collection is made by [people](https://github.com/ansible-collections/community.mysql/blob/main/CONTRIBUTORS) just like you, a community of individuals collaborating on making the world better through developing automation software.
+The content of this collection is made by [people](https://github.com/ansible-collections/ansible.mysql/blob/main/CONTRIBUTORS) just like you, a community of individuals collaborating on making the world better through developing automation software.
 
 We are actively accepting new contributors.
 
 Any kind of contribution is very welcome.
 
-You don't know how to start? Refer to our [contribution guide](https://github.com/ansible-collections/community.mysql/blob/main/CONTRIBUTING.md) or ask us in the [#mysql:ansible.com room](https://matrix.to/#/#mysql:ansible.com) on [Matrix](https://docs.ansible.com/ansible/devel/community/communication.html#ansible-community-on-matrix)!
+You don't know how to start? Refer to our [contribution guide](https://github.com/ansible-collections/ansible.mysql/blob/main/CONTRIBUTING.md) or ask us in the [#mysql:ansible.com room](https://matrix.to/#/#mysql:ansible.com) on [Matrix](https://docs.ansible.com/ansible/devel/community/communication.html#ansible-community-on-matrix)!
 
 ## Collection maintenance
 
-The current maintainers (contributors with `write` or higher access) are listed in the [MAINTAINERS](https://github.com/ansible-collections/community.mysql/blob/main/MAINTAINERS) file. If you have questions or need help, feel free to mention them in the proposals.
+The current maintainers (contributors with `write` or higher access) are listed in the [MAINTAINERS](https://github.com/ansible-collections/ansible.mysql/blob/main/MAINTAINERS) file. If you have questions or need help, feel free to mention them in the proposals.
 
-To learn how to maintain / become a maintainer of this collection, refer to the [Maintainer guidelines](https://github.com/ansible-collections/community.mysql/blob/main/MAINTAINING.md).
+To learn how to maintain / become a maintainer of this collection, refer to the [Maintainer guidelines](https://github.com/ansible-collections/ansible.mysql/blob/main/MAINTAINING.md).
 
 It is necessary for maintainers of this collection to be subscribed to:
 
@@ -66,13 +66,13 @@ Every voice is important and every idea is valuable. If you have something on yo
 ## Included content
 
 - **Modules**:
-  - [mysql_db](https://docs.ansible.com/ansible/latest/collections/community/mysql/mysql_db_module.html)
-  - [mysql_info](https://docs.ansible.com/ansible/latest/collections/community/mysql/mysql_info_module.html)
-  - [mysql_query](https://docs.ansible.com/ansible/latest/collections/community/mysql/mysql_query_module.html)
-  - [mysql_replication](https://docs.ansible.com/ansible/latest/collections/community/mysql/mysql_replication_module.html)
-  - [mysql_role](https://docs.ansible.com/ansible/latest/collections/community/mysql/mysql_role_module.html)
-  - [mysql_user](https://docs.ansible.com/ansible/latest/collections/community/mysql/mysql_user_module.html)
-  - [mysql_variables](https://docs.ansible.com/ansible/latest/collections/community/mysql/mysql_variables_module.html)
+  - [mysql_db](https://docs.ansible.com/ansible/latest/collections/ansible/mysql/mysql_db_module.html)
+  - [mysql_info](https://docs.ansible.com/ansible/latest/collections/ansible/mysql/mysql_info_module.html)
+  - [mysql_query](https://docs.ansible.com/ansible/latest/collections/ansible/mysql/mysql_query_module.html)
+  - [mysql_replication](https://docs.ansible.com/ansible/latest/collections/ansible/mysql/mysql_replication_module.html)
+  - [mysql_role](https://docs.ansible.com/ansible/latest/collections/ansible/mysql/mysql_role_module.html)
+  - [mysql_user](https://docs.ansible.com/ansible/latest/collections/ansible/mysql/mysql_user_module.html)
+  - [mysql_variables](https://docs.ansible.com/ansible/latest/collections/ansible/mysql/mysql_variables_module.html)
 
 
 ## Releases Support Timeline
@@ -132,7 +132,7 @@ For MariaDB, only Long Term releases are tested. When multiple LTS are available
 
 The MySQL modules rely on a [PyMySQL](https://github.com/PyMySQL/PyMySQL) connector.
 
-The `mysqlclient` connector support has been [deprecated](https://github.com/ansible-collections/community.mysql/issues/654) - use `PyMySQL` connector instead! We will stop testing against it in collection version 4.0.0 and remove the related code in 5.0.0.
+The `mysqlclient` connector support has been [deprecated](https://github.com/ansible-collections/ansible.mysql/issues/654) - use `PyMySQL` connector instead! We will stop testing against it in collection version 4.0.0 and remove the related code in 5.0.0.
 
 ## Using this collection
 
@@ -141,7 +141,7 @@ The `mysqlclient` connector support has been [deprecated](https://github.com/ans
 Before using the MySQL collection, you need to install it with the Ansible Galaxy CLI:
 
 ```bash
-ansible-galaxy collection install community.mysql
+ansible-galaxy collection install ansible.mysql
 ```
 
 You can also include it in a `requirements.yml` file and install it via `ansible-galaxy collection install -r requirements.yml`, using the format:
@@ -149,19 +149,19 @@ You can also include it in a `requirements.yml` file and install it via `ansible
 ```yaml
 ---
 collections:
-  - name: community.mysql
+  - name: ansible.mysql
 ```
 
 Note that if you install the collection from Ansible Galaxy, it will not be upgraded automatically if you upgrade the Ansible package. To upgrade the collection to the latest available version, run the following command:
 
 ```bash
-ansible-galaxy collection install community.mysql --upgrade
+ansible-galaxy collection install ansible.mysql --upgrade
 ```
 
 You can also install a specific version of the collection, for example, if you need to downgrade when something is broken in the latest version (please report an issue in this repository). Use the following syntax:
 
 ```bash
-ansible-galaxy collection install community.mysql:==2.0.0
+ansible-galaxy collection install ansible.mysql:==2.0.0
 ```
 
 See [Ansible Using collections](https://docs.ansible.com/ansible/latest/user_guide/collections_using.html) for more details.

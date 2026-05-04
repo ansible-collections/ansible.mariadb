@@ -15,7 +15,7 @@ description:
 - Runs arbitrary MySQL or MariaDB queries.
 - Pay attention, the module does not support check mode!
   All queries will be executed in autocommit mode.
-- To run SQL queries from a file, use M(community.mysql.mysql_db) module.
+- To run SQL queries from a file, use M(ansible.mysql.mysql_db) module.
 version_added: '0.1.0'
 options:
   query:
@@ -54,7 +54,7 @@ options:
   session_vars:
      description:
      - "Dictionary of session variables in form of C(variable: value) to set at the beginning of module execution."
-     - Cannot be used to set global variables, use the M(community.mysql.mysql_variables) module instead.
+     - Cannot be used to set global variables, use the M(ansible.mysql.mysql_variables) module instead.
      type: dict
      version_added: '3.16.0'
 attributes:
@@ -63,26 +63,26 @@ attributes:
   idempotent:
     support: none
 seealso:
-- module: community.mysql.mysql_db
+- module: ansible.mysql.mysql_db
 notes:
 - Compatible with MariaDB or MySQL.
 author:
 - Andrew Klychkov (@Andersson007)
 extends_documentation_fragment:
-- community.mysql.mysql
+- ansible.mysql.mysql
 '''
 
 EXAMPLES = r'''
 # If you encounter the "Please explicitly state intended protocol" error,
 # use the login_unix_socket argument
 - name: Simple select query to acme db
-  community.mysql.mysql_query:
+  ansible.mysql.mysql_query:
     login_db: acme
     query: SELECT * FROM orders
     login_unix_socket: /run/mysqld/mysqld.sock
 
 - name: Select query to db acme with positional arguments
-  community.mysql.mysql_query:
+  ansible.mysql.mysql_query:
     login_db: acme
     query: SELECT * FROM acme WHERE id = %s AND story = %s
     positional_args:
@@ -90,7 +90,7 @@ EXAMPLES = r'''
       - test
 
 - name: Select query to test_db with named_args
-  community.mysql.mysql_query:
+  ansible.mysql.mysql_query:
     login_db: test_db
     query: SELECT * FROM test WHERE id = %(id_val)s AND story = %(story_val)s
     named_args:
@@ -98,7 +98,7 @@ EXAMPLES = r'''
       story_val: test
 
 - name: Run several insert queries against db test_db in single transaction
-  community.mysql.mysql_query:
+  ansible.mysql.mysql_query:
     login_db: test_db
     query:
       - INSERT INTO articles (id, story) VALUES (2, 'my_long_story')
@@ -140,7 +140,7 @@ import time
 import warnings
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.community.mysql.plugins.module_utils.mysql import (
+from ansible_collections.ansible.mysql.plugins.module_utils.mysql import (
     mysql_connect,
     mysql_common_argument_spec,
     mysql_driver,

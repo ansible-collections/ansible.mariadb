@@ -130,14 +130,14 @@
           - result.rowcount[0] == 1
 
     - name: Resource limits | Drop mysql user {{ user_name_1 }} if exists
-      community.mysql.mysql_user:
+      ansible.mysql.mysql_user:
         <<: *mysql_params
         name: '{{ user_name_1 }}'
         host_all: true
         state: absent
 
     - name: Resource limits | Create mysql user {{ user_name_1 }} with MAX_STATEMENT_TIME in check_mode
-      community.mysql.mysql_user:
+      ansible.mysql.mysql_user:
         <<: *mysql_params
         name: '{{ user_name_1 }}'
         password: '{{ user_password_1 }}'
@@ -162,7 +162,7 @@
       when: db_engine == 'mysql'
 
     - name: Resource limits | Create mysql user {{ user_name_1 }} with MAX_STATEMENT_TIME in actual mode
-      community.mysql.mysql_user:
+      ansible.mysql.mysql_user:
         <<: *mysql_params
         name: '{{ user_name_1 }}'
         password: '{{ user_password_1 }}'
@@ -186,7 +186,7 @@
       when: db_engine == 'mysql'
 
     - name: Resource limits | Retrieve user with MAX_STATEMENT_TIME
-      community.mysql.mysql_query:
+      ansible.mysql.mysql_query:
         <<: *mysql_params
         query: >
           SELECT User FROM mysql.user
@@ -204,7 +204,7 @@
       when: db_engine == 'mariadb'
 
     - name: Resource limits | Try to set the same limits with MAX_STATEMENT_TIME again in check mode
-      community.mysql.mysql_user:
+      ansible.mysql.mysql_user:
         <<: *mysql_params
         name: '{{ user_name_1 }}'
         password: '{{ user_password_1 }}'
@@ -223,7 +223,7 @@
       when: db_engine == 'mariadb'
 
     - name: Resource limits | Try to set the same limits with MAX_STATEMENT_TIME again in actual mode
-      community.mysql.mysql_user:
+      ansible.mysql.mysql_user:
         <<: *mysql_params
         name: '{{ user_name_1 }}'
         password: '{{ user_password_1 }}'
@@ -241,7 +241,7 @@
       when: db_engine == 'mariadb'
 
     - name: Resource limits | Change limits with MAX_STATEMENT_TIME
-      community.mysql.mysql_user:
+      ansible.mysql.mysql_user:
         <<: *mysql_params
         name: '{{ user_name_1 }}'
         password: '{{ user_password_1 }}'
@@ -259,7 +259,7 @@
       when: db_engine == 'mariadb'
 
     - name: Resource limits | Get user limits with MAX_STATEMENT_TIME
-      community.mysql.mysql_query:
+      ansible.mysql.mysql_query:
         <<: *mysql_params
         query: >
           SELECT User FROM mysql.user

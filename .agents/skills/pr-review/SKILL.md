@@ -1,13 +1,13 @@
 ---
 name: pr-review
-description: Reviews pull requests and code changes in the community.mysql Ansible collection against project standards and the Ansible Collection Review Checklist. Use when asked to review a PR, patch, diff, or set of code changes. Do not use for GitHub Issues or general Q&A.
+description: Reviews pull requests and code changes in the ansible.mysql Ansible collection against project standards and the Ansible Collection Review Checklist. Use when asked to review a PR, patch, diff, or set of code changes. Do not use for GitHub Issues or general Q&A.
 ---
 
 # Skill: pr-reviewer
 
 ## Purpose
 
-Review pull requests and code changes in the `community.mysql` Ansible collection.
+Review pull requests and code changes in the `ansible.mysql` Ansible collection.
 
 ## When to Invoke
 
@@ -93,7 +93,7 @@ Architecture, check_mode, and Type Conversion categories are fully covered by `A
 - Integration test pattern is followed:
   1. Call module → `register: result`
   2. `ansible.builtin.assert` on `result`
-  3. Verify DB state using `community.mysql.mysql_query` → `register: result` → `ansible.builtin.assert`
+  3. Verify DB state using `ansible.mysql.mysql_query` → `register: result` → `ansible.builtin.assert`
 - Each integration test target has `tests/integration/targets/<name>/meta/main.yml` declaring `setup_controller` as a dependency.
 - Tests cover both the happy path and idempotency (running the same task twice).
 - Tests cover the `state: absent` path where applicable.

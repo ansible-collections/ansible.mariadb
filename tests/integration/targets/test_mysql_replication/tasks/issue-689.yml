@@ -9,7 +9,7 @@
   block:
 
     - name: Disable ssl verification
-      community.mysql.mysql_replication:
+      ansible.mysql.mysql_replication:
         <<: *mysql_params
         login_port: '{{ mysql_replica1_port }}'
         mode: changeprimary
@@ -40,7 +40,7 @@
         expected_queries: ["CHANGE REPLICATION SOURCE TO SOURCE_SSL_VERIFY_SERVER_CERT=0"]
 
     - name: Disable ssl verification for MySQL 8.0.23+
-      community.mysql.mysql_replication:
+      ansible.mysql.mysql_replication:
         <<: *mysql_params
         login_port: '{{ mysql_replica1_port }}'
         mode: changereplication

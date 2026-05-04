@@ -248,7 +248,7 @@
     - include_tasks: test_priv_dict.yml
 
     # Test that append_privs will not attempt to make a change where current privileges are a superset of new privileges
-    # (https://github.com/ansible-collections/community.mysql/issues/69)
+    # (https://github.com/ansible-collections/ansible.mysql/issues/69)
     - include_tasks: test_priv_append.yml
       vars:
         enable_check_mode: no
@@ -257,7 +257,7 @@
         enable_check_mode: yes
 
     # Test that subtract_privs will only revoke the grants given by priv
-    # (https://github.com/ansible-collections/community.mysql/issues/331)
+    # (https://github.com/ansible-collections/ansible.mysql/issues/331)
     - include_tasks: test_priv_subtract.yml
       vars:
         enable_check_mode: no
@@ -290,10 +290,10 @@
         - issue-671  
 
     # Test that mysql_user still works with force_context enabled (database set to "mysql")
-    # (https://github.com/ansible-collections/community.mysql/issues/265)
+    # (https://github.com/ansible-collections/ansible.mysql/issues/265)
     - include_tasks: issue-265.yml
 
-    # https://github.com/ansible-collections/community.mysql/issues/231
+    # https://github.com/ansible-collections/ansible.mysql/issues/231
     - include_tasks: test_user_grants_with_roles_applied.yml
 
     - include_tasks: test_revoke_only_grant.yml
@@ -311,10 +311,10 @@
         file: test_user_locking.yml
 
       # Test that mysql_user still works with default role set
-      # (https://github.com/ansible-collections/community.mysql/issues/710)
+      # (https://github.com/ansible-collections/ansible.mysql/issues/710)
     - include_tasks: issue-710.yml
 
     # Test for bug with revoking GRANT OPTION when user has only USAGE
-    # (https://github.com/ansible-collections/community.mysql/issues/664)
-    # (https://github.com/ansible-collections/community.mysql/pull/744)
+    # (https://github.com/ansible-collections/ansible.mysql/issues/664)
+    # (https://github.com/ansible-collections/ansible.mysql/pull/744)
     - include_tasks: issue-744.yml
