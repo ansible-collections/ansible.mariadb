@@ -20,7 +20,6 @@ options:
       - Name of the user (role) to add or remove.
     type: str
     required: true
-    aliases: ['user']
   password:
     description:
       - Set the user's password. Only for C(mysql_native_password) authentication.
@@ -461,13 +460,7 @@ from ansible.module_utils.common.text.converters import to_native
 def main():
     argument_spec = mysql_common_argument_spec()
     argument_spec.update(
-        name=dict(type='str', required=True, aliases=['user'], deprecated_aliases=[
-            {
-                'name': 'user',
-                'version': '5.0.0',
-                'collection_name': 'ansible.mysql',
-            }],
-        ),
+        name=dict(type='str', required=True),
         password=dict(type='str', no_log=True),
         encrypted=dict(type='bool', default=False),
         host=dict(type='str', default='localhost'),

@@ -742,3 +742,15 @@ releases:
     - 4.2.1.yml
     - mysql_query_decimal_serialization.yaml
     release_date: '2026-05-04'
+  5.0.0:
+    changes:
+      breaking_changes:
+      - The collection supports ansible-core version ``>= 2.16.0``.
+      - mysql_user - the deprecated ``user`` alias of the ``name`` argument has been removed. Use the ``name`` argument instead.
+      release_summary: 'This is a major release of the ``ansible.mysql`` collection.
+
+        Since this version, ``ansible.mysql`` superseds the ``community.mysql`` collection.'
+    fragments:
+    - 2-16-0.yml
+    - 5.0.0.yml
+    release_date: '2026-05-04'

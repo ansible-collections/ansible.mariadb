@@ -83,10 +83,9 @@ Here is the table for the support timeline:
 
 - 1.x.y: released 2020-08-17, EOL
 - 2.x.y: released 2021-04-15, EOL
-- 3.x.y: released 2021-12-01, EOL 2027-09-30
-- 4.x.y: released 2025-09-15, current
-- 5.x.y: To be released
-
+- 3.x.y: released 2021-12-01, EOL
+- 4.x.y: released 2025-09-15, EOL 2028-05-05
+- 5.x.y: released 2026-05-05, current
 
 ## Tested with
 
@@ -161,10 +160,20 @@ ansible-galaxy collection install ansible.mysql --upgrade
 You can also install a specific version of the collection, for example, if you need to downgrade when something is broken in the latest version (please report an issue in this repository). Use the following syntax:
 
 ```bash
-ansible-galaxy collection install ansible.mysql:==2.0.0
+ansible-galaxy collection install ansible.mysql:==5.0.0
 ```
 
 See [Ansible Using collections](https://docs.ansible.com/ansible/latest/user_guide/collections_using.html) for more details.
+
+## Support
+
+If you obtained this collection from:
+- Ansible community package, Ansible Galaxy, or GitHub: open an issue in this repository or start a forum topic. See the [Communication section](https://github.com/ansible-collections/ansible.mysql#communication) for details.
+- Automation Hub: as Red Hat Ansible Certified Content, this collection is entitled to support through the Ansible Automation Platform (AAP) using the **Create issue** button on the top right corner.
+
+## Release notes
+
+See the [CHANGELOG.rst](https://github.com/ansible-collections/ansible.mysql/blob/main/CHANGELOG.rst) for all changes.
 
 ## Licensing
 

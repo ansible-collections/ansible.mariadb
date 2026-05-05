@@ -6,6 +6,21 @@ Community MySQL and MariaDB Collection Release Notes
 
 This changelog describes changes after version 2.0.0.
 
+v5.0.0
+======
+
+Release Summary
+---------------
+
+This is a major release of the ``ansible.mysql`` collection.
+Since this version, ``ansible.mysql`` superseds the ``community.mysql`` collection.
+
+Breaking Changes / Porting Guide
+--------------------------------
+
+- The collection supports ansible-core version ``>= 2.16.0``.
+- mysql_user - the deprecated ``user`` alias of the ``name`` argument has been removed. Use the ``name`` argument instead.
+
 v4.2.1
 ======
 
