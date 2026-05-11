@@ -1,0 +1,71 @@
+---
+name: Execution Environment
+on:  # yamllint disable-line rule:truthy
+  push:
+    paths:
+      - 'meta/execution-environment.yml'
+      - 'meta/ee-requirements.txt'
+      - '.github/ee-tests.yml'
+      - '.github/workflows/ee.yml'
+  pull_request:
+    paths:
+      - 'meta/execution-environment.yml'
+      - 'meta/ee-requirements.txt'
+      - '.github/ee-tests.yml'
+      - '.github/workflows/ee.yml'
+  # Run once per week (Monday at 06:00 UTC)
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build and validate EE image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get install -y podman
+          pip install ansible-core ansible-builder ansible-navigator
+
+      - name: Create EE definition
+        run: |
+          mkdir -p _build_ee && cat > _build_ee/execution-environment.yml <<'EOF'
+          version: 3
+          images:
+            base_image:
+              name: registry.fedoraproject.org/fedora:44
+          dependencies:
+            python_interpreter:
+              package_system: python3
+            ansible_core:
+              package_pip: ansible-core
+            ansible_runner:
+              package_pip: ansible-runner
+            system:
+            - openssh-clients
+            - sshpass
+            galaxy:
+              collections:
+              - name: ansible.mysql
+          EOF
+
+      - name: Build EE image
+        run: ansible-builder build -v 3 -t mysql_ee
+        working-directory: _build_ee
+
+      - name: Validate EE image
+        run: |
+          ansible-navigator -v --mode stdout --pull-policy never \
+            --execution-environment-image mysql_ee \
+            run .github/ee-tests.yml

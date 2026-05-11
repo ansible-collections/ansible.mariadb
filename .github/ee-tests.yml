@@ -1,0 +1,24 @@
+- name: Validate ansible.mysql EE
+  hosts: localhost
+  gather_facts: false
+  tasks:
+
+   - name: Verify pymysql is importable
+     ansible.builtin.command: python3 -c "import pymysql; print(pymysql.__version__)"
+     changed_when: false
+     register: _pymysql
+
+   - name: Verify ansible.mysql collection is installed
+     ansible.builtin.command: ansible-galaxy collection list ansible.mysql
+     changed_when: false
+     register: _collection
+
+   - name: Verify ansible.mysql.mysql_info module is documented
+     ansible.builtin.command: ansible-doc ansible.mysql.mysql_info
+     changed_when: false
+
+   - name: Print results
+     ansible.builtin.debug:
+       msg:
+        - "pymysql version: {{ _pymysql.stdout }}"
+        - "{{ _collection.stdout }}"
