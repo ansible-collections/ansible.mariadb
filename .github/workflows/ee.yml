@@ -1,5 +1,8 @@
 ---
-name: Execution Environment
+# This workflow checks if we can build EE from this collection
+# It runs when changes are made to EE-related configuration
+# and test files. See the "paths" list below.
+name: Build Execution Environment
 on:  # yamllint disable-line rule:truthy
   push:
     paths:

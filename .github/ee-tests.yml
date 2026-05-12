@@ -1,3 +1,5 @@
+# This playbook is used by the .github/workflows/ee.yml
+# workflow for EE configuration validation
 - name: Validate ansible.mysql EE
   hosts: localhost
   gather_facts: false

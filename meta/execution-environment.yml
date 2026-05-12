@@ -5,6 +5,7 @@
 
 # https://docs.ansible.com/projects/ansible/devel/getting_started_ee/index.html
 # https://docs.ansible.com/projects/builder/en/latest/collection_metadata/
+version: 3
 
 dependencies:
   python: meta/ee-requirements.txt
