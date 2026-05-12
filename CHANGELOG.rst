@@ -6,6 +6,14 @@ Community MySQL and MariaDB Collection Release Notes
 
 This changelog describes changes after version 2.0.0.
 
+v5.0.1
+======
+
+Release Summary
+---------------
+
+This is a patch release of the ``ansible.mysql`` collection. This changelog contains all changes to the modules and plugins in this collection that have been made after the previous release. Specifically, it contains documentation fixes, changes to ansible-lint configuration, and adds execution environments configuration.
+
 v5.0.0
 ======
 

@@ -110,9 +110,9 @@ releases:
       - mysql_user - Fix idempotence when using variables from the ``users_info``
         filter of ``mysql_info`` as an input (https://github.com/ansible-collections/ansible.mysql/pull/628).
       - mysql_user - Fixed an IndexError in the update_password functionality introduced
-        in PR https://github.com/ansible-collections/ansible.mysql/pull/580 and
-        released in ansible.mysql 3.8.0. If you used this functionality, please
-        avoid versions 3.8.0 to 3.9.0 (https://github.com/ansible-collections/ansible.mysql/pull/642).
+        in PR https://github.com/ansible-collections/ansible.mysql/pull/580 and released
+        in ansible.mysql 3.8.0. If you used this functionality, please avoid versions
+        3.8.0 to 3.9.0 (https://github.com/ansible-collections/ansible.mysql/pull/642).
       - mysql_user - add correct ``ed25519`` auth plugin handling (https://github.com/ansible-collections/ansible.mysql/issues/6).
       - mysql_variables - fix the module always changes on boolean values (https://github.com/ansible-collections/ansible.mysql/issues/652).
       deprecated_features:
@@ -437,10 +437,10 @@ releases:
         module will turn off SSL (https://github.com/ansible-collections/ansible.mysql/issues/393).
       major_changes:
       - mysql_db - the ``pipefail`` argument's default value will be changed to ``true``
-        in ansible.mysql 4.0.0. If your target machines do not use ``bash`` as a
-        default interpreter, set ``pipefail`` to ``false`` explicitly. However, we
-        strongly recommend setting up ``bash`` as a default and ``pipefail=true``
-        as it will protect you from getting broken dumps you don't know about (https://github.com/ansible-collections/ansible.mysql/issues/407).
+        in ansible.mysql 4.0.0. If your target machines do not use ``bash`` as a default
+        interpreter, set ``pipefail`` to ``false`` explicitly. However, we strongly
+        recommend setting up ``bash`` as a default and ``pipefail=true`` as it will
+        protect you from getting broken dumps you don't know about (https://github.com/ansible-collections/ansible.mysql/issues/407).
       minor_changes:
       - mysql_db - add the ``chdir`` argument to avoid failings when a dump file contains
         relative paths (https://github.com/ansible-collections/ansible.mysql/issues/395).
@@ -746,7 +746,8 @@ releases:
     changes:
       breaking_changes:
       - The collection supports ansible-core version ``>= 2.16.0``.
-      - mysql_user - the deprecated ``user`` alias of the ``name`` argument has been removed. Use the ``name`` argument instead.
+      - mysql_user - the deprecated ``user`` alias of the ``name`` argument has been
+        removed. Use the ``name`` argument instead.
       release_summary: 'This is a major release of the ``ansible.mysql`` collection.
 
         Since this version, ``ansible.mysql`` superseds the ``community.mysql`` collection.'
@@ -754,3 +755,13 @@ releases:
     - 2-16-0.yml
     - 5.0.0.yml
     release_date: '2026-05-04'
+  5.0.1:
+    changes:
+      release_summary: This is a patch release of the ``ansible.mysql`` collection.
+        This changelog contains all changes to the modules and plugins in this collection
+        that have been made after the previous release. Specifically, it contains
+        documentation fixes, changes to ansible-lint configuration, and adds execution
+        environments configuration.
+    fragments:
+    - 5.0.1.yml
+    release_date: '2026-05-12'
