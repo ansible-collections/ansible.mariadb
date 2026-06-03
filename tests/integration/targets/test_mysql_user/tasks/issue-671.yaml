@@ -82,7 +82,6 @@
         session_vars:
           sql_mode: ""
         name: '{{ user_name_2 }}'
-        password: '{{ user_password_2 }}'
         state: present
         priv: 'FUNCTION foo.function:EXECUTE/foo.*:SELECT/PROCEDURE bar.procedure:EXECUTE'
       register: result

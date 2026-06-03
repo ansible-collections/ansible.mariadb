@@ -23,6 +23,13 @@ def supports_identified_by_password(cursor):
     return LooseVersion(version) < LooseVersion("8")
 
 
+def server_supports_mysql_native_password(cursor):
+    # mysql_native_password was removed in MySQL 9.0; SHA1() in 9.6.
+    # Gate at 9.7 (first LTS in the 9.x series and our CI target).
+    version = get_server_version(cursor)
+    return LooseVersion(version) < LooseVersion("9.7")
+
+
 def server_supports_alter_user(cursor):
     version = get_server_version(cursor)
 

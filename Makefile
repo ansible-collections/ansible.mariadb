@@ -11,6 +11,14 @@ ifdef continue_on_errors
 	_continue_on_errors = --continue-on-error
 endif
 
+# Use ubuntu2604 for devel (ubuntu2204 is no longer supported),
+# keep ubuntu2204 for stable branches.
+ifeq ($(ansible),devel)
+	_docker_image = ubuntu2604
+else
+	_docker_image = ubuntu2204
+endif
+
 # Set command variables based on database engine
 # Required for MariaDB 11+ which no longer includes mysql named compatible
 # executable symlinks
@@ -100,7 +108,7 @@ test-integration:
 	https://github.com/ansible/ansible/archive/$(ansible).tar.gz; \
 	set -x; \
 	ansible-test integration $(target) -v --color --coverage --diff \
-	--docker ubuntu2204 \
+	--docker $(_docker_image) \
 	--docker-network podman $(_continue_on_errors) $(_keep_containers_alive); \
 	set +x
 	# End of venv

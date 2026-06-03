@@ -23,8 +23,20 @@
         state: present
       register: result
 
+    # MySQL 9.7.0+: caching_sha2_password uses a random salt, so the module
+    # can't detect unchanged passwords and always reports changed=true.
     - name: Idempotency | Assert create user task is not changed
       assert: {that: [result is not changed]}
+      when: db_version is version('9.7', '<') or db_engine == 'mariadb'
+
+    - name: Idempotency | Assert always-changed behavior on MySQL 9.7.0+
+      assert:
+        that:
+          - result is changed
+          - result.password_changed == true
+      when:
+        - db_engine == 'mysql'
+        - db_version is version('9.7', '>=')
 
     # ========================================================================
     # Removal

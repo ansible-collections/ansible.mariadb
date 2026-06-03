@@ -6,6 +6,7 @@ __metaclass__ = type
 import pytest
 
 from ansible_collections.ansible.mysql.plugins.module_utils.implementations.mariadb.user import (
+    server_supports_mysql_native_password,
     supports_identified_by_password,
 )
 from ..utils import dummy_cursor_class
@@ -27,3 +28,16 @@ def test_supports_identified_by_password(function_return, cursor_output, cursor_
     """
     cursor = dummy_cursor_class(cursor_output, cursor_ret_type)
     assert supports_identified_by_password(cursor) == function_return
+
+
+@pytest.mark.parametrize(
+    'cursor_output,cursor_ret_type,function_return',
+    [
+        ('10.5.0-mariadb', 'dict', True),
+        ('10.6.0-mariadb', 'list', True),
+        ('11.5.1-mariadb', 'dict', True),
+    ]
+)
+def test_server_supports_mysql_native_password(cursor_output, cursor_ret_type, function_return):
+    cursor = dummy_cursor_class(cursor_output, cursor_ret_type)
+    assert server_supports_mysql_native_password(cursor) == function_return

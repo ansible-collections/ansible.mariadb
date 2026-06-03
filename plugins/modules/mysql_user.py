@@ -24,10 +24,16 @@ options:
     description:
       - Set the user's password. Only for C(mysql_native_password) authentication.
         For other authentication plugins see the combination of I(plugin), I(plugin_hash_string), I(plugin_auth_string).
+      - On MySQL 9.7.0+, C(mysql_native_password) was removed. The password is still accepted and applied
+        via C(IDENTIFIED BY), letting the server use C(caching_sha2_password) instead.
+      - Because C(caching_sha2_password) uses a random salt, the password hash cannot be compared.
+        As a result, I(update_password=always) will always report C(changed) on MySQL 9.7.0+.
     type: str
   encrypted:
     description:
-      - Indicate that the 'password' field is a `mysql_native_password` hash.
+      - Indicate that the 'password' field is a C(mysql_native_password) hash.
+      - Not supported on MySQL 9.7.0+ because the C(mysql_native_password) plugin has been removed.
+        The module will fail if this option is used on MySQL 9.7.0+.
     type: bool
     default: false
   host:
@@ -214,7 +220,9 @@ notes:
      1) change the root user's password, without providing any I(login_user)/I(login_password) details,
      2) drop a C(~/.my.cnf) file containing the new root credentials.
      Subsequent runs of the playbook will then succeed by reading the new credentials from the file."
-   - Currently, there is only support for the C(mysql_native_password) encrypted password hash module.
+   - On MySQL versions before 9.7.0, the C(password) argument uses C(mysql_native_password) hashing.
+     On MySQL 9.7.0+, C(mysql_native_password) was removed and the password is applied via C(IDENTIFIED BY),
+     letting the server use C(caching_sha2_password) instead. The C(encrypted) argument is not supported on MySQL 9.7.0+.
 
 attributes:
   check_mode:

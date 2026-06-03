@@ -323,7 +323,7 @@
       {% endif %}
 
 - name: State Present Absent | Capture binlog position
-  command: "{{ mysql_command }} -e \"{{ show_master_status }}\\G\""
+  command: "{{ mysql_command }} --vertical -e \"{{ show_master_status }}\""
   register: bin_log_position_1
 
 - name: State Present Absent | Create database with sql_log_bin enabled
@@ -337,7 +337,7 @@
     state: present
 
 - name: State Present Absent | Capture binlog position
-  command: "{{ mysql_command }} -e \"{{ show_master_status }}\\G\""
+  command: "{{ mysql_command }} --vertical -e \"{{ show_master_status }}\""
   register: bin_log_position_2
 
 - name: State Present Absent | Assert binlog events were written
@@ -356,7 +356,7 @@
     state: absent
 
 - name: State Present Absent | Capture binlog position
-  command: "{{ mysql_command }} -e \"{{ show_master_status }}\\G\""
+  command: "{{ mysql_command }} --vertical -e \"{{ show_master_status }}\""
   register: bin_log_position_3
 
 - name: State Present Absent | Assert Binlog events were written
@@ -366,7 +366,7 @@
 
 # ============================================================
 - name: State Present Absent | Capture binlog position
-  command: "{{ mysql_command }} -e \"{{ show_master_status }}\\G\""
+  command: "{{ mysql_command }} --vertical -e \"{{ show_master_status }}\""
   register: bin_log_position_4
 
 - name: State Present Absent | Create database with sql_log_bin disabled
@@ -380,7 +380,7 @@
     state: present
 
 - name: State Present Absent | Capture binlog position
-  command: "{{ mysql_command }} -e \"{{ show_master_status }}\\G\""
+  command: "{{ mysql_command }} --vertical -e \"{{ show_master_status }}\""
   register: bin_log_position_5
 
 - name: State Present Absent | Assert binlog events were not written
@@ -399,7 +399,7 @@
     state: absent
 
 - name: State Present Absent | Capture binlog position
-  command: "{{ mysql_command }} -e \"{{ show_master_status }}\\G\""
+  command: "{{ mysql_command }} --vertical -e \"{{ show_master_status }}\""
   register: bin_log_position_6
 
 - name: State Present Absent | Assert Binlog events were not written

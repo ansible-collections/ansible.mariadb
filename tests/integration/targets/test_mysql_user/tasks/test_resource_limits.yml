@@ -68,7 +68,6 @@
       mysql_user:
         <<: *mysql_params
         name: '{{ user_name_1 }}'
-        password: '{{ user_password_1 }}'
         state: present
         resource_limits:
           MAX_QUERIES_PER_HOUR: 10
@@ -85,7 +84,6 @@
       mysql_user:
         <<: *mysql_params
         name: '{{ user_name_1 }}'
-        password: '{{ user_password_1 }}'
         state: present
         resource_limits:
           MAX_QUERIES_PER_HOUR: 10

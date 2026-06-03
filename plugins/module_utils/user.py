@@ -217,10 +217,17 @@ def user_add(cursor, user, host, host_all, password, encrypted,
     if password and encrypted:
         if impl.supports_identified_by_password(cursor):
             query_with_args = "CREATE USER %s@%s IDENTIFIED BY PASSWORD %s", (user, host, password)
-        else:
+        elif impl.server_supports_mysql_native_password(cursor):
             query_with_args = "CREATE USER %s@%s IDENTIFIED WITH mysql_native_password AS %s", (user, host, password)
+        else:
+            # MySQL 9.7.0+: encrypted hashes are mysql_native_password format, unusable.
+            module.fail_json(msg="The 'encrypted' option is not supported on MySQL 9.7.0+ "
+                                 "because the mysql_native_password plugin has been removed. "
+                                 "Use a plaintext password instead.")
     elif password and not encrypted:
-        if old_user_mgmt:
+        # MySQL 9.7.0+: SHA1() and mysql_native_password were removed;
+        # let the server hash with caching_sha2_password via IDENTIFIED BY.
+        if old_user_mgmt or not impl.server_supports_mysql_native_password(cursor):
             query_with_args = "CREATE USER %s@%s IDENTIFIED BY %s", (user, host, password)
         else:
             cursor.execute("SELECT CONCAT('*', UCASE(SHA1(UNHEX(SHA1(%s)))))", (password,))
@@ -304,69 +311,82 @@ def user_mod(cursor, user, host, host_all, password, encrypted,
         # Handle clear text and hashed passwords.
         if not role:
             if bool(password):
-
-                # Get a list of valid columns in mysql.user table to check if Password and/or authentication_string exist
-                cursor.execute("""
-                    SELECT COLUMN_NAME FROM information_schema.COLUMNS
-                    WHERE TABLE_SCHEMA = 'mysql' AND TABLE_NAME = 'user' AND COLUMN_NAME IN ('Password', 'authentication_string')
-                    ORDER BY COLUMN_NAME DESC LIMIT 1
-                """)
-                colA = cursor.fetchone()
-
-                cursor.execute("""
-                    SELECT COLUMN_NAME FROM information_schema.COLUMNS
-                    WHERE TABLE_SCHEMA = 'mysql' AND TABLE_NAME = 'user' AND COLUMN_NAME IN ('Password', 'authentication_string')
-                    ORDER BY COLUMN_NAME ASC  LIMIT 1
-                """)
-                colB = cursor.fetchone()
-
-                # Select hash from either Password or authentication_string, depending which one exists and/or is filled
-                cursor.execute("""
-                    SELECT COALESCE(
-                            CASE WHEN %s = '' THEN NULL ELSE %s END,
-                            CASE WHEN %s = '' THEN NULL ELSE %s END
-                        )
-                    FROM mysql.user WHERE user = %%s AND host = %%s
-                    """ % (colA[0], colA[0], colB[0], colB[0]), (user, host))
-                current_pass_hash = cursor.fetchone()[0]
-                if isinstance(current_pass_hash, bytes):
-                    current_pass_hash = current_pass_hash.decode('ascii')
-
-                if encrypted:
-                    encrypted_password = password
-                    if not is_hash(encrypted_password):
-                        module.fail_json(msg="encrypted was specified however it does not appear to be a valid hash expecting: *SHA1(SHA1(your_password))")
-                else:
-                    if old_user_mgmt:
-                        cursor.execute("SELECT PASSWORD(%s)", (password,))
-                    else:
-                        cursor.execute("SELECT CONCAT('*', UCASE(SHA1(UNHEX(SHA1(%s)))))", (password,))
-                    encrypted_password = cursor.fetchone()[0]
-
-                if current_pass_hash != encrypted_password:
+                if not impl.server_supports_mysql_native_password(cursor):
+                    # MySQL 9.7.0+: mysql_native_password and SHA1() are removed.
+                    # We cannot compare password hashes (caching_sha2_password
+                    # uses a random salt), so always update the password.
+                    if encrypted:
+                        module.fail_json(msg="The 'encrypted' option is not supported by your database server "
+                                             "version because the mysql_native_password plugin has been removed. "
+                                             "Use a plaintext password instead.")
                     password_changed = True
                     msg = "Password updated"
                     if not module.check_mode:
-                        if old_user_mgmt:
-                            cursor.execute("SET PASSWORD FOR %s@%s = %s", (user, host, encrypted_password))
-                            msg = "Password updated (old style)"
-                        else:
-                            try:
-                                cursor.execute("ALTER USER %s@%s IDENTIFIED WITH mysql_native_password AS %s", (user, host, encrypted_password))
-                                msg = "Password updated (new style)"
-                            except (mysql_driver.Error) as e:
-                                # https://stackoverflow.com/questions/51600000/authentication-string-of-root-user-on-mysql
-                                # Replacing empty root password with new authentication mechanisms fails with error 1396
-                                if e.args[0] == 1396:
-                                    cursor.execute(
-                                        "UPDATE mysql.user SET plugin = %s, authentication_string = %s, Password = '' WHERE User = %s AND Host = %s",
-                                        ('mysql_native_password', encrypted_password, user, host)
-                                    )
-                                    cursor.execute("FLUSH PRIVILEGES")
-                                    msg = "Password forced update"
-                                else:
-                                    raise e
+                        cursor.execute("ALTER USER %s@%s IDENTIFIED BY %s", (user, host, password))
                     changed = True
+                else:
+                    # Get a list of valid columns in mysql.user table to check if Password and/or authentication_string exist
+                    cursor.execute("""
+                        SELECT COLUMN_NAME FROM information_schema.COLUMNS
+                        WHERE TABLE_SCHEMA = 'mysql' AND TABLE_NAME = 'user' AND COLUMN_NAME IN ('Password', 'authentication_string')
+                        ORDER BY COLUMN_NAME DESC LIMIT 1
+                    """)
+                    colA = cursor.fetchone()
+
+                    cursor.execute("""
+                        SELECT COLUMN_NAME FROM information_schema.COLUMNS
+                        WHERE TABLE_SCHEMA = 'mysql' AND TABLE_NAME = 'user' AND COLUMN_NAME IN ('Password', 'authentication_string')
+                        ORDER BY COLUMN_NAME ASC  LIMIT 1
+                    """)
+                    colB = cursor.fetchone()
+
+                    # Select hash from either Password or authentication_string, depending which one exists and/or is filled
+                    cursor.execute("""
+                        SELECT COALESCE(
+                                CASE WHEN %s = '' THEN NULL ELSE %s END,
+                                CASE WHEN %s = '' THEN NULL ELSE %s END
+                            )
+                        FROM mysql.user WHERE user = %%s AND host = %%s
+                        """ % (colA[0], colA[0], colB[0], colB[0]), (user, host))
+                    current_pass_hash = cursor.fetchone()[0]
+                    if isinstance(current_pass_hash, bytes):
+                        current_pass_hash = current_pass_hash.decode('ascii')
+
+                    if encrypted:
+                        encrypted_password = password
+                        if not is_hash(encrypted_password):
+                            module.fail_json(msg="encrypted was specified however it does not appear to be a valid hash expecting: *SHA1(SHA1(your_password))")
+                    else:
+                        if old_user_mgmt:
+                            cursor.execute("SELECT PASSWORD(%s)", (password,))
+                        else:
+                            cursor.execute("SELECT CONCAT('*', UCASE(SHA1(UNHEX(SHA1(%s)))))", (password,))
+                        encrypted_password = cursor.fetchone()[0]
+
+                    if current_pass_hash != encrypted_password:
+                        password_changed = True
+                        msg = "Password updated"
+                        if not module.check_mode:
+                            if old_user_mgmt:
+                                cursor.execute("SET PASSWORD FOR %s@%s = %s", (user, host, encrypted_password))
+                                msg = "Password updated (old style)"
+                            else:
+                                try:
+                                    cursor.execute("ALTER USER %s@%s IDENTIFIED WITH mysql_native_password AS %s", (user, host, encrypted_password))
+                                    msg = "Password updated (new style)"
+                                except (mysql_driver.Error) as e:
+                                    # https://stackoverflow.com/questions/51600000/authentication-string-of-root-user-on-mysql
+                                    # Replacing empty root password with new authentication mechanisms fails with error 1396
+                                    if e.args[0] == 1396:
+                                        cursor.execute(
+                                            "UPDATE mysql.user SET plugin = %s, authentication_string = %s, Password = '' WHERE User = %s AND Host = %s",
+                                            ('mysql_native_password', encrypted_password, user, host)
+                                        )
+                                        cursor.execute("FLUSH PRIVILEGES")
+                                        msg = "Password forced update"
+                                    else:
+                                        raise e
+                        changed = True
 
         # Handle password expiration
         if bool(password_expire):

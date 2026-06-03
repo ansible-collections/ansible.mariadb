@@ -62,7 +62,9 @@
 
     # Use a query instead of mysql_user, because we want to catch differences
     # at the end and a bug in mysql_user would be invisible to this tests
+    # MySQL 9.0 removed the mysql_native_password plugin
     - name: Mysql_info users_info | Prepare common tests users
+      when: db_version is version('9.0', '<') or db_engine == 'mariadb'
       ansible.mysql.mysql_query:
         query:
           - >-
@@ -233,6 +235,7 @@
       when:
         - db_engine == 'mariadb'
 
+    # MySQL 9.0 removed the sha256_password plugin
     - name: Mysql_info users_info | Prepare tests users for MySQL
       ansible.mysql.mysql_query:
         query:
@@ -242,6 +245,7 @@
           - GRANT ALL ON *.* to users_info_sha256@'users_info.com'
       when:
         - db_engine == 'mysql'
+        - db_version is version('9.0', '<')
 
     - name: Mysql_info users_info | Prepare tests users for MySQL 8+
       ansible.mysql.mysql_query:

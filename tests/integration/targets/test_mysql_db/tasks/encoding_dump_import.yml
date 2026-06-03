@@ -46,6 +46,7 @@
     encoding: latin1
     target: "{{ latin1_file1 }}"
     state: dump
+    dump_extra_args: "{{ '--set-gtid-purged=OFF' if db_engine == 'mysql' else '' }}"
   register: result
 
 - assert:

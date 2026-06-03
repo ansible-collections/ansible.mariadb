@@ -40,7 +40,6 @@
         <<: *mysql_params
         name: '{{ user_name_4 }}'
         host: '%'
-        password: '{{ user_password_4 }}'
         priv: 'data1.*:DELETE'
         subtract_privs: yes
         state: present
@@ -99,7 +98,6 @@
         <<: *mysql_params
         name: '{{ user_name_4 }}'
         host: '%'
-        password: '{{ user_password_4 }}'
         priv: 'data1.*:INVALID'
         subtract_privs: yes
         state: present

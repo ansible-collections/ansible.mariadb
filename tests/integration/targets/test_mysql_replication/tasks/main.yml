@@ -11,7 +11,12 @@
 - import_tasks: mysql_replication_initial.yml
 
 # Tests of replication filters and force_context
+# Requires working replication IO thread; MySQL 9.0+ defaults to
+# caching_sha2_password which needs SSL for replication (not configured
+# in the test containers).
+# TODO: configure SSL for test containers so this test can run on MySQL 9.0+.
 - include_tasks: issue-265.yml
+  when: db_version is version('9.0', '<') or db_engine == 'mariadb'
 
 # primary_ssl_verify_server_cert
 # Must run before mysql add channels in mysql_replication_channel.yml

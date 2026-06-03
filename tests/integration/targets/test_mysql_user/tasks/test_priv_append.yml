@@ -43,7 +43,6 @@
         <<: *mysql_params
         name: '{{ user_name_4 }}'
         host: '%'
-        password: '{{ user_password_4 }}'
         priv: 'data1.*:SELECT/data2.*:SELECT'
         append_privs: yes
         state: present

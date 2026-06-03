@@ -37,6 +37,7 @@ jobs:
         db_engine_version:
           - '8.0.38'
           - '8.4.9'
+          - '9.7.0'
           - '10.11.8'
           - '11.8.7'
         connector_name:
@@ -76,6 +77,9 @@ jobs:
 
           - db_engine_name: mariadb
             db_engine_version: '8.4.9'
+
+          - db_engine_name: mariadb
+            db_engine_version: '9.7.0'
 
           - db_engine_version: '8.0.38'
             ansible: stable-2.17

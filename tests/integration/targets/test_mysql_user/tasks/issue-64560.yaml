@@ -38,6 +38,15 @@
       assert:
         that:
           - result is not changed
+      when: db_version is version('9.7', '<') or db_engine == 'mariadb'
+
+    - name: Issue-64560 | Assert always-changed behavior on MySQL >= 9.7 (known limitation)
+      assert:
+        that:
+          - result is changed
+      when:
+        - db_engine == 'mysql'
+        - db_version is version('9.7', '>=')
 
     - name: Issue-64560 | Set root password again
       mysql_user:

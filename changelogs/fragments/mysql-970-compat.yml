@@ -1,0 +1,4 @@
+bugfixes:
+  - mysql_user - fix errors on MySQL 9.7.0+ caused by removal of SHA1() SQL
+    function and mysql_native_password plugin. The module now uses
+    ``IDENTIFIED BY`` for password management on MySQL 9.7.0+.

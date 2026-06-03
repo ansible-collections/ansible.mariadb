@@ -69,6 +69,13 @@
         that:
           - result is success
           - result is not changed
+      when: db_version is version('9.7', '<') or db_engine == 'mariadb'
+
+    - name: Issue-29511 | Assert Create user with FUNCTION and PROCEDURE privileges (MySQL 9.7.0+)
+      assert:
+        that:
+          - result is success
+      when: db_version is version('9.7', '>=') and db_engine == 'mysql'
 
     - name: Issue-29511 | Test teardown | cleanup databases
       mysql_db:

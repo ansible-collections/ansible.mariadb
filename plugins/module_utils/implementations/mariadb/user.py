@@ -19,6 +19,11 @@ def supports_identified_by_password(cursor):
     return True
 
 
+def server_supports_mysql_native_password(cursor):
+    # MariaDB still supports mysql_native_password and SHA1().
+    return True
+
+
 def server_supports_alter_user(cursor):
     version = get_server_version(cursor)
 

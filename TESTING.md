@@ -65,6 +65,7 @@ The Makefile accept the following options
   - Choices:
     - "8.0.38" <- mysql
     - "8.4.9" <- mysql
+    - "9.7.0" <- mysql
     - "10.11.8" <- mariadb
     - "11.8.7" <- mariadb
   - Description: The tag of the container to use for the service containers that will host a primary database and two replicas. Do not use short version, like `mysql:8` (don't do that) because our tests expect a full version to filter tests precisely. For instance: `when: db_version is version ('8.0.22', '>')`. You can use any tag available on [hub.docker.com/_/mysql](https://hub.docker.com/_/mysql) and [hub.docker.com/_/mariadb](https://hub.docker.com/_/mariadb) but GitHub Action will only use the versions listed above.

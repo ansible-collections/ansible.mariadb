@@ -26,6 +26,7 @@
     db_user: "test"
     db_user_unsafe_password: "pass!word"
     config_file: "{{ playbook_dir }}/root/.my.cnf"
+    gtid_purged_off: "{{ '--set-gtid-purged=OFF' if db_engine == 'mysql' else '' }}"
 
 - name: Dump and Import | Create custom config file
   shell: 'echo "[client]" > {{ config_file }}'
@@ -105,7 +106,7 @@
     master_data: 1
     skip_lock_tables: yes
     dump_extra_args: >-
-      --skip-triggers
+      --skip-triggers {{ gtid_purged_off }}
     config_file: '{{ config_file }}'
     restrict_config_file: yes
     check_implicit_admin: no
@@ -126,6 +127,7 @@
     that:
       - result is changed
       - result.executed_commands[0] is search(".department --source-data=1 --skip-triggers")
+      - result.executed_commands[0] is search("--set-gtid-purged=OFF")
   when:
     - db_engine == 'mysql'
     - db_version is version('8.2', '>=')
@@ -145,6 +147,7 @@
     state: dump
     target: '{{ dump_file1 }}'
     check_implicit_admin: yes
+    dump_extra_args: "{{ gtid_purged_off }}"
   register: dump_result1
 
 - name: Dump and Import | Assert successful completion of dump operation (with multiple databases in comma separated form)
@@ -198,6 +201,7 @@
       - '{{ db_name2 }}'
     state: dump
     target: '{{ dump_file2 }}'
+    dump_extra_args: "{{ gtid_purged_off }}"
   register: dump_result2
 
 - name: Dump and Import | Assert successful completion of dump operation (with multiple databases in list form)
@@ -346,6 +350,7 @@
     name: '{{ db_name }}'
     state: dump
     target: '{{ db_file_name }}'
+    dump_extra_args: "{{ gtid_purged_off }}"
   register: result
 
 - name: Dump and Import | Assert output message backup the database
@@ -434,48 +439,51 @@
 
 ########################
 # Test import with chdir
+# MySQL 9.7+ no longer supports the SOURCE command in batch mode
+- when: db_engine == 'mariadb' or (db_engine == 'mysql' and db_version is version('9.7', '<'))
+  block:
 
-- name: Dump and Import | Create dir
-  file:
-    path: ~/subdir
-    state: directory
+    - name: Dump and Import | Create dir
+      file:
+        path: ~/subdir
+        state: directory
 
-- name: Dump and Import | Create test dump
-  shell: 'echo "SOURCE ./subdir_test.sql" > ~/original_test.sql'
+    - name: Dump and Import | Create test dump
+      shell: 'echo "SOURCE ./subdir_test.sql" > ~/original_test.sql'
 
-- name: Dump and Import | Create test source
-  shell: 'echo "SELECT 1" > ~/subdir/subdir_test.sql'
+    - name: Dump and Import | Create test source
+      shell: 'echo "SELECT 1" > ~/subdir/subdir_test.sql'
 
-- name: Dump and Import | Try to restore without chdir argument, must fail
-  mysql_db:
-    login_user: '{{ mysql_user }}'
-    login_password: '{{ mysql_password }}'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
-    name: '{{ db_name }}'
-    state: import
-    target: '~/original_test.sql'
-  ignore_errors: yes
-  register: result
-- assert:
-    that:
-      - result is failed
-      - result.msg is search('Failed to open file')
+    - name: Dump and Import | Try to restore without chdir argument, must fail
+      mysql_db:
+        login_user: '{{ mysql_user }}'
+        login_password: '{{ mysql_password }}'
+        login_host: '{{ mysql_host }}'
+        login_port: '{{ mysql_primary_port }}'
+        name: '{{ db_name }}'
+        state: import
+        target: '~/original_test.sql'
+      ignore_errors: yes
+      register: result
+    - assert:
+        that:
+          - result is failed
+          - result.msg is search('Failed to open file')
 
-- name: Dump and Import | Restore with chdir argument, must pass
-  mysql_db:
-    login_user: '{{ mysql_user }}'
-    login_password: '{{ mysql_password }}'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
-    name: '{{ db_name }}'
-    state: import
-    target: '~/original_test.sql'
-    chdir: ~/subdir
-  register: result
-- assert:
-    that:
-      - result is succeeded
+    - name: Dump and Import | Restore with chdir argument, must pass
+      mysql_db:
+        login_user: '{{ mysql_user }}'
+        login_password: '{{ mysql_password }}'
+        login_host: '{{ mysql_host }}'
+        login_port: '{{ mysql_primary_port }}'
+        name: '{{ db_name }}'
+        state: import
+        target: '~/original_test.sql'
+        chdir: ~/subdir
+      register: result
+    - assert:
+        that:
+          - result is succeeded
 
 ##########
 # Clean up

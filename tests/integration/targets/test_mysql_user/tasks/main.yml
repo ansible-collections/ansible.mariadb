@@ -209,8 +209,11 @@
     # Test plugin authentication scenarios.
     #
     # FIXME: mariadb sql syntax for create/update user is not compatible
+    # MySQL 9.0 removed the mysql_native_password plugin used by these tests
     - include_tasks: test_user_plugin_auth.yml
-      when: db_engine == 'mysql'
+      when:
+        - db_engine == 'mysql'
+        - db_version is version('9.0', '<')
 
     # ============================================================
     # Assert create user with SELECT privileges, attempt to create database and update privileges to create database

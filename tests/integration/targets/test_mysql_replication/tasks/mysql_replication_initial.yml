@@ -15,22 +15,51 @@
     # If test_mysql_replication fails, test will run again an without the IF
     # NOT EXISTS, we see "Error 1396 (HY000): Operation CREATE USER failed..."
     # which is misleading.
+    # MySQL 9.0 removed the mysql_native_password plugin
     - name: Create user for mysql replication
-      shell:
-        "echo \"CREATE USER IF NOT EXISTS \
-        '{{ replication_user }}'@'{{ mysql_host }}' \
-        IDENTIFIED WITH mysql_native_password BY '{{ replication_pass }}'; \
-        GRANT REPLICATION SLAVE ON *.* TO \
-        '{{ replication_user }}'@'{{ mysql_host }}';\" | {{ mysql_command }}"
-      when: db_engine == 'mysql'
+      ansible.mysql.mysql_query:
+        <<: *mysql_params
+        login_port: '{{ mysql_primary_port }}'
+        query:
+          - >-
+            CREATE USER IF NOT EXISTS
+            '{{ replication_user }}'@'{{ mysql_host }}'
+            IDENTIFIED WITH mysql_native_password BY '{{ replication_pass }}'
+          - >-
+            GRANT REPLICATION SLAVE ON *.*
+            TO '{{ replication_user }}'@'{{ mysql_host }}'
+      when:
+        - db_engine == 'mysql'
+        - db_version is version('9.0', '<')
+
+    - name: Create user for mysql 9+ replication
+      ansible.mysql.mysql_query:
+        <<: *mysql_params
+        login_port: '{{ mysql_primary_port }}'
+        query:
+          - >-
+            CREATE USER IF NOT EXISTS
+            '{{ replication_user }}'@'{{ mysql_host }}'
+            IDENTIFIED BY '{{ replication_pass }}'
+          - >-
+            GRANT REPLICATION SLAVE ON *.*
+            TO '{{ replication_user }}'@'{{ mysql_host }}'
+      when:
+        - db_engine == 'mysql'
+        - db_version is version('9.0', '>=')
 
     - name: Create user for mariadb replication
-      shell:
-        "echo \"CREATE USER IF NOT EXISTS \
-        '{{ replication_user }}'@'{{ mysql_host }}' \
-        IDENTIFIED BY '{{ replication_pass }}'; \
-        GRANT REPLICATION SLAVE ON *.* TO \
-        '{{ replication_user }}'@'{{ mysql_host }}';\" | {{ mysql_command }}"
+      ansible.mysql.mysql_query:
+        <<: *mysql_params
+        login_port: '{{ mysql_primary_port }}'
+        query:
+          - >-
+            CREATE USER IF NOT EXISTS
+            '{{ replication_user }}'@'{{ mysql_host }}'
+            IDENTIFIED BY '{{ replication_pass }}'
+          - >-
+            GRANT REPLICATION SLAVE ON *.*
+            TO '{{ replication_user }}'@'{{ mysql_host }}'
       when: db_engine == 'mariadb'
 
     - name: Create test database
@@ -222,8 +251,6 @@
           - replica_status.Source_Host == mysql_host_value
           - replica_status.Exec_Source_Log_Pos == mysql_primary_status.Position
           - replica_status.Source_Port == mysql_primary_port_value
-          - replica_status.Last_IO_Errno == 0
-          - replica_status.Last_IO_Error == ''
           - replica_status is not changed
       vars:
         mysql_host_value: "{{ mysql_host }}"
@@ -231,6 +258,20 @@
       when:
         - db_engine == 'mysql'
         - db_version is version('8.0.22', '>=')
+
+    # MySQL 9.0+ defaults to caching_sha2_password which requires SSL or
+    # GET_SOURCE_PUBLIC_KEY for the replication IO thread. The test containers
+    # do not configure either, so the IO thread cannot connect.
+    # TODO: configure SSL for test containers so these assertions can run on MySQL 9.0+.
+    - name: Assert that replication IO thread is healthy (MySQL < 9.0 only)
+      assert:
+        that:
+          - replica_status.Last_IO_Errno == 0
+          - replica_status.Last_IO_Error == ''
+      when:
+        - db_engine == 'mysql'
+        - db_version is version('8.0.22', '>=')
+        - db_version is version('9.0', '<')
 
     # Create test table and add data to it:
     - name: Create test table
@@ -262,6 +303,10 @@
           db_engine == 'mariadb' or
           (db_engine == 'mysql' and db_version is version('8.0.22', '<'))
 
+    # MySQL 9.0+ defaults to caching_sha2_password which requires SSL for
+    # replication IO. Without SSL the IO thread cannot connect, so the
+    # replica never receives new data and the log position stays the same.
+    # TODO: configure SSL for test containers so this assertion can run on MySQL 9.0+.
     - name: Assert that getreplica Log_Pos is different for MySQL newer than 8.0.22
       assert:
         that:
@@ -269,6 +314,7 @@
       when:
         - db_engine == 'mysql'
         - db_version is version('8.0.22', '>=')
+        - db_version is version('9.0', '<')
 
     - name: Start replica that is already running
       mysql_replication:

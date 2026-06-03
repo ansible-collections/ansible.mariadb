@@ -26,6 +26,13 @@
 
   block:
 
+    - name: Privs | Ensure test database is absent before testing
+      mysql_db:
+        <<: *mysql_params
+        name: '{{ db_name }}'
+        state: absent
+      ignore_errors: true
+
     # ============================================================
     - name: Privs | Create user with basic select privileges
       mysql_user:
@@ -101,7 +108,6 @@
         <<: *mysql_params
         name: '{{ user_name_2 }}'
         host: '%'
-        password: '{{ user_password_2 }}'
         priv: 'jmainguy.jmainguy:ALL'
         state: present
       register: result
@@ -116,7 +122,6 @@
         <<: *mysql_params
         name: '{{ user_name_2 }}'
         host: '%'
-        password: '{{ user_password_2 }}'
         priv: 'jmainguy.jmainguy:ALL'
         state: present
       register: result
@@ -165,7 +170,6 @@
         <<: *mysql_params
         name: '{{ user_name_2 }}'
         host: '%'
-        password: '{{ user_password_2 }}'
         priv: '*.*:CREATE USER,FILE,PROCESS,RELOAD,REPLICATION CLIENT,REPLICATION SLAVE,SHOW DATABASES,SHUTDOWN,SUPER,CREATE,DROP,EVENT,LOCK TABLES,INSERT,UPDATE,DELETE,SELECT,SHOW VIEW,GRANT'
         state: present
       register: result
@@ -180,7 +184,6 @@
         <<: *mysql_params
         name: '{{ user_name_2 }}'
         host: '%'
-        password: '{{ user_password_2 }}'
         priv: '*.*:CREATE USER,FILE,PROCESS,RELOAD,REPLICATION CLIENT,REPLICATION SLAVE,SHOW DATABASES,SHUTDOWN,SUPER,CREATE,DROP,EVENT,LOCK TABLES,INSERT,UPDATE,DELETE,SELECT,SHOW VIEW,GRANT'
         state: present
       register: result
@@ -236,6 +239,7 @@
       assert:
         that:
           - result is not changed
+      when: db_version is version('9.7', '<') or db_engine == 'mariadb'
 
     - name: Privs | Collect user info by host
       ansible.mysql.mysql_info:
