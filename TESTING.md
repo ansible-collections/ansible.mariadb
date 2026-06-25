@@ -90,6 +90,7 @@ The Makefile accept the following options
     - "test_mysql_binlog_info"
     - "test_mysql_db"
     - "test_mysql_info"
+    - "test_mysql_perf_schema"
     - "test_mysql_query"
     - "test_mysql_replication"
     - "test_mysql_role"
