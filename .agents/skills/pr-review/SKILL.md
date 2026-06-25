@@ -136,6 +136,7 @@ Check thoroughly that:
 - The version_added field for the modules is set in the DOCUMENTATION block.
   - Individual arguments as well as the returned values must have version_added set only when they are added to an existing module.
 - The DOCUMENTATION, EXAMPLE, and RETURNS sections follow the [style guide](https://docs.ansible.com/projects/ansible/devel/dev_guide/style_guide/index.html).
+- The changelog fragment must not be present for the new Ansible module: a proper entry will be generated automatically by the antsibull-changelog tool during releasing based on the version_added field.
 
 ---
 
