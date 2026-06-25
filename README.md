@@ -66,6 +66,7 @@ Every voice is important and every idea is valuable. If you have something on yo
 ## Included content
 
 - **Modules**:
+  - [mysql_clone](https://docs.ansible.com/ansible/devel/collections/ansible/mysql/mysql_clone_module.html)
   - [mysql_db](https://docs.ansible.com/ansible/devel/collections/ansible/mysql/mysql_db_module.html)
   - [mysql_info](https://docs.ansible.com/ansible/devel/collections/ansible/mysql/mysql_info_module.html)
   - [mysql_perf_schema](https://docs.ansible.com/ansible/devel/collections/ansible/mysql/mysql_perf_schema_module.html)

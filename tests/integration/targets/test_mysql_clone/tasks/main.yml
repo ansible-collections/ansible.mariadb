@@ -1,0 +1,305 @@
+---
+####################################################################
+# WARNING: These are designed specifically for Ansible tests       #
+# and should not be used as examples of how to write Ansible roles #
+####################################################################
+
+- name: MySQL clone | Run integration checks
+  vars:
+    primary_params: &primary_params
+      login_user: '{{ mysql_user }}'
+      login_password: '{{ mysql_password }}'
+      login_host: '{{ mysql_host }}'
+      login_port: '{{ mysql_primary_port }}'
+    standalone_bootstrap_params: &standalone_bootstrap_params
+      login_user: root
+      login_unix_socket: '{{ standalone_socket }}'
+      config_file: ''
+    standalone_params: &standalone_params
+      login_user: root
+      login_password: '{{ mysql_password }}'
+      login_unix_socket: '{{ standalone_socket }}'
+      config_file: ''
+    clone_plugin_query: "SELECT PLUGIN_STATUS AS plugin_status FROM INFORMATION_SCHEMA.PLUGINS WHERE PLUGIN_NAME = 'clone'"
+  block:
+    - name: MySQL clone | Assert MariaDB unsupported
+      ansible.mysql.mysql_clone:
+        <<: *primary_params
+        donor_host: '{{ mysql_host }}'
+        donor_port: '{{ mysql_primary_port }}'
+        donor_user: '{{ clone_user_name }}'
+        donor_password: '{{ clone_user_password }}'
+      register: result
+      ignore_errors: true
+      when: db_engine == 'mariadb'
+
+    - name: MySQL clone | Assert MariaDB failure message
+      ansible.builtin.assert:
+        that:
+          - result is failed
+          - result.msg == 'MariaDB is not supported by mysql_clone.'
+      when: db_engine == 'mariadb'
+
+    - name: MySQL clone | Prepare donor dataset
+      ansible.mysql.mysql_query:
+        <<: *primary_params
+        query:
+          - "DROP DATABASE IF EXISTS {{ clone_test_db }}"
+          - "CREATE DATABASE {{ clone_test_db }}"
+          - "CREATE TABLE {{ clone_test_db }}.{{ clone_test_table }} (value VARCHAR(64))"
+          - "INSERT INTO {{ clone_test_db }}.{{ clone_test_table }} VALUES ('{{ clone_test_value }}')"
+      when: db_engine == 'mysql'
+
+    - name: MySQL clone | Check clone plugin on primary
+      ansible.mysql.mysql_query:
+        <<: *primary_params
+        query: "{{ clone_plugin_query }}"
+      register: primary_clone_plugin
+      when: db_engine == 'mysql'
+
+    - name: MySQL clone | Set standalone recipient variables
+      ansible.builtin.set_fact:
+        standalone_server_package: mysql-server
+        standalone_service_name: mysql
+        standalone_socket: /var/run/mysqld/mysqld.sock
+      when: db_engine == 'mysql'
+
+    - name: MySQL clone | Install standalone recipient package
+      ansible.builtin.apt:
+        name: '{{ standalone_server_package }}'
+        state: present
+      when: db_engine == 'mysql'
+
+    - name: MySQL clone | Ensure standalone recipient service is started
+      ansible.builtin.service:
+        name: '{{ standalone_service_name }}'
+        state: started
+      when: db_engine == 'mysql'
+
+    - name: MySQL clone | Wait for standalone recipient socket
+      ansible.builtin.wait_for:
+        path: '{{ standalone_socket }}'
+        state: present
+        timeout: 60
+      when: db_engine == 'mysql'
+
+    - name: MySQL clone | Bootstrap standalone root password to match donor
+      ansible.mysql.mysql_query:
+        <<: *standalone_bootstrap_params
+        query: "ALTER USER IF EXISTS 'root'@'localhost' IDENTIFIED BY '{{ mysql_password }}'"
+      when: db_engine == 'mysql'
+
+    - name: MySQL clone | Install clone plugin on primary if needed
+      ansible.mysql.mysql_query:
+        <<: *primary_params
+        query: "INSTALL PLUGIN clone SONAME 'mysql_clone.so'"
+      register: primary_clone_plugin_install
+      ignore_errors: true
+      when:
+        - db_engine == 'mysql'
+        - primary_clone_plugin.query_result[0] | length == 0
+
+    - name: MySQL clone | Re-check clone plugin on primary
+      ansible.mysql.mysql_query:
+        <<: *primary_params
+        query: "{{ clone_plugin_query }}"
+      register: primary_clone_plugin
+      when: db_engine == 'mysql'
+
+    - name: MySQL clone | Check clone plugin on standalone recipient
+      ansible.mysql.mysql_query:
+        <<: *standalone_params
+        query: "{{ clone_plugin_query }}"
+      register: standalone_clone_plugin
+      when: db_engine == 'mysql'
+
+    - name: MySQL clone | Install clone plugin on standalone recipient if needed
+      ansible.mysql.mysql_query:
+        <<: *standalone_params
+        query: "INSTALL PLUGIN clone SONAME 'mysql_clone.so'"
+      register: standalone_clone_plugin_install
+      ignore_errors: true
+      when:
+        - db_engine == 'mysql'
+        - standalone_clone_plugin.query_result[0] | length == 0
+
+    - name: MySQL clone | Re-check clone plugin on standalone recipient
+      ansible.mysql.mysql_query:
+        <<: *standalone_params
+        query: "{{ clone_plugin_query }}"
+      register: standalone_clone_plugin
+      when: db_engine == 'mysql'
+
+    - name: MySQL clone | Determine if clone plugin is active on donor and recipient
+      ansible.builtin.set_fact:
+        clone_plugin_ready: >-
+          {{
+            primary_clone_plugin.query_result[0] | length == 1 and
+            primary_clone_plugin.query_result[0][0].plugin_status == 'ACTIVE' and
+            standalone_clone_plugin.query_result[0] | length == 1 and
+            standalone_clone_plugin.query_result[0][0].plugin_status == 'ACTIVE'
+          }}
+      when: db_engine == 'mysql'
+
+    - name: MySQL clone | Create donor clone user
+      ansible.mysql.mysql_query:
+        <<: *primary_params
+        query:
+          - >-
+            CREATE USER IF NOT EXISTS
+            '{{ clone_user_name }}'@'%'
+            IDENTIFIED BY '{{ clone_user_password }}'
+          - >-
+            GRANT BACKUP_ADMIN ON *.*
+            TO '{{ clone_user_name }}'@'%'
+      when:
+        - db_engine == 'mysql'
+        - clone_plugin_ready | default(false) | bool
+
+    - name: MySQL clone | Configure recipient donor allow-list
+      ansible.mysql.mysql_variables:
+        <<: *standalone_params
+        variable: clone_valid_donor_list
+        value: '{{ mysql_host }}:{{ mysql_primary_port }}'
+        mode: persist
+      when:
+        - db_engine == 'mysql'
+        - clone_plugin_ready | default(false) | bool
+
+    - name: MySQL clone | Preview clone in check mode
+      check_mode: true
+      ansible.mysql.mysql_clone:
+        <<: *standalone_params
+        donor_host: '{{ mysql_host }}'
+        donor_port: '{{ mysql_primary_port }}'
+        donor_user: '{{ clone_user_name }}'
+        donor_password: '{{ clone_user_password }}'
+        wait_timeout: 300
+        poll_interval: 2
+      register: clone_preview
+      when:
+        - db_engine == 'mysql'
+        - clone_plugin_ready | default(false) | bool
+
+    - name: MySQL clone | Assert check mode result
+      ansible.builtin.assert:
+        that:
+          - clone_preview is changed
+          - clone_preview.msg == 'Clone would be started.'
+          - "'********' in clone_preview.query"
+          - "'REQUIRE SSL' not in clone_preview.query"
+          - "'REQUIRE NO SSL' not in clone_preview.query"
+      when:
+        - db_engine == 'mysql'
+        - clone_plugin_ready | default(false) | bool
+
+    - name: MySQL clone | Verify recipient database is unchanged after check mode
+      ansible.mysql.mysql_query:
+        <<: *standalone_params
+        query: "SHOW DATABASES LIKE '{{ clone_test_db }}'"
+      register: standalone_check_mode_db
+      when:
+        - db_engine == 'mysql'
+        - clone_plugin_ready | default(false) | bool
+
+    - name: MySQL clone | Assert recipient database is absent after check mode
+      ansible.builtin.assert:
+        that:
+          - standalone_check_mode_db.query_result[0] | length == 0
+      when:
+        - db_engine == 'mysql'
+        - clone_plugin_ready | default(false) | bool
+
+    - name: MySQL clone | Run clone and wait for completion
+      ansible.mysql.mysql_clone:
+        <<: *standalone_params
+        donor_host: '{{ mysql_host }}'
+        donor_port: '{{ mysql_primary_port }}'
+        donor_user: '{{ clone_user_name }}'
+        donor_password: '{{ clone_user_password }}'
+        require_ssl: true
+        wait_timeout: 300
+        poll_interval: 2
+      register: clone_result
+      when:
+        - db_engine == 'mysql'
+        - clone_plugin_ready | default(false) | bool
+
+    - name: MySQL clone | Assert completed clone result
+      ansible.builtin.assert:
+        that:
+          - clone_result is succeeded
+          - clone_result is changed
+          - clone_result.clone_status.STATE == 'Completed'
+          - clone_result.clone_progress | length > 0
+          - "'REQUIRE SSL' in clone_result.query"
+          - "'STAGE' in clone_result.clone_progress[0]"
+          - "'STATE' in clone_result.clone_progress[0]"
+          - clone_result.msg == 'Clone completed successfully.'
+      when:
+        - db_engine == 'mysql'
+        - clone_plugin_ready | default(false) | bool
+
+    - name: MySQL clone | Verify cloned data on standalone recipient
+      ansible.mysql.mysql_query:
+        <<: *standalone_params
+        query: "SELECT value FROM {{ clone_test_db }}.{{ clone_test_table }}"
+      register: standalone_cloned_data
+      when:
+        - db_engine == 'mysql'
+        - clone_plugin_ready | default(false) | bool
+
+    - name: MySQL clone | Assert cloned row exists
+      ansible.builtin.assert:
+        that:
+          - standalone_cloned_data.query_result[0][0].value == clone_test_value
+      when:
+        - db_engine == 'mysql'
+        - clone_plugin_ready | default(false) | bool
+
+    - name: MySQL clone | Re-run clone to confirm non-idempotent behavior
+      ansible.mysql.mysql_clone:
+        <<: *standalone_params
+        donor_host: '{{ mysql_host }}'
+        donor_port: '{{ mysql_primary_port }}'
+        donor_user: '{{ clone_user_name }}'
+        donor_password: '{{ clone_user_password }}'
+        require_ssl: true
+        wait_timeout: 300
+        poll_interval: 2
+      register: clone_rerun_result
+      when:
+        - db_engine == 'mysql'
+        - clone_plugin_ready | default(false) | bool
+
+    - name: MySQL clone | Assert clone rerun result
+      ansible.builtin.assert:
+        that:
+          - clone_rerun_result is succeeded
+          - clone_rerun_result is changed
+          - clone_rerun_result.clone_status.STATE == 'Completed'
+          - clone_rerun_result.clone_progress | length > 0
+          - "'REQUIRE SSL' in clone_rerun_result.query"
+          - "'STAGE' in clone_rerun_result.clone_progress[0]"
+          - "'STATE' in clone_rerun_result.clone_progress[0]"
+          - clone_rerun_result.msg == 'Clone completed successfully.'
+      when:
+        - db_engine == 'mysql'
+        - clone_plugin_ready | default(false) | bool
+
+    - name: MySQL clone | Verify cloned data still exists after rerun
+      ansible.mysql.mysql_query:
+        <<: *standalone_params
+        query: "SELECT value FROM {{ clone_test_db }}.{{ clone_test_table }}"
+      register: standalone_cloned_data_after_rerun
+      when:
+        - db_engine == 'mysql'
+        - clone_plugin_ready | default(false) | bool
+
+    - name: MySQL clone | Assert cloned row exists after rerun
+      ansible.builtin.assert:
+        that:
+          - standalone_cloned_data_after_rerun.query_result[0][0].value == clone_test_value
+      when:
+        - db_engine == 'mysql'
+        - clone_plugin_ready | default(false) | bool
