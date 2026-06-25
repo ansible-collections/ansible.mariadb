@@ -94,6 +94,7 @@ The Makefile accept the following options
     - "test_mysql_query"
     - "test_mysql_replication"
     - "test_mysql_role"
+    - "test_mysql_slow_log"
     - "test_mysql_user"
     - "test_mysql_variables"
   - Description: If omitted, all test targets will run. But you can limit the tests to a single target to speed up your tests.

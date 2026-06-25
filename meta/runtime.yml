@@ -9,5 +9,6 @@ action_groups:
     - mysql_query
     - mysql_replication
     - mysql_role
+    - mysql_slow_log
     - mysql_user
     - mysql_variables
