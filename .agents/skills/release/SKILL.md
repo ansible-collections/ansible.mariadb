@@ -115,11 +115,13 @@ release_summary: |-
 EOF
 ```
 
-Generate the changelog:
+Generate the changelog using the antsibull-changelog tool:
 
 ```bash
 antsibull-changelog release --reload-plugins
 ```
+
+You MUST only use antsibull-changelog for changelog generation. You are NOT allowed to edit any related files such as CHANGELOG.rst or changelogs/changelog.yaml.
 
 **CONFIRM:** Show the human the generated `CHANGELOG.rst` diff and ask them to confirm the content is correct before continuing.
 
