@@ -12,6 +12,9 @@ body:
     attributes:
       value: |
         ⚠
+        This collection is for **MariaDB only**. If your issue is related to MySQL,
+        please open it at [ansible-collections/ansible.mysql](https://github.com/ansible-collections/ansible.mysql).
+
         Verify first that your issue is not [already reported on GitHub][issue search].
         Also test if the latest release and devel branch are affected too.
         *Complete **all** sections as described, this form is processed automatically.*

@@ -18,6 +18,10 @@ contact_links:
       For more information, see
       https://docs.ansible.com/projects/ansible/latest/community/reporting_bugs_and_features.html
 
+  - name: MySQL-related issues
+    url: https://github.com/ansible-collections/ansible.mysql
+    about: This collection is for MariaDB only. For MySQL issues, go to ansible-collections/ansible.mysql.
+
   - name: Ansible Code of Conduct
     url: https://docs.ansible.com/projects/ansible/latest/community/code_of_conduct.html?utm_medium=github&utm_source=issue_template_chooser_ansible_collections
     about: Be nice to other members of the community.
