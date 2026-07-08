@@ -2,7 +2,6 @@
 requires_ansible: '>=2.16.0'
 action_groups:
   all:
-    - mysql_clone
     - mysql_db
     - mysql_binlog_info
     - mysql_info
@@ -10,8 +9,6 @@ action_groups:
     - mysql_query
     - mysql_replication
     - mysql_replication_filter
-    - mysql_resource_group
-    - mysql_resource_group_info
     - mysql_role
     - mysql_slow_log
     - mysql_user
