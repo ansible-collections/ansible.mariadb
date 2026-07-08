@@ -394,7 +394,7 @@ def user_mod(cursor, user, host, host_all, password, encrypted,
                 module.fail_json(msg="The server version does not match the requirements "
                                      "for password_expire parameter. See module's documentation.")
             update = False
-            mariadb_role = True if "mariadb" in str(impl.__name__) else False
+            mariadb_role = True if "implementations.mariadb." in str(impl.__name__) else False
             current_password_policy = get_password_expiration_policy(cursor, user, host, maria_role=mariadb_role)
             password_expired = is_password_expired(cursor, user, host)
             # Check if changes needed to be applied.
