@@ -57,11 +57,11 @@ They also should be subscribed to Ansible's [The Bullhorn newsletter](https://do
 
 ## Governance
 
-We, [the MySQL/MariaDB team](https://forum.ansible.com/g/MySQLTeam), use [the forum](https://forum.ansible.com/tag/mysql) posts tagged with `mariadb` for general announcements and discussions.
+We, [the MySQL/MariaDB team](https://forum.ansible.com/g/MySQLTeam), use [the forum](https://forum.ansible.com/tag/mariadb) posts tagged with `mariadb` for general announcements and discussions.
 
 The process of decision making in this collection is based on discussing and finding consensus among participants.
 
-Every voice is important and every idea is valuable. If you have something on your mind, create an issue or dedicated forum [discussion](https://forum.ansible.com/new-topic?title=topic%20title&body=topic%20body&category=project&tags=mysql) and let's discuss it!
+Every voice is important and every idea is valuable. If you have something on your mind, create an issue or dedicated forum [discussion](https://forum.ansible.com/new-topic?title=topic%20title&body=topic%20body&category=project&tags=mariadb) and let's discuss it!
 
 ## Included content
 
@@ -114,8 +114,6 @@ Here is the table for the support timeline:
 
 For MariaDB, only Long Term releases are tested. When multiple LTS are available, we test the oldest and the newest only. Usually breaking changes introduced in the versions in between are also present in the latest version.
 
-- mysql 8.4.9
-- mysql 9.7.0
 - mariadb:10.11 (collection version >= 3.10.0)
 - mariadb:11.8  (collection version >= 4.0.1)
 
