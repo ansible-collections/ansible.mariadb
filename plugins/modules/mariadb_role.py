@@ -320,13 +320,13 @@ EXAMPLES = r'''
 RETURN = '''#'''
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.ansible.mysql.plugins.module_utils.mysql import (
+from ansible_collections.ansible.mariadb.plugins.module_utils.mysql import (
     mysql_connect,
     mysql_driver,
     mysql_driver_fail_msg,
     mysql_common_argument_spec
 )
-from ansible_collections.ansible.mysql.plugins.module_utils.user import (
+from ansible_collections.ansible.mariadb.plugins.module_utils.user import (
     convert_priv_dict_to_str,
     get_user_implementation,
     get_mode,
@@ -428,9 +428,9 @@ class DbServer():
         self.cursor.execute("SELECT VERSION()")
 
         if 'mariadb' in self.cursor.fetchone()[0].lower():
-            import ansible_collections.ansible.mysql.plugins.module_utils.implementations.mariadb.role as role_impl
+            import ansible_collections.ansible.mariadb.plugins.module_utils.implementations.mariadb.role as role_impl
         else:
-            import ansible_collections.ansible.mysql.plugins.module_utils.implementations.mysql.role as role_impl
+            import ansible_collections.ansible.mariadb.plugins.module_utils.implementations.mysql.role as role_impl
 
         return role_impl
 

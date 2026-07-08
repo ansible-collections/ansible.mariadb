@@ -437,15 +437,15 @@ EXAMPLES = r'''
 RETURN = '''#'''
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.ansible.mysql.plugins.module_utils.database import SQLParseError
-from ansible_collections.ansible.mysql.plugins.module_utils.mysql import (
+from ansible_collections.ansible.mariadb.plugins.module_utils.database import SQLParseError
+from ansible_collections.ansible.mariadb.plugins.module_utils.mysql import (
     mysql_connect,
     mysql_driver,
     mysql_driver_fail_msg,
     mysql_common_argument_spec,
     set_session_vars,
 )
-from ansible_collections.ansible.mysql.plugins.module_utils.user import (
+from ansible_collections.ansible.mariadb.plugins.module_utils.user import (
     convert_priv_dict_to_str,
     get_mode,
     InvalidPrivsError,

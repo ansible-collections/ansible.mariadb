@@ -304,10 +304,10 @@ import os
 import warnings
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.ansible.mysql.plugins.module_utils.command_resolver import (
+from ansible_collections.ansible.mariadb.plugins.module_utils.command_resolver import (
     CommandResolver
 )
-from ansible_collections.ansible.mysql.plugins.module_utils.mysql import (
+from ansible_collections.ansible.mariadb.plugins.module_utils.mysql import (
     get_server_version,
     get_server_implementation,
     mysql_connect,
@@ -570,9 +570,9 @@ def main():
     command_resolver = CommandResolver(server_implementation, server_version)
     cursor.execute("SELECT VERSION()")
     if server_implementation == 'mariadb':
-        from ansible_collections.ansible.mysql.plugins.module_utils.implementations.mariadb import replication as impl
+        from ansible_collections.ansible.mariadb.plugins.module_utils.implementations.mariadb import replication as impl
     else:
-        from ansible_collections.ansible.mysql.plugins.module_utils.implementations.mysql import replication as impl
+        from ansible_collections.ansible.mariadb.plugins.module_utils.implementations.mysql import replication as impl
 
     # Since MySQL 8.0.22 and MariaDB 10.5.1,
     # "REPLICA" must be used instead of "SLAVE"

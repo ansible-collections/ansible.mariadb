@@ -125,10 +125,10 @@ settings:
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.common.text.converters import to_native
 
-from ansible_collections.ansible.mysql.plugins.module_utils.command_resolver import (
+from ansible_collections.ansible.mariadb.plugins.module_utils.command_resolver import (
     CommandResolver,
 )
-from ansible_collections.ansible.mysql.plugins.module_utils.mysql import (
+from ansible_collections.ansible.mariadb.plugins.module_utils.mysql import (
     get_server_implementation,
     get_server_version,
     mysql_common_argument_spec,

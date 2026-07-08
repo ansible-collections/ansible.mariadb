@@ -350,8 +350,8 @@ import traceback
 import shlex
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.ansible.mysql.plugins.module_utils.database import mysql_quote_identifier
-from ansible_collections.ansible.mysql.plugins.module_utils.mysql import (
+from ansible_collections.ansible.mariadb.plugins.module_utils.database import mysql_quote_identifier
+from ansible_collections.ansible.mariadb.plugins.module_utils.mysql import (
     mysql_connect,
     mysql_driver,
     mysql_driver_fail_msg,
@@ -359,7 +359,7 @@ from ansible_collections.ansible.mysql.plugins.module_utils.mysql import (
     get_server_implementation,
     get_server_version,
 )
-from ansible_collections.ansible.mysql.plugins.module_utils.version import LooseVersion
+from ansible_collections.ansible.mariadb.plugins.module_utils.version import LooseVersion
 from ansible.module_utils.common.text.converters import to_native
 
 executed_commands = []

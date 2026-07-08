@@ -306,10 +306,10 @@ connector_version:
 from decimal import Decimal
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.ansible.mysql.plugins.module_utils.command_resolver import (
+from ansible_collections.ansible.mariadb.plugins.module_utils.command_resolver import (
     CommandResolver
 )
-from ansible_collections.ansible.mysql.plugins.module_utils.mysql import (
+from ansible_collections.ansible.mariadb.plugins.module_utils.mysql import (
     mysql_connect,
     mysql_common_argument_spec,
     mysql_driver,
@@ -320,7 +320,7 @@ from ansible_collections.ansible.mysql.plugins.module_utils.mysql import (
     get_server_version,
 )
 
-from ansible_collections.ansible.mysql.plugins.module_utils.user import (
+from ansible_collections.ansible.mariadb.plugins.module_utils.user import (
     privileges_get,
     get_resource_limits,
     get_existing_authentication,

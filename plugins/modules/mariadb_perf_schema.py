@@ -265,13 +265,13 @@ objects:
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.common.text.converters import to_native
 
-from ansible_collections.ansible.mysql.plugins.module_utils.mysql import (
+from ansible_collections.ansible.mariadb.plugins.module_utils.mysql import (
     mysql_common_argument_spec,
     mysql_connect,
     mysql_driver,
     mysql_driver_fail_msg,
 )
-from ansible_collections.ansible.mysql.plugins.module_utils.perf_schema import (
+from ansible_collections.ansible.mariadb.plugins.module_utils.perf_schema import (
     SECTION_DEFINITIONS,
     ensure_perf_schema_sections_supported,
     plan_section_changes,

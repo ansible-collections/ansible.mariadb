@@ -35,7 +35,7 @@ mysql_driver_fail_msg = ('A MySQL module is required: for Python 2.7 either PyMy
                          'Consider setting ansible_python_interpreter to use '
                          'the intended Python version.')
 
-from ansible_collections.ansible.mysql.plugins.module_utils.database import mysql_quote_identifier
+from ansible_collections.ansible.mariadb.plugins.module_utils.database import mysql_quote_identifier
 
 
 def get_connector_name(connector):
