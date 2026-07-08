@@ -5,7 +5,7 @@
     latin1_file1: "{{ tmp_dir }}/{{ file }}"
 
 - name: Deleting Latin1 encoded Database
-  mysql_db:
+  mariadb_db:
     login_user: '{{ mysql_user }}'
     login_password: '{{ mysql_password }}'
     login_host: '{{ mysql_host }}'
@@ -14,7 +14,7 @@
     state: absent
 
 - name: Encoding | Create Latin1 encoded database
-  mysql_db:
+  mariadb_db:
     login_user: '{{ mysql_user }}'
     login_password: '{{ mysql_password }}'
     login_host: '{{ mysql_host }}'
@@ -37,7 +37,7 @@
   register: output
 
 - name: Encoding | Dumping a table in Latin1 database
-  mysql_db:
+  mariadb_db:
     login_user: '{{ mysql_user }}'
     login_password: '{{ mysql_password }}'
     login_host: '{{ mysql_host }}'
@@ -62,7 +62,7 @@
   shell: grep -a 47 {{ latin1_file1 }} | od -c |grep "A   m 351   d 351   e       B 364\|A   m 303 251   d 303 251   e       B 303"
 
 - name: Encoding | Dropping {{ db_latin1_name }} database
-  mysql_db:
+  mariadb_db:
     login_user: '{{ mysql_user }}'
     login_password: '{{ mysql_password }}'
     login_host: '{{ mysql_host }}'
@@ -71,7 +71,7 @@
     state: absent
 
 - name: Encoding | Importing the latin1 mysql script
-  mysql_db:
+  mariadb_db:
     login_user: '{{ mysql_user }}'
     login_password: '{{ mysql_password }}'
     login_host: '{{ mysql_host }}'
@@ -97,7 +97,7 @@
   failed_when: '"latin1_swedish_ci" not in output.stdout'
 
 - name: Encoding | Clean up database
-  mysql_db:
+  mariadb_db:
     login_user: '{{ mysql_user }}'
     login_password: '{{ mysql_password }}'
     login_host: '{{ mysql_host }}'

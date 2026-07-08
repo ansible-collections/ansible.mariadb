@@ -23,7 +23,7 @@
       delegate_to: localhost
 
     - name: Drop mysql user if exists
-      mysql_user:
+      mariadb_user:
         <<: *mysql_params
         name: '{{ user_name_1 }}'
         host_all: true
@@ -31,7 +31,7 @@
       ignore_errors: yes
 
     - name: create user with ssl requirement
-      mysql_user:
+      mariadb_user:
         <<: *mysql_params
         name: "{{ user_name_1 }}"
         password: "{{ user_password_1 }}"
@@ -40,7 +40,7 @@
           SSL:
 
     - name: attempt connection with newly created user (expect failure)
-      mysql_replication:
+      mariadb_replication:
         mode: getprimary
         login_user: '{{ user_name_1 }}'
         login_password: '{{ user_password_1 }}'
@@ -63,7 +63,7 @@
         - connector_name != 'pymysql'
 
     - name: attempt connection with newly created user ignoring hostname
-      mysql_replication:
+      mariadb_replication:
         mode: getprimary
         login_user: '{{ user_name_1 }}'
         login_password: '{{ user_password_1 }}'
@@ -79,7 +79,7 @@
           - result is succeeded or 'pymysql >= 0.7.11 is required' in result.msg
 
     - name: Drop mysql user
-      mysql_user:
+      mariadb_user:
         <<: *mysql_params
         name: '{{ user_name_1 }}'
         host: '{{ gateway_addr }}'

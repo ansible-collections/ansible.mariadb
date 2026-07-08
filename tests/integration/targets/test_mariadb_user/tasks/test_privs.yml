@@ -27,7 +27,7 @@
   block:
 
     - name: Privs | Ensure test database is absent before testing
-      mysql_db:
+      mariadb_db:
         <<: *mysql_params
         name: '{{ db_name }}'
         state: absent
@@ -35,7 +35,7 @@
 
     # ============================================================
     - name: Privs | Create user with basic select privileges
-      mysql_user:
+      mariadb_user:
         <<: *mysql_params
         name: '{{ user_name_2 }}'
         host: '%'
@@ -52,7 +52,7 @@
       when: current_append_privs ==  "yes"
 
     - name: Privs | Create user with current privileges (expect changed=true)
-      mysql_user:
+      mariadb_user:
         <<: *mysql_params
         name: '{{ user_name_2 }}'
         host: '%'
@@ -84,7 +84,7 @@
       when: current_append_privs ==  "yes"
 
     - name: Privs | Create database using user current privileges
-      mysql_db:
+      mariadb_db:
         login_user: '{{ user_name_2 }}'
         login_password: '{{ user_password_2 }}'
         login_host: '{{ mysql_host }}'
@@ -104,7 +104,7 @@
 
     # ============================================================
     - name: Privs | Add privs to a specific table (expect changed)
-      mysql_user:
+      mariadb_user:
         <<: *mysql_params
         name: '{{ user_name_2 }}'
         host: '%'
@@ -118,7 +118,7 @@
           - result is changed
 
     - name: Privs | Add privs to a specific table (expect ok)
-      mysql_user:
+      mariadb_user:
         <<: *mysql_params
         name: '{{ user_name_2 }}'
         host: '%'
@@ -133,7 +133,7 @@
 
     # ============================================================
     - name: Privs | Grant ALL to user {{ user_name_2 }}
-      mysql_user:
+      mariadb_user:
         <<: *mysql_params
         name: '{{ user_name_2 }}'
         host: '%'
@@ -144,7 +144,7 @@
     # - include_tasks: utils/assert_user.yml user_name={{user_name_2}} user_host=% priv='ALL PRIVILEGES'
 
     - name: Privs | Create database using user {{ user_name_2 }}
-      mysql_db:
+      mariadb_db:
         login_user: '{{ user_name_2 }}'
         login_password: '{{ user_password_2 }}'
         login_host: '{{ mysql_host }}'
@@ -156,7 +156,7 @@
       command: "{{ mysql_command }} -e \"SHOW CREATE DATABASE {{ db_name }}\""
 
     - name: Privs | Drop database using user {{ user_name_2 }}
-      mysql_db:
+      mariadb_db:
         login_user: '{{ user_name_2 }}'
         login_password: '{{ user_password_2 }}'
         login_host: '{{ mysql_host }}'
@@ -166,7 +166,7 @@
 
     # ============================================================
     - name: Privs | Update user with a long privileges list (mysql has a special multiline grant output)
-      mysql_user:
+      mariadb_user:
         <<: *mysql_params
         name: '{{ user_name_2 }}'
         host: '%'
@@ -180,7 +180,7 @@
           - result is changed
 
     - name: Privs | Test idempotency with a long privileges list (expect ok)
-      mysql_user:
+      mariadb_user:
         <<: *mysql_params
         name: '{{ user_name_2 }}'
         host: '%'
@@ -201,7 +201,7 @@
 
     # ============================================================
     - name: Privs | Grant all privileges with grant option
-      mysql_user:
+      mariadb_user:
         <<: *mysql_params
         name: '{{ user_name_2 }}'
         password: '{{ user_password_2 }}'
@@ -226,7 +226,7 @@
           - mysql_info_about_users.users.localhost.db_user2.Grant_priv == 'Y'
 
     - name: Privs | Test idempotency (expect ok)
-      mysql_user:
+      mariadb_user:
         <<: *mysql_params
         name: '{{ user_name_2 }}'
         password: '{{ user_password_2 }}'
@@ -254,7 +254,7 @@
 
     # ============================================================
     - name: Privs | Update user with invalid privileges
-      mysql_user:
+      mariadb_user:
         <<: *mysql_params
         name: '{{ user_name_2 }}'
         password: '{{ user_password_2 }}'

@@ -9,7 +9,7 @@
   block:
     # Get primary log file and log pos:
     - name: Get primary status
-      mysql_replication:
+      mariadb_replication:
         <<: *mysql_params
         login_port: '{{ mysql_primary_port }}'
         mode: getprimary
@@ -17,7 +17,7 @@
 
     # Test changereplication mode:
     - name: Run replication
-      mysql_replication:
+      mariadb_replication:
         <<: *mysql_params
         login_port: '{{ mysql_replica1_port }}'
         mode: changereplication
@@ -45,7 +45,7 @@
 
     # Test changereplication mode with channel:
     - name: Run replication
-      mysql_replication:
+      mariadb_replication:
         <<: *mysql_params
         login_port: '{{ mysql_replica1_port }}'
         mode: changereplication

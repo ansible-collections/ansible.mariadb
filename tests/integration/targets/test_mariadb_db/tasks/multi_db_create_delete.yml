@@ -15,7 +15,7 @@
 # ==========================================================================
 # Initial check - To confirm that database does not exist before executing check mode tasks
 - name: Drop databases before test
-  mysql_db:
+  mariadb_db:
     login_user: '{{ mysql_user }}'
     login_password: '{{ mysql_password }}'
     login_host: '{{ mysql_host }}'
@@ -40,7 +40,7 @@
 # ==========================================================================
 # Create multiple databases that does not exists (check mode)
 - name: Create multiple databases that does not exists (check mode)
-  mysql_db:
+  mariadb_db:
     login_user: '{{ mysql_user }}'
     login_password: '{{ mysql_password }}'
     login_host: '{{ mysql_host }}'
@@ -72,7 +72,7 @@
 # ==========================================================================
 # Create multiple databases
 - name: Create multiple databases
-  mysql_db:
+  mariadb_db:
     login_user: '{{ mysql_user }}'
     login_password: '{{ mysql_password }}'
     login_host: '{{ mysql_host }}'
@@ -104,7 +104,7 @@
 # =========================================================================
 # Recreate already existing databases (check mode)
 - name: Recreate already existing databases (check mode)
-  mysql_db:
+  mariadb_db:
     login_user: '{{ mysql_user }}'
     login_password: '{{ mysql_password }}'
     login_host: '{{ mysql_host }}'
@@ -136,7 +136,7 @@
 # ==========================================================================
 # Recreate same databases
 - name: Recreate multiple databases
-  mysql_db:
+  mariadb_db:
     login_user: '{{ mysql_user }}'
     login_password: '{{ mysql_password }}'
     login_host: '{{ mysql_host }}'
@@ -167,7 +167,7 @@
 # ==========================================================================
 # Delete one of the databases (db2 here)
 - name: Delete db2 database
-  mysql_db:
+  mariadb_db:
     login_user: '{{ mysql_user }}'
     login_password: '{{ mysql_password }}'
     login_host: '{{ mysql_host }}'
@@ -196,7 +196,7 @@
 # =========================================================================
 # Recreate multiple databases in which few databases does not exists (check mode)
 - name: Recreate multiple databases in which few databases does not exists (check mode)
-  mysql_db:
+  mariadb_db:
     login_user: '{{ mysql_user }}'
     login_password: '{{ mysql_password }}'
     login_host: '{{ mysql_host }}'
@@ -228,7 +228,7 @@
 # ==========================================================================
 # Create multiple databases
 - name: Create multiple databases
-  mysql_db:
+  mariadb_db:
     login_user: '{{ mysql_user }}'
     login_password: '{{ mysql_password }}'
     login_host: '{{ mysql_host }}'
@@ -268,7 +268,7 @@
 # ==========================================================================
 # Dump existing databases (check mode)
 - name: Dump existing databases (check mode)
-  mysql_db:
+  mariadb_db:
     login_user: '{{ mysql_user }}'
     login_password: '{{ mysql_password }}'
     login_host: '{{ mysql_host }}'
@@ -305,7 +305,7 @@
 # ==========================================================================
 # Dump existing and non-existing databases (check mode)
 - name: Dump existing and non-existing databases (check mode)
-  mysql_db:
+  mariadb_db:
     login_user: '{{ mysql_user }}'
     login_password: '{{ mysql_password }}'
     login_host: '{{ mysql_host }}'
@@ -345,7 +345,7 @@
 # ==========================================================================
 # Dump non-existing databases (check mode)
 - name: Dump non-existing databases (check mode)
-  mysql_db:
+  mariadb_db:
     login_user: '{{ mysql_user }}'
     login_password: '{{ mysql_password }}'
     login_host: '{{ mysql_host }}'
@@ -386,7 +386,7 @@
 # Dump existing databases
 
 - name: Dump existing databases
-  mysql_db:
+  mariadb_db:
     login_user: '{{ mysql_user }}'
     login_password: '{{ mysql_password }}'
     login_host: '{{ mysql_host }}'
@@ -439,7 +439,7 @@
     state: absent
 
 - name: Dump existing databases
-  mysql_db:
+  mariadb_db:
     login_user: '{{ mysql_user }}'
     login_password: '{{ mysql_password }}'
     login_host: '{{ mysql_host }}'
@@ -477,7 +477,7 @@
 # ==========================================================================
 # Delete multiple databases which already exists (check mode)
 - name: Delete multiple databases which already exists (check mode)
-  mysql_db:
+  mariadb_db:
     login_user: '{{ mysql_user }}'
     login_password: '{{ mysql_password }}'
     login_host: '{{ mysql_host }}'
@@ -507,7 +507,7 @@
 # ==========================================================================
 # Delete multiple databases
 - name: Delete multiple databases
-  mysql_db:
+  mariadb_db:
     login_user: '{{ mysql_user }}'
     login_password: '{{ mysql_password }}'
     login_host: '{{ mysql_host }}'
@@ -537,7 +537,7 @@
 # ==========================================================================
 # Delete non existing databases (check mode)
 - name: Delete non existing databases (check mode)
-  mysql_db:
+  mariadb_db:
     login_user: '{{ mysql_user }}'
     login_password: '{{ mysql_password }}'
     login_host: '{{ mysql_host }}'
@@ -567,7 +567,7 @@
 # ==========================================================================
 # Delete already deleted databases
 - name: Delete already deleted databases
-  mysql_db:
+  mariadb_db:
     login_user: '{{ mysql_user }}'
     login_password: '{{ mysql_password }}'
     login_host: '{{ mysql_host }}'
@@ -596,7 +596,7 @@
 # ==========================================================================
 # Delete all databases
 - name: Delete all databases
-  mysql_db:
+  mariadb_db:
     login_user: '{{ mysql_user }}'
     login_password: '{{ mysql_password }}'
     login_host: '{{ mysql_host }}'

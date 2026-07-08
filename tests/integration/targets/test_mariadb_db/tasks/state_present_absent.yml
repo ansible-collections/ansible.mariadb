@@ -28,7 +28,7 @@
   failed_when: "'1049' not in mysql_db_check.stderr"
 
 - name: State Present Absent | Test state=present for a database name (expect changed=true)
-  mysql_db:
+  mariadb_db:
     login_user: '{{ mysql_user }}'
     login_password: '{{ mysql_password }}'
     login_host: '{{ mysql_host }}'
@@ -57,7 +57,7 @@
 
 # ============================================================
 - name: State Present Absent | Test state=absent for a database name (expect changed=true)
-  mysql_db:
+  mariadb_db:
     login_user: '{{ mysql_user }}'
     login_password: '{{ mysql_password }}'
     login_host: '{{ mysql_host }}'
@@ -86,7 +86,7 @@
 
 # ============================================================
 - name: State Present Absent | Test mysql_db encoding param not valid - issue 8075
-  mysql_db:
+  mariadb_db:
     login_user: '{{ mysql_user }}'
     login_password: '{{ mysql_password }}'
     login_host: '{{ mysql_host }}'
@@ -106,7 +106,7 @@
 
 # ============================================================
 - name: State Present Absent | Test mysql_db using a valid encoding utf8 (expect changed=true)
-  mysql_db:
+  mariadb_db:
     login_user: '{{ mysql_user }}'
     login_password: '{{ mysql_password }}'
     login_host: '{{ mysql_host }}'
@@ -134,7 +134,7 @@
       - "'utf8' in result.stdout"
 
 - name: State Present Absent | Remove database
-  mysql_db:
+  mariadb_db:
     login_user: '{{ mysql_user }}'
     login_password: '{{ mysql_password }}'
     login_host: '{{ mysql_host }}'
@@ -144,7 +144,7 @@
 
 # ============================================================
 - name: State Present Absent | Test mysql_db using valid encoding binary (expect changed=true)
-  mysql_db:
+  mariadb_db:
     login_user: '{{ mysql_user }}'
     login_password: '{{ mysql_password }}'
     login_host: '{{ mysql_host }}'
@@ -172,7 +172,7 @@
       - "'binary' in result.stdout"
 
 - name: State Present Absent | Remove database
-  mysql_db:
+  mariadb_db:
     login_user: '{{ mysql_user }}'
     login_password: '{{ mysql_password }}'
     login_host: '{{ mysql_host }}'
@@ -182,7 +182,7 @@
 
 # ============================================================
 - name: State Present Absent | Create user1 to access database dbuser1
-  mysql_user:
+  mariadb_user:
     login_user: '{{ mysql_user }}'
     login_password: '{{ mysql_password }}'
     login_host: '{{ mysql_host }}'
@@ -194,7 +194,7 @@
     state: present
 
 - name: State Present Absent | Create database dbuser1 using user1
-  mysql_db:
+  mariadb_db:
     login_user: user1
     login_password: 'Hfd6fds^dfA8Ga'
     login_host: '{{ mysql_host }}'
@@ -219,7 +219,7 @@
 
 # ============================================================
 - name: State Present Absent | Create user2 to access database with privilege select only
-  mysql_user:
+  mariadb_user:
     login_user: '{{ mysql_user }}'
     login_password: '{{ mysql_password }}'
     login_host: '{{ mysql_host }}'
@@ -230,7 +230,7 @@
     state: present
 
 - name: State Present Absent | Create database dbuser2 using user2 with no privilege to create (expect failed=true)
-  mysql_db:
+  mariadb_db:
     login_user: user2
     login_password: 'kjsfd&F7safjad'
     login_host: '{{ mysql_host }}'
@@ -257,7 +257,7 @@
 
 # ============================================================
 - name: State Present Absent | Delete database using user2 with no privilege to delete (expect failed=true)
-  mysql_db:
+  mariadb_db:
     login_user: user2
     login_password: 'kjsfd&F7safjad'
     login_host: '{{ mysql_host }}'
@@ -284,7 +284,7 @@
 
 # ============================================================
 - name: State Present Absent | Delete database using user1 with all privilege to delete a database (expect changed=true)
-  mysql_db:
+  mariadb_db:
     login_user: user1
     login_password: 'Hfd6fds^dfA8Ga'
     login_host: '{{ mysql_host }}'
@@ -327,7 +327,7 @@
   register: bin_log_position_1
 
 - name: State Present Absent | Create database with sql_log_bin enabled
-  mysql_db:
+  mariadb_db:
     login_user: '{{ mysql_user }}'
     login_password: '{{ mysql_password }}'
     login_host: '{{ mysql_host }}'
@@ -346,7 +346,7 @@
       - bin_log_position_1.stdout_lines[2] != bin_log_position_2.stdout_lines[2]
 
 - name: State Present Absent | Remove database with sql_log_bin enabled
-  mysql_db:
+  mariadb_db:
     login_user: '{{ mysql_user }}'
     login_password: '{{ mysql_password }}'
     login_host: '{{ mysql_host }}'
@@ -370,7 +370,7 @@
   register: bin_log_position_4
 
 - name: State Present Absent | Create database with sql_log_bin disabled
-  mysql_db:
+  mariadb_db:
     login_user: '{{ mysql_user }}'
     login_password: '{{ mysql_password }}'
     login_host: '{{ mysql_host }}'
@@ -389,7 +389,7 @@
       - bin_log_position_4.stdout_lines[2] == bin_log_position_5.stdout_lines[2]
 
 - name: State Present Absent | Remove database with sql_log_bin disabled
-  mysql_db:
+  mariadb_db:
     login_user: '{{ mysql_user }}'
     login_password: '{{ mysql_password }}'
     login_host: '{{ mysql_host }}'

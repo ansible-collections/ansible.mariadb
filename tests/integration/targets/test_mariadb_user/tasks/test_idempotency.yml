@@ -16,7 +16,7 @@
         user_password: "{{ user_password_1 }}"
 
     - name: Idempotency | Create user that already exist (expect changed=false)
-      mysql_user:
+      mariadb_user:
         <<: *mysql_params
         name: "{{ user_name_1 }}"
         password: "{{ user_password_1 }}"
@@ -42,7 +42,7 @@
     # Removal
     # ========================================================================
     - name: Idempotency | Remove user (expect changed=true)
-      mysql_user:
+      mariadb_user:
         <<: *mysql_params
         name: "{{ user_name_1 }}"
         state: absent
@@ -54,7 +54,7 @@
           - result is changed
 
     - name: Idempotency | Remove user that doesn't exists (expect changed=false)
-      mysql_user:
+      mariadb_user:
         <<: *mysql_params
         name: "{{ user_name_1 }}"
         state: absent
@@ -76,7 +76,7 @@
         user_password: 'KJFDY&D*Sfuysf'
 
     - name: Idempotency | Remove blank  user with hosts=all (expect changed)
-      mysql_user:
+      mariadb_user:
         <<: *mysql_params
         name: ""
         host_all: true
@@ -89,7 +89,7 @@
           - result is changed
 
     - name: Idempotency | Remove blank user with hosts=all (expect ok)
-      mysql_user:
+      mariadb_user:
         <<: *mysql_params
         name: ""
         host_all: true

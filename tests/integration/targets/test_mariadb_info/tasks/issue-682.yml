@@ -15,7 +15,7 @@
         - db_engine != 'mysql' or db_version is version('8.0.23', '<')
 
     - name: Test mysql_info with slave_status filter on replica database
-      mysql_info:
+      mariadb_info:
         <<: *mysql_params
         filter: slave_status
       register: slave_status_result

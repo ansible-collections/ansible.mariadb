@@ -10,7 +10,7 @@
 
 # Auxiliary step:
 - name: Get master status
-  mysql_replication:
+  mariadb_replication:
     login_host: '{{ mysql_host }}'
     login_port: "{{ primary_db.port }}"
     mode: getmaster
@@ -18,7 +18,7 @@
 
 # Set master_use_gtid disabled:
 - name: Run replication
-  mysql_replication:
+  mariadb_replication:
     login_host: '{{ mysql_host }}'
     login_port: "{{ replica_db.port }}"
     mode: changemaster
@@ -37,13 +37,13 @@
 
 # Start standby for further tests:
 - name: Start standby
-  mysql_replication:
+  mariadb_replication:
     login_host: '{{ mysql_host }}'
     login_port: "{{ primary_db.port }}"
     mode: startslave
 
 - name: Get standby status
-  mysql_replication:
+  mariadb_replication:
     login_host: '{{ mysql_host }}'
     login_port: "{{ replica_db.port }}"
     mode: getslave
@@ -55,7 +55,7 @@
 
 # Stop standby for further tests:
 - name: Stop standby
-  mysql_replication:
+  mariadb_replication:
     login_host: '{{ mysql_host }}'
     login_port: "{{ replica_db.port }}"
     mode: stopslave
@@ -66,7 +66,7 @@
 
 # Auxiliary step:
 - name: Get master status
-  mysql_replication:
+  mariadb_replication:
     login_host: '{{ mysql_host }}'
     login_port: "{{ primary_db.port }}"
     mode: getmaster
@@ -74,7 +74,7 @@
 
 # Set master_use_gtid current_pos:
 - name: Run replication
-  mysql_replication:
+  mariadb_replication:
     login_host: '{{ mysql_host }}'
     login_port: "{{ replica_db.port }}"
     mode: changemaster
@@ -93,13 +93,13 @@
 
 # Start standby for further tests:
 - name: Start standby
-  mysql_replication:
+  mariadb_replication:
     login_host: '{{ mysql_host }}'
     login_port: "{{ primary_db.port }}"
     mode: startslave
 
 - name: Get standby status
-  mysql_replication:
+  mariadb_replication:
     login_host: '{{ mysql_host }}'
     login_port: "{{ replica_db.port }}"
     mode: getslave
@@ -111,7 +111,7 @@
 
 # Stop standby for further tests:
 - name: Stop standby
-  mysql_replication:
+  mariadb_replication:
     login_host: '{{ mysql_host }}'
     login_port: "{{ replica_db.port }}"
     mode: stopslave
@@ -122,7 +122,7 @@
 
 # Auxiliary step:
 - name: Get master status
-  mysql_replication:
+  mariadb_replication:
     login_host: '{{ mysql_host }}'
     login_port: "{{ primary_db.port }}"
     mode: getmaster
@@ -130,7 +130,7 @@
 
 # Set master_use_gtid slave_pos:
 - name: Run replication
-  mysql_replication:
+  mariadb_replication:
     login_host: '{{ mysql_host }}'
     login_port: "{{ replica_db.port }}"
     mode: changemaster
@@ -149,13 +149,13 @@
 
 # Start standby for further tests:
 - name: Start standby
-  mysql_replication:
+  mariadb_replication:
     login_host: '{{ mysql_host }}'
     login_port: "{{ primary_db.port }}"
     mode: startslave
 
 - name: Get standby status
-  mysql_replication:
+  mariadb_replication:
     login_host: '{{ mysql_host }}'
     login_port: "{{ replica_db.port }}"
     mode: getslave
@@ -167,7 +167,7 @@
 
 # Stop standby for further tests:
 - name: Stop standby
-  mysql_replication:
+  mariadb_replication:
     login_host: '{{ mysql_host }}'
     login_port: "{{ replica_db.port }}"
     mode: stopslave

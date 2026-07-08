@@ -63,7 +63,7 @@
       when: db_engine == 'mariadb'
 
     - name: Create test database
-      mysql_db:
+      mariadb_db:
         <<: *mysql_params
         login_port: '{{ mysql_primary_port }}'
         state: present
@@ -98,7 +98,7 @@
 
     # Test getprimary mode:
     - name: Get primary status
-      mysql_replication:
+      mariadb_replication:
         <<: *mysql_params
         login_port: '{{ mysql_primary_port }}'
         mode: getprimary
@@ -113,7 +113,7 @@
 
     # Test startreplica fails without changeprimary first. This needs fail_on_error
     - name: Start replica and fail because primary is not specified; failing on error as requested
-      mysql_replication:
+      mariadb_replication:
         <<: *mysql_params
         login_port: '{{ mysql_replica1_port }}'
         mode: startreplica
@@ -129,7 +129,7 @@
 
     # Test startreplica doesn't fail if fail_on_error: no
     - name: Start replica and fail without propagating it to ansible as we were asked not to
-      mysql_replication:
+      mariadb_replication:
         <<: *mysql_params
         login_port: '{{ mysql_replica1_port }}'
         mode: startreplica
@@ -144,7 +144,7 @@
     # Test startreplica doesn't fail if there is no fail_on_error.
     # This is suboptimal because nothing happens, but it's the old behavior.
     - name: Start replica and fail without propagating it to ansible as previous versions did not fail on error
-      mysql_replication:
+      mariadb_replication:
         <<: *mysql_params
         login_port: '{{ mysql_replica1_port }}'
         mode: startreplica
@@ -206,7 +206,7 @@
 
     # Test startreplica mode:
     - name: Start replica
-      mysql_replication:
+      mariadb_replication:
         <<: *mysql_params
         login_port: '{{ mysql_replica1_port }}'
         mode: startreplica
@@ -220,7 +220,7 @@
 
     # Test getreplica mode:
     - name: Get replica status
-      mysql_replication:
+      mariadb_replication:
         <<: *mysql_params
         login_port: '{{ mysql_replica1_port }}'
         mode: getreplica
@@ -286,7 +286,7 @@
 
     # Test primary log pos has been changed:
     - name: Get replica status
-      mysql_replication:
+      mariadb_replication:
         <<: *mysql_params
         login_port: '{{ mysql_replica1_port }}'
         mode: getreplica
@@ -317,7 +317,7 @@
         - db_version is version('9.0', '<')
 
     - name: Start replica that is already running
-      mysql_replication:
+      mariadb_replication:
         <<: *mysql_params
         login_port: '{{ mysql_replica1_port }}'
         mode: startreplica
@@ -326,7 +326,7 @@
 
     # Test stopreplica mode:
     - name: Stop replica
-      mysql_replication:
+      mariadb_replication:
         <<: *mysql_params
         login_port: '{{ mysql_replica1_port }}'
         mode: stopreplica
@@ -345,7 +345,7 @@
     # master / slave related choices were removed in 3.0.0
     # https://github.com/ansible-collections/ansible.mysql/pull/252
     - name: Test invoking the module with unsupported choice
-      mysql_replication:
+      mariadb_replication:
         <<: *mysql_params
         login_port: '{{ mysql_replica1_port }}'
         mode: stopslave

@@ -32,7 +32,7 @@
   shell: 'echo "[client]" > {{ config_file }}'
 
 - name: Dump and Import | Create user for test unsafe_login_password parameter
-  mysql_user:
+  mariadb_user:
     login_user: '{{ mysql_user }}'
     login_password: '{{ mysql_password }}'
     login_host: '{{ mysql_host }}'
@@ -44,7 +44,7 @@
     state: present
 
 - name: Dump and Import | State dump/import - create database
-  mysql_db:
+  mariadb_db:
     login_user: '{{ mysql_user }}'
     login_password: '{{ mysql_password }}'
     login_host: '{{ mysql_host }}'
@@ -54,7 +54,7 @@
     check_implicit_admin: yes
 
 - name: Dump and Import | Create database
-  mysql_db:
+  mariadb_db:
     login_user: '{{ mysql_user }}'
     login_password: '{{ mysql_password }}'
     login_host: '{{ mysql_host }}'
@@ -91,7 +91,7 @@
     state: absent
 
 - name: Dump and Import | State dump without department table.
-  mysql_db:
+  mariadb_db:
     login_user: '{{ db_user }}'
     login_password: '{{ db_user_unsafe_password }}'
     login_host: '{{ mysql_host }}'
@@ -138,7 +138,7 @@
     state: file
 
 - name: Dump and Import | State dump with multiple databases in comma separated form for MySQL.
-  mysql_db:
+  mariadb_db:
     login_user: '{{ mysql_user }}'
     login_password: '{{ mysql_password }}'
     login_host: '{{ mysql_host }}'
@@ -162,7 +162,7 @@
     state: file
 
 - name: Dump and Import | State dump with multiple databases in list form via check_mode
-  mysql_db:
+  mariadb_db:
     login_user: '{{ mysql_user }}'
     login_password: '{{ mysql_password }}'
     login_host: '{{ mysql_host }}'
@@ -191,7 +191,7 @@
       - stat_result.stat.exists is defined and not stat_result.stat.exists
 
 - name: Dump and Import | State dump with multiple databases in list form.
-  mysql_db:
+  mariadb_db:
     login_user: '{{ mysql_user }}'
     login_password: '{{ mysql_password }}'
     login_host: '{{ mysql_host }}'
@@ -215,7 +215,7 @@
     state: file
 
 - name: Dump and Import | State dump/import - remove database
-  mysql_db:
+  mariadb_db:
     login_user: '{{ mysql_user }}'
     login_password: '{{ mysql_password }}'
     login_host: '{{ mysql_host }}'
@@ -224,7 +224,7 @@
     state: absent
 
 - name: Dump and Import | Remove database
-  mysql_db:
+  mariadb_db:
     login_user: '{{ mysql_user }}'
     login_password: '{{ mysql_password }}'
     login_host: '{{ mysql_host }}'
@@ -233,7 +233,7 @@
     state: absent
 
 - name: Dump and Import | Test state=import to restore the database of type {{ format_type }} (expect changed=true)
-  mysql_db:
+  mariadb_db:
     login_user: '{{ db_user }}'
     login_password: '{{ db_user_unsafe_password }}'
     login_host: '{{ mysql_host }}'
@@ -255,7 +255,7 @@
       - "'department' not in result.stdout"
 
 - name: Dump and Import | Test state=import to restore a database from multiple database dumped file1
-  mysql_db:
+  mariadb_db:
     login_user: '{{ mysql_user }}'
     login_password: '{{ mysql_password }}'
     login_host: '{{ mysql_host }}'
@@ -272,7 +272,7 @@
       - import_result is changed
 
 - name: Dump and Import | Remove database
-  mysql_db:
+  mariadb_db:
     login_user: '{{ mysql_user }}'
     login_password: '{{ mysql_password }}'
     login_host: '{{ mysql_host }}'
@@ -290,7 +290,7 @@
       - db_name2 not in mysql_result.stdout
 
 - name: Dump and Import | Test state=import to restore a database from dumped file2 (check mode)
-  mysql_db:
+  mariadb_db:
     login_user: '{{ mysql_user }}'
     login_password: '{{ mysql_password }}'
     login_host: '{{ mysql_host }}'
@@ -316,7 +316,7 @@
       - db_name2 not in mysql_result.stdout
 
 - name: Dump and Import | Test state=import to restore a database from multiple database dumped file2
-  mysql_db:
+  mariadb_db:
     login_user: '{{ mysql_user }}'
     login_password: '{{ mysql_password }}'
     login_host: '{{ mysql_host }}'
@@ -342,7 +342,7 @@
       - db_name2 in mysql_result.stdout
 
 - name: Dump and Import | Test state=dump to backup the database of type {{ format_type }} (expect changed=true)
-  mysql_db:
+  mariadb_db:
     login_user: '{{ mysql_user }}'
     login_password: '{{ mysql_password }}'
     login_host: '{{ mysql_host }}'
@@ -372,7 +372,7 @@
   command: "{{ mysql_command }} {{ db_name }} \"-e update employee set name='John Doe' where id=47\""
 
 - name: Dump and Import | Test state=import to restore the database of type {{ format_type }} (expect changed=true)
-  mysql_db:
+  mariadb_db:
     login_user: '{{ mysql_user }}'
     login_password: '{{ mysql_password }}'
     login_host: '{{ mysql_host }}'
@@ -405,7 +405,7 @@
   shell: echo 'CREATE TABLE hello (id int); CREATE ELBAT ehlo (int id);' >> '{{ wrong_sql_file }}'
 
 - name: Dump and Import | Try to import without force parameter, must fail
-  mysql_db:
+  mariadb_db:
     login_user: '{{ mysql_user }}'
     login_password: '{{ mysql_password }}'
     login_host: '{{ mysql_host }}'
@@ -422,7 +422,7 @@
       - result is failed
 
 - name: Dump and Import | Try to import with force parameter
-  mysql_db:
+  mariadb_db:
     login_user: '{{ mysql_user }}'
     login_password: '{{ mysql_password }}'
     login_host: '{{ mysql_host }}'
@@ -455,7 +455,7 @@
       shell: 'echo "SELECT 1" > ~/subdir/subdir_test.sql'
 
     - name: Dump and Import | Try to restore without chdir argument, must fail
-      mysql_db:
+      mariadb_db:
         login_user: '{{ mysql_user }}'
         login_password: '{{ mysql_password }}'
         login_host: '{{ mysql_host }}'
@@ -471,7 +471,7 @@
           - result.msg is search('Failed to open file')
 
     - name: Dump and Import | Restore with chdir argument, must pass
-      mysql_db:
+      mariadb_db:
         login_user: '{{ mysql_user }}'
         login_password: '{{ mysql_password }}'
         login_host: '{{ mysql_host }}'
@@ -490,7 +490,7 @@
 ##########
 
 - name: Dump and Import | Clean up databases
-  mysql_db:
+  mariadb_db:
     login_user: '{{ mysql_user }}'
     login_password: '{{ mysql_password }}'
     login_host: '{{ mysql_host }}'

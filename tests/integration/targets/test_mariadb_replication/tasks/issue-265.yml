@@ -11,7 +11,7 @@
     # start replica so it is available for testing
 
     - name: Start replica
-      mysql_replication:
+      mariadb_replication:
         <<: *mysql_params
         login_port: '{{ mysql_replica1_port }}'
         mode: startreplica
@@ -23,7 +23,7 @@
           - result.queries == ["START SLAVE"] or result.queries == ["START REPLICA"]
 
     - name: Drop {{ user_name_1 }} if exists
-      mysql_user:
+      mariadb_user:
         <<: *mysql_params
         name: '{{ user_name_1 }}'
         host: '{{ gateway_addr }}'
@@ -33,7 +33,7 @@
     # First test
     # check if user creation works with force_context and is replicated
     - name: create user with force_context
-      mysql_user:
+      mariadb_user:
         <<: *mysql_params
         name: "{{ user_name_1 }}"
         host: '{{ gateway_addr }}'
@@ -42,7 +42,7 @@
         force_context: yes
 
     - name: attempt connection on replica1 with newly created user (expect success)
-      mysql_replication:
+      mariadb_replication:
         mode: getprimary
         login_user: '{{ user_name_1 }}'
         login_password: '{{ user_password_1 }}'
@@ -56,7 +56,7 @@
           - result is succeeded
 
     - name: Drop user
-      mysql_user:
+      mariadb_user:
         <<: *mysql_params
         name: '{{ user_name_1 }}'
         host: '{{ gateway_addr }}'
@@ -64,7 +64,7 @@
         force_context: yes
 
     - name: attempt connection on replica with freshly removed user (expect failure)
-      mysql_replication:
+      mariadb_replication:
         mode: getprimary
         login_user: '{{ user_name_1 }}'
         login_password: '{{ user_password_1 }}'
@@ -80,7 +80,7 @@
     # Prepare replica1 for testing with a replication filter in place
     # Stop replication, create a filter and restart replication on replica1.
     - name: Stop replica
-      mysql_replication:
+      mariadb_replication:
         <<: *mysql_params
         login_port: '{{ mysql_replica1_port }}'
         mode: stopreplica
@@ -100,7 +100,7 @@
       when: db_engine == 'mariadb'
 
     - name: Start replica
-      mysql_replication:
+      mariadb_replication:
         <<: *mysql_params
         login_port: '{{ mysql_replica1_port }}'
         mode: startreplica
@@ -114,7 +114,7 @@
     # Second test
     # Filter in place, ready to test if user creation is filtered with force_context
     - name: create user with force_context
-      mysql_user:
+      mariadb_user:
         <<: *mysql_params
         name: "{{ user_name_1 }}"
         host: "{{ gateway_addr }}"
@@ -123,7 +123,7 @@
         force_context: yes
 
     - name: attempt connection on replica with newly created user (expect failure)
-      mysql_replication:
+      mariadb_replication:
         mode: getprimary
         login_user: '{{ user_name_1 }}'
         login_password: '{{ user_password_1 }}'
@@ -137,7 +137,7 @@
           - result is failed
 
     - name: Drop user
-      mysql_user:
+      mariadb_user:
         <<: *mysql_params
         name: '{{ user_name_1 }}'
         host: "{{ gateway_addr }}"
@@ -147,7 +147,7 @@
     # restore normal replica1 operation
     # Stop replication and remove the filter
     - name: Stop replica
-      mysql_replication:
+      mariadb_replication:
         <<: *mysql_params
         login_port: '{{ mysql_replica1_port }}'
         mode: stopreplica

@@ -11,7 +11,7 @@
         user_name: "{{ user_name_1 }}"
 
     - name: Revoke only grants | Create user with two grants
-      mysql_user:
+      mariadb_user:
         <<: *mysql_params
         name: "{{ user_name_1 }}"
         password: "{{ user_password_1 }}"
@@ -20,7 +20,7 @@
 
     - name: Revoke only grants | Revoke grant priv from db_user1
       register: result
-      mysql_user:
+      mariadb_user:
         <<: *mysql_params
         name: "{{ user_name_1 }}"
         password: "{{ user_password_1 }}"
@@ -35,7 +35,7 @@
 
     - name: Revoke only grants | Update db_user1 again to test idempotence
       register: result
-      mysql_user:
+      mariadb_user:
         <<: *mysql_params
         name: "{{ user_name_1 }}"
         password: "{{ user_password_1 }}"

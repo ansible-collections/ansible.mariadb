@@ -6,7 +6,7 @@
   shell: "echo \"GRANT REPLICATION SLAVE ON *.* TO '{{ replication_user }}'@'localhost' IDENTIFIED BY '{{ replication_pass }}'; FLUSH PRIVILEGES;\" | mysql -P {{ primary_db.port }} -h '{{ mysql_host }}'"
 
 - name: Create test database
-  mysql_db:
+  mariadb_db:
     login_host: '{{ mysql_host }}'
     login_port: '{{ primary_db.port }}'
     state: present
@@ -20,7 +20,7 @@
 
 # Test getmaster mode:
 - name: Get master status
-  mysql_replication:
+  mariadb_replication:
     login_host: '{{ mysql_host }}'
     login_port: "{{ primary_db.port }}"
     mode: getmaster
@@ -34,7 +34,7 @@
 
 # Test changemaster mode:
 - name: Run replication
-  mysql_replication:
+  mariadb_replication:
     login_host: '{{ mysql_host }}'
     login_port: "{{ replica_db.port }}"
     mode: changemaster
@@ -53,7 +53,7 @@
 
 # Test startslave mode:
 - name: Start slave
-  mysql_replication:
+  mariadb_replication:
     login_host: '{{ mysql_host }}'
     login_port: "{{ replica_db.port }}"
     mode: startslave
@@ -66,7 +66,7 @@
 
 # Test getslave mode:
 - name: Get replica status
-  mysql_replication:
+  mariadb_replication:
     login_host: '{{ mysql_host }}'
     login_port: "{{ replica_db.port }}"
     mode: getslave
@@ -84,7 +84,7 @@
 
 # Test stopslave mode:
 - name: Stop slave
-  mysql_replication:
+  mariadb_replication:
     login_host: '{{ mysql_host }}'
     login_port: "{{ replica_db.port }}"
     mode: stopslave

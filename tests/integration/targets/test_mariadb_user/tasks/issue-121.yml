@@ -16,7 +16,7 @@
       delegate_to: localhost
 
     - name: Issue-121 | Drop mysql user if exists
-      mysql_user:
+      mariadb_user:
         <<: *mysql_params
         name: '{{ item }}'
         host_all: true
@@ -27,7 +27,7 @@
         - "{{ user_name_2 }}"
 
     - name: Issue-121 | Create user with REQUIRESSL privilege (expect failure)
-      mysql_user:
+      mariadb_user:
         <<: *mysql_params
         name: "{{ user_name_1 }}"
         password: "{{ user_password_1 }}"
@@ -44,7 +44,7 @@
     - name: >-
         Issue-121 | Create user with both REQUIRESSL privilege and an incompatible
         tls_requires option
-      mysql_user:
+      mariadb_user:
         <<: *mysql_params
         name: "{{ user_name_1 }}"
         host: '{{ gateway_addr }}'
@@ -64,7 +64,7 @@
           - result.msg is search('Error granting privileges')
 
     - name: Issue-121 | Teardown | Drop mysql user
-      mysql_user:
+      mariadb_user:
         <<: *mysql_params
         name: '{{ item }}'
         host_all: true

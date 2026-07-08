@@ -10,14 +10,14 @@
   block:
 
     - name: Resource limits | Drop mysql user {{ user_name_1 }} if exists
-      mysql_user:
+      mariadb_user:
         <<: *mysql_params
         name: '{{ user_name_1 }}'
         host_all: true
         state: absent
 
     - name: Resource limits | Create mysql user {{ user_name_1 }} with resource limits in check_mode
-      mysql_user:
+      mariadb_user:
         <<: *mysql_params
         name: '{{ user_name_1 }}'
         password: '{{ user_password_1 }}'
@@ -34,7 +34,7 @@
           - result is changed
 
     - name: Resource limits | Create mysql user {{ user_name_1 }} with resource limits in actual mode
-      mysql_user:
+      mariadb_user:
         <<: *mysql_params
         name: '{{ user_name_1 }}'
         password: '{{ user_password_1 }}'
@@ -49,7 +49,7 @@
           - result is changed
 
     - name: Resource limits | Retrieve user
-      mysql_query:
+      mariadb_query:
         <<: *mysql_params
         query: >
           SELECT User FROM mysql.user
@@ -65,7 +65,7 @@
           - result.rowcount[0] == 1
 
     - name: Resource limits | Try to set the same limits again in check mode
-      mysql_user:
+      mariadb_user:
         <<: *mysql_params
         name: '{{ user_name_1 }}'
         state: present
@@ -81,7 +81,7 @@
           - result is not changed
 
     - name: Resource limits | Try to set the same limits again in actual mode
-      mysql_user:
+      mariadb_user:
         <<: *mysql_params
         name: '{{ user_name_1 }}'
         state: present
@@ -96,7 +96,7 @@
           - result is not changed
 
     - name: Resource limits | Change limits
-      mysql_user:
+      mariadb_user:
         <<: *mysql_params
         name: '{{ user_name_1 }}'
         password: '{{ user_password_1 }}'
@@ -112,7 +112,7 @@
           - result is changed
 
     - name: Resource limits | Get user limits
-      mysql_query:
+      mariadb_query:
         <<: *mysql_params
         query: >
           SELECT User FROM mysql.user

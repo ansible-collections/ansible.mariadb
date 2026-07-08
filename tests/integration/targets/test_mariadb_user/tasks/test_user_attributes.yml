@@ -17,7 +17,7 @@
 
       # Check mode
       - name: Attributes | Attempt to create user with attributes with mariadb in check mode
-        mysql_user:
+        mariadb_user:
           <<: *mysql_params
           name: '{{ user_name_2 }}'
           host: '%'
@@ -29,7 +29,7 @@
         check_mode: yes
 
       - name: Attributes | Run query to verify user creation with attributes fails with mariadb in check mode
-        mysql_query:
+        mariadb_query:
           <<: *mysql_params
           query: 'SELECT user FROM mysql.user WHERE user = "{{ user_name_2 }}" AND host = "%"'
         ignore_errors: yes
@@ -43,7 +43,7 @@
 
       # Real mode
       - name: Attributes | Attempt to create user with attributes with mariadb
-        mysql_user:
+        mariadb_user:
           <<: *mysql_params
           name: '{{ user_name_2 }}'
           host: '%'
@@ -54,7 +54,7 @@
         register: result_module
 
       - name: Attributes | Run query to verify user creation with attributes fails with mariadb
-        mysql_query:
+        mariadb_query:
           <<: *mysql_params
           query: 'SELECT user FROM mysql.user WHERE user = "{{ user_name_2 }}" AND host = "%"'
         register: result_query
@@ -74,7 +74,7 @@
 
       # Check mode
       - name: Attributes | Test creating a user with no attributes in check mode
-        mysql_user:
+        mariadb_user:
           <<: *mysql_params
           name: '{{ user_name_2 }}'
           host: '%'
@@ -83,7 +83,7 @@
         check_mode: yes
 
       - name: Attributes | Run query to verify user creation with no attributes did not take place in check mode
-        mysql_query:
+        mariadb_query:
           <<: *mysql_params
           query: 'SELECT user FROM mysql.user WHERE user = "{{ user_name_2 }}" AND host = "%"'
         register: result_query
@@ -97,7 +97,7 @@
 
       # Real mode
       - name: Attributes | Test creating a user with no attributes
-        mysql_user:
+        mariadb_user:
           <<: *mysql_params
           name: '{{ user_name_2 }}'
           host: '%'
@@ -105,7 +105,7 @@
         register: result_module
 
       - name: Attributes | Run query to verify created user without attributes
-        mysql_query:
+        mariadb_query:
           <<: *mysql_params
           query: 'SELECT attribute FROM INFORMATION_SCHEMA.USER_ATTRIBUTES WHERE user = "{{ user_name_2 }}" AND host = "%"'
         register: result_query
@@ -128,7 +128,7 @@
 
       # Check mode
       - name: Attributes | Test creating a user with attributes in check mode
-        mysql_user:
+        mariadb_user:
           <<: *mysql_params
           name: '{{ user_name_2 }}'
           host: '%'
@@ -139,7 +139,7 @@
         check_mode: yes
 
       - name: Attributes | Run query to verify user creation did not take place in check mode
-        mysql_query:
+        mariadb_query:
           <<: *mysql_params
           query: 'SELECT user FROM mysql.user WHERE user = "{{ user_name_2 }}" AND host = "%"'
         register: result_query
@@ -153,7 +153,7 @@
 
       # Real mode
       - name: Attributes | Test creating a user with attributes
-        mysql_user:
+        mariadb_user:
           <<: *mysql_params
           name: '{{ user_name_2 }}'
           host: '%'
@@ -163,7 +163,7 @@
         register: result_module
 
       - name: Attributes | Run query to verify created user attributes
-        mysql_query:
+        mariadb_query:
           <<: *mysql_params
           query: 'SELECT attribute FROM INFORMATION_SCHEMA.USER_ATTRIBUTES WHERE user = "{{ user_name_2 }}" AND host = "%"'
         register: result_query
@@ -181,7 +181,7 @@
 
       # Check mode
       - name: Attributes | Test appending attributes to an existing user in check mode
-        mysql_user:
+        mariadb_user:
           <<: *mysql_params
           name: '{{ user_name_2 }}'
           host: '%'
@@ -191,7 +191,7 @@
         check_mode: yes
 
       - name: Attributes | Run query to check appended attributes in check mode
-        mysql_query:
+        mariadb_query:
           <<: *mysql_params
           query: 'SELECT attribute FROM INFORMATION_SCHEMA.USER_ATTRIBUTES WHERE user = "{{ user_name_2 }}" AND host = "%"'
         register: result_query
@@ -206,7 +206,7 @@
 
       # Real mode
       - name: Attributes | Test appending attributes to an existing user
-        mysql_user:
+        mariadb_user:
           <<: *mysql_params
           name: '{{ user_name_2 }}'
           host: '%'
@@ -215,7 +215,7 @@
         register: result_module
 
       - name: Attributes | Run query to check appended attributes
-        mysql_query:
+        mariadb_query:
           <<: *mysql_params
           query: 'SELECT attribute FROM INFORMATION_SCHEMA.USER_ATTRIBUTES WHERE user = "{{ user_name_2 }}" AND host = "%"'
         register: result_query
@@ -235,7 +235,7 @@
 
       # Check mode
       - name: Attributes | Test updating attributes on an existing user in check mode
-        mysql_user:
+        mariadb_user:
           <<: *mysql_params
           name: '{{ user_name_2 }}'
           host: '%'
@@ -245,7 +245,7 @@
         register: result_module
 
       - name: Attributes | Run query to verify updated attribute in check mode
-        mysql_query:
+        mariadb_query:
           <<: *mysql_params
           query: 'SELECT attribute FROM INFORMATION_SCHEMA.USER_ATTRIBUTES WHERE user = "{{ user_name_2 }}" AND host = "%"'
         register: result_query
@@ -259,7 +259,7 @@
 
       # Real mode
       - name: Attributes | Test updating attributes on an existing user
-        mysql_user:
+        mariadb_user:
           <<: *mysql_params
           name: '{{ user_name_2 }}'
           host: '%'
@@ -268,7 +268,7 @@
         register: result_module
 
       - name: Attributes | Run query to verify updated attribute
-        mysql_query:
+        mariadb_query:
           <<: *mysql_params
           query: 'SELECT attribute FROM INFORMATION_SCHEMA.USER_ATTRIBUTES WHERE user = "{{ user_name_2 }}" AND host = "%"'
         register: result_query
@@ -286,7 +286,7 @@
 
       # Check mode
       - name: Attributes | Test attribute idempotency by trying to change an already correct attribute in check mode
-        mysql_user:
+        mariadb_user:
           <<: *mysql_params
           name: '{{ user_name_2 }}'
           host: '%'
@@ -296,7 +296,7 @@
         check_mode: yes
 
       - name: Attributes | Run query to verify idempotency of already correct attribute in check mode
-        mysql_query:
+        mariadb_query:
           <<: *mysql_params
           query: 'SELECT attribute FROM INFORMATION_SCHEMA.USER_ATTRIBUTES WHERE user = "{{ user_name_2 }}" AND host = "%"'
         register: result_query
@@ -310,7 +310,7 @@
 
       # Real mode
       - name: Attributes | Test attribute idempotency by trying to change an already correct attribute
-        mysql_user:
+        mariadb_user:
           <<: *mysql_params
           name: '{{ user_name_2 }}'
           host: '%'
@@ -319,7 +319,7 @@
         register: result_module
 
       - name: Attributes | Run query to verify idempotency of already correct attribute
-        mysql_query:
+        mariadb_query:
           <<: *mysql_params
           query: 'SELECT attribute FROM INFORMATION_SCHEMA.USER_ATTRIBUTES WHERE user = "{{ user_name_2 }}" AND host = "%"'
         register: result_query
@@ -337,7 +337,7 @@
 
       # Check mode
       - name: Attributes | Test attribute idempotency by not specifying attribute parameter in check mode
-        mysql_user:
+        mariadb_user:
           <<: *mysql_params
           name: '{{ user_name_2 }}'
           host: '%'
@@ -345,7 +345,7 @@
         check_mode: yes
 
       - name: Attributes | Run query to verify idempotency when not specifying attribute parameter in check mode
-        mysql_query:
+        mariadb_query:
           <<: *mysql_params
           query: 'SELECT attribute FROM INFORMATION_SCHEMA.USER_ATTRIBUTES WHERE user = "{{ user_name_2 }}" AND host = "%"'
         register: result_query
@@ -359,14 +359,14 @@
 
       # Real mode
       - name: Attributes | Test attribute idempotency by not specifying attribute parameter
-        mysql_user:
+        mariadb_user:
           <<: *mysql_params
           name: '{{ user_name_2 }}'
           host: '%'
         register: result_module
 
       - name: Attributes | Run query to verify idempotency when not specifying attribute parameter
-        mysql_query:
+        mariadb_query:
           <<: *mysql_params
           query: 'SELECT attribute FROM INFORMATION_SCHEMA.USER_ATTRIBUTES WHERE user = "{{ user_name_2 }}" AND host = "%"'
         register: result_query
@@ -384,7 +384,7 @@
 
       # Check mode
       - name: Attributes | Test deleting attributes on an existing user in check mode
-        mysql_user:
+        mariadb_user:
           <<: *mysql_params
           name: '{{ user_name_2 }}'
           host: '%'
@@ -394,7 +394,7 @@
         check_mode: yes
 
       - name: Attributes | Run query to verify deleted attribute in check mode
-        mysql_query:
+        mariadb_query:
           <<: *mysql_params
           query: 'SELECT attribute FROM INFORMATION_SCHEMA.USER_ATTRIBUTES WHERE user = "{{ user_name_2 }}" AND host = "%"'
         register: result_query
@@ -408,7 +408,7 @@
 
       # Real mode
       - name: Attributes | Test deleting attributes on an existing user
-        mysql_user:
+        mariadb_user:
           <<: *mysql_params
           name: '{{ user_name_2 }}'
           host: '%'
@@ -417,7 +417,7 @@
         register: result_module
 
       - name: Attributes | Run query to verify deleted attribute
-        mysql_query:
+        mariadb_query:
           <<: *mysql_params
           query: 'SELECT attribute FROM INFORMATION_SCHEMA.USER_ATTRIBUTES WHERE user = "{{ user_name_2 }}" AND host = "%"'
         register: result_query
@@ -435,7 +435,7 @@
 
       # Check mode
       - name: Attributes | Test attributes return value when no attributes exist in check mode
-        mysql_user:
+        mariadb_user:
           <<: *mysql_params
           name: '{{ user_name_2 }}'
           host: '%'
@@ -452,7 +452,7 @@
 
       # Real mode
       - name: Attributes | Test attributes return value when no attributes exist
-        mysql_user:
+        mariadb_user:
           <<: *mysql_params
           name: '{{ user_name_2 }}'
           host: '%'

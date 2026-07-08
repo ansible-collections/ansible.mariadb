@@ -9,7 +9,7 @@
   block:
 
     - name: Tls reqs | Create user with TLS requirements in check mode (expect changed=true)
-      mysql_user:
+      mariadb_user:
         <<: *mysql_params
         name: "{{ user_name_1 }}"
         password: "{{ user_password_1 }}"
@@ -28,7 +28,7 @@
         user_name: "{{user_name_1}}"
 
     - name: Tls reqs | Create user with TLS requirements state=present (expect changed=true)
-      mysql_user:
+      mariadb_user:
         <<: *mysql_params
         name: '{{ item[0] }}'
         password: '{{ user_password_1 }}'
@@ -97,7 +97,7 @@
       when: ansible_distribution != 'CentOS' or ansible_distribution_major_version != '6'
 
     - name: Tls reqs | Modify user with TLS requirements state=present in check mode (expect changed=true)
-      mysql_user:
+      mariadb_user:
         <<: *mysql_params
         name: '{{ user_name_1 }}'
         password: '{{ user_password_1 }}'
@@ -132,7 +132,7 @@
         reqs: "{{ (old_result is skipped | ternary(new_result, old_result)).stdout.split('REQUIRE')[1].split(separator)[0].strip() }}"
 
     - name: Tls reqs | Modify user with TLS requirements state=present (expect changed=true)
-      mysql_user:
+      mariadb_user:
         <<: *mysql_params
         name: '{{ user_name_1 }}'
         password: '{{ user_password_1 }}'
@@ -160,7 +160,7 @@
         reqs: "{{ (old_result is skipped | ternary(new_result, old_result)).stdout.split('REQUIRE')[1].split(separator)[0].strip() }}"
 
     - name: Tls reqs | Remove TLS requirements from user (expect changed=true)
-      mysql_user:
+      mariadb_user:
         <<: *mysql_params
         name: '{{ user_name_1 }}'
         password: '{{ user_password_1 }}'

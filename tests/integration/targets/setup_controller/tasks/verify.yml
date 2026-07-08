@@ -10,7 +10,7 @@
   block:
 
     - name: Query Primary container over TCP for MySQL/MariaDB version
-      mysql_info:
+      mariadb_info:
         <<: *mysql_params
         filter:
           - version

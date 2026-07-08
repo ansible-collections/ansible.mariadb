@@ -16,7 +16,7 @@
         - db_version is version('8.0.0', '<')
 
     - name: User grants with roles applied | Create test databases
-      mysql_db:
+      mariadb_db:
         <<: *mysql_params
         name: '{{ item }}'
         state: present
@@ -25,7 +25,7 @@
         - data2
 
     - name: User grants with roles applied | Create user with privileges
-      mysql_user:
+      mariadb_user:
         <<: *mysql_params
         name: '{{ user_name_3 }}'
         password: '{{ user_password_3 }}'
@@ -45,14 +45,14 @@
           - "'GRANT SELECT ON `data2`.*' in result.stdout"
 
     - name: User grants with roles applied | Create role
-      mysql_role:
+      mariadb_role:
         <<: *mysql_params
         name: test231
         members:
           - '{{ user_name_3 }}@localhost'
 
     - name: User grants with roles applied | Try to change privs
-      mysql_user:
+      mariadb_user:
         <<: *mysql_params
         name: '{{ user_name_3 }}'
         priv:
@@ -73,7 +73,7 @@
     ##########
     # Clean up
     - name: User grants with roles applied | Drop test databases
-      mysql_db:
+      mariadb_db:
         <<: *mysql_params
         name: '{{ item }}'
         state: absent
@@ -86,7 +86,7 @@
         user_name: "{{ user_name_3 }}"
 
     - name: User grants with roles applied | Drop test role
-      mysql_role:
+      mariadb_role:
         <<: *mysql_params
         name: test231
         state: absent

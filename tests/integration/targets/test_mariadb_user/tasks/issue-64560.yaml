@@ -9,7 +9,7 @@
   block:
 
     - name: Issue-64560 | Set root password
-      mysql_user:
+      mariadb_user:
         <<: *mysql_params
         name: root
         host: '%'
@@ -23,7 +23,7 @@
           - result is changed
 
     - name: Issue-64560 | Set root password again
-      mysql_user:
+      mariadb_user:
         login_user: '{{ mysql_user }}'
         login_password: '{{ root_password }}'
         login_host: '{{ mysql_host }}'
@@ -49,7 +49,7 @@
         - db_version is version('9.7', '>=')
 
     - name: Issue-64560 | Set root password again
-      mysql_user:
+      mariadb_user:
         login_user: '{{ mysql_user }}'
         login_password: '{{ root_password }}'
         login_host: '{{ mysql_host }}'

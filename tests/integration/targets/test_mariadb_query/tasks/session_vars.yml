@@ -9,13 +9,13 @@
   block:
 
   - name: Select sql_log_bin without session vars
-    mysql_query:
+    mariadb_query:
       <<: *mysql_params
       query: SELECT @@session.sql_log_bin AS sql_log_bin
     register: result_without_vars
 
   - name: Select sql_log_bin with session vars
-    mysql_query:
+    mariadb_query:
       <<: *mysql_params
       query: SELECT @@session.sql_log_bin AS sql_log_bin
       session_vars:

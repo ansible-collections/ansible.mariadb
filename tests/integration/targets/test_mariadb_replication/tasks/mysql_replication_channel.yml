@@ -11,7 +11,7 @@
   block:
     # Get primary log file and log pos:
     - name: Get primary status
-      mysql_replication:
+      mariadb_replication:
         <<: *mysql_params
         login_port: '{{ mysql_primary_port }}'
         mode: getprimary
@@ -19,7 +19,7 @@
 
     # Test changeprimary mode:
     - name: Run replication with channel
-      mysql_replication:
+      mariadb_replication:
         <<: *mysql_params
         login_port: '{{ mysql_replica2_port }}'
         mode: changeprimary
@@ -65,7 +65,7 @@
 
     # Test startreplica mode:
     - name: Start replica with channel
-      mysql_replication:
+      mariadb_replication:
         <<: *mysql_params
         login_port: '{{ mysql_replica2_port }}'
         mode: startreplica
@@ -82,7 +82,7 @@
 
     # Test getreplica mode:
     - name: Get standby status with channel
-      mysql_replication:
+      mariadb_replication:
         <<: *mysql_params
         login_port: '{{ mysql_replica2_port }}'
         mode: getreplica
@@ -129,7 +129,7 @@
 
     # Test stopreplica mode:
     - name: Stop replica with channel
-      mysql_replication:
+      mariadb_replication:
         <<: *mysql_params
         login_port: '{{ mysql_replica2_port }}'
         mode: stopreplica
@@ -146,7 +146,7 @@
 
     # Test reset
     - name: Reset replica with channel
-      mysql_replication:
+      mariadb_replication:
         <<: *mysql_params
         login_port: '{{ mysql_replica2_port }}'
         mode: resetreplica
@@ -163,7 +163,7 @@
 
     # Test reset all
     - name: Reset replica all with channel
-      mysql_replication:
+      mariadb_replication:
         <<: *mysql_params
         login_port: '{{ mysql_replica2_port }}'
         mode: resetreplicaall

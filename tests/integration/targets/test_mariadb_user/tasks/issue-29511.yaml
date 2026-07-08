@@ -9,7 +9,7 @@
   block:
 
     - name: Issue-29511 | test setup | drop database
-      mysql_db:
+      mariadb_db:
         <<: *mysql_params
         name: "{{ item }}"
         state: absent
@@ -18,7 +18,7 @@
         - bar
 
     - name: Issue-29511 | test setup | create database
-      mysql_db:
+      mariadb_db:
         <<: *mysql_params
         name: "{{ item }}"
         state: present
@@ -41,7 +41,7 @@
       shell: "{{ mysql_command }} < {{ remote_tmp_dir }}/create-procedure.sql"
 
     - name: Issue-29511 | Create user with FUNCTION and PROCEDURE privileges
-      mysql_user:
+      mariadb_user:
         <<: *mysql_params
         name: '{{ user_name_2 }}'
         password: '{{ user_password_2 }}'
@@ -56,7 +56,7 @@
           - result is changed
 
     - name: Issue-29511 | Create user with FUNCTION and PROCEDURE privileges - Idempotent check
-      mysql_user:
+      mariadb_user:
         <<: *mysql_params
         name: '{{ user_name_2 }}'
         password: '{{ user_password_2 }}'
@@ -78,7 +78,7 @@
       when: db_version is version('9.7', '>=') and db_engine == 'mysql'
 
     - name: Issue-29511 | Test teardown | cleanup databases
-      mysql_db:
+      mariadb_db:
         <<: *mysql_params
         name: "{{ item }}"
         state: absent

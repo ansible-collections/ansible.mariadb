@@ -29,7 +29,7 @@
     insertafter: EOF
 
 - name: Config overrides | Create database using fake port to connect to, must fail
-  mysql_db:
+  mariadb_db:
     login_user: '{{ mysql_user }}'
     login_password: '{{ mysql_password }}'
     login_host: '{{ mysql_host }}'
@@ -49,7 +49,7 @@
       - result.msg is search("unable to connect to database")
 
 - name: Config overrides | Create database using default port
-  mysql_db:
+  mariadb_db:
     login_user: '{{ mysql_user }}'
     login_password: '{{ mysql_password }}'
     login_host: '{{ mysql_host }}'
@@ -75,7 +75,7 @@
 - name: >-
     Config overrides | Fail to Remove database using fake login_host
     because its default has been overriden by wrong value from config file
-  mysql_db:
+  mariadb_db:
     login_user: '{{ mysql_user }}'
     login_password: '{{ mysql_password }}'
     login_host: '{{ mysql_host }}'
@@ -96,7 +96,7 @@
     pattern3: Unknown server host '{{ fake_host }}'
 
 - name: Config overrides | Clean up test database
-  mysql_db:
+  mariadb_db:
     login_user: '{{ mysql_user }}'
     login_password: '{{ mysql_password }}'
     login_host: '{{ mysql_host }}'

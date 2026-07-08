@@ -10,7 +10,7 @@
 
     # Tests for priv parameter value passed as a dict
     - name: Priv dict | Create test databases
-      mysql_db:
+      mariadb_db:
         <<: *mysql_params
         name: '{{ item }}'
         state: present
@@ -20,7 +20,7 @@
         - data3
 
     - name: Priv dict | Create user with privileges
-      mysql_user:
+      mariadb_user:
         <<: *mysql_params
         name: '{{ user_name_3 }}'
         password: '{{ user_password_3 }}'
@@ -41,12 +41,12 @@
 
     # Issue https://github.com/ansible-collections/ansible.mysql/issues/99
     - name: Priv dict | Create test table test_table_issue99
-      mysql_query:
+      mariadb_query:
         <<: *mysql_params
         query: "CREATE TABLE IF NOT EXISTS data3.test_table_issue99 (a INT, b INT, c INT)"
 
     - name: Priv dict | Grant select on a column
-      mysql_user:
+      mariadb_user:
         <<: *mysql_params
         name: '{{ user_name_3 }}'
         priv:
@@ -59,7 +59,7 @@
           - result is changed
 
     - name: Priv dict | Grant select on the column again
-      mysql_user:
+      mariadb_user:
         <<: *mysql_params
         name: '{{ user_name_3 }}'
         priv:
@@ -72,7 +72,7 @@
           - result is not changed
 
     - name: Priv dict | Grant select on columns
-      mysql_user:
+      mariadb_user:
         <<: *mysql_params
         name: '{{ user_name_3 }}'
         priv:
@@ -85,7 +85,7 @@
           - result is changed
 
     - name: Priv dict | Grant select on columns again
-      mysql_user:
+      mariadb_user:
         <<: *mysql_params
         name: '{{ user_name_3 }}'
         priv:
@@ -98,7 +98,7 @@
           - result is not changed
 
     - name: Priv dict | Grant privs on columns
-      mysql_user:
+      mariadb_user:
         <<: *mysql_params
         name: '{{ user_name_3 }}'
         priv:
@@ -112,7 +112,7 @@
           - result is changed
 
     - name: Priv dict | Grant same privs on columns again, note that the column order is different
-      mysql_user:
+      mariadb_user:
         <<: *mysql_params
         name: '{{ user_name_3 }}'
         priv:
@@ -144,7 +144,7 @@
     ##########
     # Clean up
     - name: Priv dict | Drop test databases
-      mysql_db:
+      mariadb_db:
         <<: *mysql_params
         name: '{{ item }}'
         state: present

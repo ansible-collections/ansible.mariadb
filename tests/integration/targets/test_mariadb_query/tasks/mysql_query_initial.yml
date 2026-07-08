@@ -12,7 +12,7 @@
   block:
 
   - name: Create db {{ test_db }}
-    mysql_query:
+    mariadb_query:
       <<: *mysql_params
       query: 'CREATE DATABASE {{ test_db }}'
     register: result
@@ -26,7 +26,7 @@
       expected_queries: ['CREATE DATABASE {{ test_db }}']
 
   - name: Create {{ test_table1 }}
-    mysql_query:
+    mariadb_query:
       <<: *mysql_params
       login_db: '{{ test_db }}'
       query: 'CREATE TABLE {{ test_table1 }} (id int)'
@@ -42,7 +42,7 @@
       expected_queries: ['CREATE TABLE {{ test_table1 }} (id int)']
 
   - name: Insert test data
-    mysql_query:
+    mariadb_query:
       <<: *mysql_params
       login_db: '{{ test_db }}'
       query:
@@ -66,7 +66,7 @@
       ]
 
   - name: Check data in {{ test_table1 }}
-    mysql_query:
+    mariadb_query:
       <<: *mysql_params
       login_db: '{{ test_db }}'
       query: 'SELECT * FROM {{ test_table1 }}'
@@ -85,7 +85,7 @@
       expected_queries: ['SELECT * FROM {{ test_table1 }}']
 
   - name: Check data in {{ test_table1 }} using positional args
-    mysql_query:
+    mariadb_query:
       <<: *mysql_params
       login_db: '{{ test_db }}'
       query: 'SELECT * FROM {{ test_table1 }} WHERE id = %s'
@@ -104,7 +104,7 @@
       expected_queries: ["SELECT * FROM {{ test_table1 }} WHERE id = 1"]
 
   - name: Check data in {{ test_table1 }} using named args
-    mysql_query:
+    mariadb_query:
       <<: *mysql_params
       login_db: '{{ test_db }}'
       query: 'SELECT * FROM {{ test_table1 }} WHERE id = %(some_id)s'
@@ -123,7 +123,7 @@
       expected_queries: ["SELECT * FROM {{ test_table1 }} WHERE id = 1"]
 
   - name: Update data in {{ test_table1 }}
-    mysql_query:
+    mariadb_query:
       <<: *mysql_params
       login_db: '{{ test_db }}'
       query: 'UPDATE {{ test_table1 }} SET id = %(new_id)s WHERE id = %(current_id)s'
@@ -142,7 +142,7 @@
       expected_queries: ['UPDATE {{ test_table1 }} SET id = 0 WHERE id = 1']
 
   - name: Check the prev update - row with value 1 does not exist anymore
-    mysql_query:
+    mariadb_query:
       <<: *mysql_params
       login_db: '{{ test_db }}'
       query: 'SELECT * FROM {{ test_table1 }} WHERE id = %(some_id)s'
@@ -160,7 +160,7 @@
       expected_queries: ['SELECT * FROM {{ test_table1 }} WHERE id = 1']
 
   - name: Check the prev update - row with value - exist
-    mysql_query:
+    mariadb_query:
       <<: *mysql_params
       login_db: '{{ test_db }}'
       query: 'SELECT * FROM {{ test_table1 }} WHERE id = %(some_id)s'
@@ -178,7 +178,7 @@
       expected_queries: ['SELECT * FROM {{ test_table1 }} WHERE id = 0']
 
   - name: Update data in {{ test_table1 }} again
-    mysql_query:
+    mariadb_query:
       <<: *mysql_params
       login_db: '{{ test_db }}'
       query: 'UPDATE {{ test_table1 }} SET id = %(new_id)s WHERE id = %(current_id)s'
@@ -197,7 +197,7 @@
       expected_queries: ['UPDATE {{ test_table1 }} SET id = 0 WHERE id = 1']
 
   - name: Delete data from {{ test_table1 }}
-    mysql_query:
+    mariadb_query:
       <<: *mysql_params
       login_db: '{{ test_db }}'
       query:
@@ -215,7 +215,7 @@
       expected_queries: ['DELETE FROM {{ test_table1 }} WHERE id = 0', 'SELECT * FROM {{ test_table1 }} WHERE id = 0']
 
   - name: Delete data from {{ test_table1 }} again
-    mysql_query:
+    mariadb_query:
       <<: *mysql_params
       login_db: '{{ test_db }}'
       query: 'DELETE FROM {{ test_table1 }} WHERE id = 0'
@@ -231,7 +231,7 @@
       expected_queries: ['DELETE FROM {{ test_table1 }} WHERE id = 0']
 
   - name: Truncate {{ test_table1 }}
-    mysql_query:
+    mariadb_query:
       <<: *mysql_params
       login_db: '{{ test_db }}'
       query:
@@ -249,7 +249,7 @@
       expected_queries: ['TRUNCATE {{ test_table1 }}', 'SELECT * FROM {{ test_table1 }}']
 
   - name: Rename {{ test_table1 }}
-    mysql_query:
+    mariadb_query:
       <<: *mysql_params
       login_db: '{{ test_db }}'
       query: 'RENAME TABLE {{ test_table1 }} TO {{ test_table2 }}'
@@ -265,7 +265,7 @@
       expected_queries: ['RENAME TABLE {{ test_table1 }} TO {{ test_table2 }}']
 
   - name: Check the prev rename
-    mysql_query:
+    mariadb_query:
       <<: *mysql_params
       login_db: '{{ test_db }}'
       query: 'SELECT * FROM {{ test_table1 }}'
@@ -278,7 +278,7 @@
         - result is failed
 
   - name: Check the prev rename
-    mysql_query:
+    mariadb_query:
       <<: *mysql_params
       login_db: '{{ test_db }}'
       query: 'SELECT * FROM {{ test_table2 }}'
@@ -290,19 +290,19 @@
         - result.rowcount == [0]
 
   - name: Create {{ test_table3 }}
-    mysql_query:
+    mariadb_query:
       <<: *mysql_params
       login_db: '{{ test_db }}'
       query: 'CREATE TABLE {{ test_table3 }} (id int, story text)'
 
   - name: Add data to {{ test_table3 }}
-    mysql_query:
+    mariadb_query:
       <<: *mysql_params
       login_db: '{{ test_db }}'
       query: "INSERT INTO {{ test_table3 }} (id, story) VALUES (1, 'first'), (2, 'second')"
 
   - name: Select from {{ test_table3 }}
-    mysql_query:
+    mariadb_query:
       <<: *mysql_params
       login_db: '{{ test_db }}'
       query: 'SELECT id, story FROM {{ test_table3 }}'
@@ -314,7 +314,7 @@
         - result.rowcount == [2]
 
   - name: Pass wrong query type
-    mysql_query:
+    mariadb_query:
       <<: *mysql_params
       login_db: '{{ test_db }}'
       query: {'this type is': 'wrong'}
@@ -328,7 +328,7 @@
         - result.msg is search('the query option value must be a string or list')
 
   - name: Pass wrong query element
-    mysql_query:
+    mariadb_query:
       <<: *mysql_params
       login_db: '{{ test_db }}'
       query:
@@ -344,13 +344,13 @@
         - result.msg is search('the elements in query list must be strings')
 
   - name: Create {{ test_table4 }}
-    mysql_query:
+    mariadb_query:
       <<: *mysql_params
       login_db: '{{ test_db }}'
       query: 'CREATE TABLE {{ test_table4 }} (id int primary key, story text)'
 
   - name: Insert test data using replace statement
-    mysql_query:
+    mariadb_query:
       <<: *mysql_params
       login_db: '{{ test_db }}'
       query: "REPLACE INTO {{ test_table4 }} VALUES (1, 'first')"
@@ -364,7 +364,7 @@
         - result.rowcount == [1]
 
   - name: Replace test data
-    mysql_query:
+    mariadb_query:
       <<: *mysql_params
       login_db: '{{ test_db }}'
       query: "REPLACE INTO {{ test_table4 }} VALUES (1, 'one')"
@@ -378,7 +378,7 @@
 
   # Issue https://github.com/ansible-collections/ansible.mysql/issues/268
   - name: Create table
-    mysql_query:
+    mariadb_query:
       <<: *mysql_params
       login_db: '{{ test_db }}'
       query: "CREATE TABLE issue268 (id int)"
@@ -386,7 +386,7 @@
 
   # Issue https://github.com/ansible-collections/ansible.mysql/issues/268
   - name: Create table with IF NOT EXISTS
-    mysql_query:
+    mariadb_query:
       <<: *mysql_params
       login_db: '{{ test_db }}'
       query: "CREATE TABLE IF NOT EXISTS issue268 (id int)"
@@ -402,7 +402,7 @@
       - connector_name == 'pymysql'
 
   - name: Drop db {{ test_db }}
-    mysql_query:
+    mariadb_query:
       <<: *mysql_params
       query: 'DROP DATABASE {{ test_db }}'
     register: result
@@ -418,6 +418,6 @@
   always:
 
     - name: Clean up test_db
-      mysql_query:
+      mariadb_query:
         <<: *mysql_params
         query: 'DROP DATABASE IF EXISTS {{ test_db }}'

@@ -11,7 +11,7 @@
 
     # Test primary_delay mode:
     - name: Run replication
-      mysql_replication:
+      mariadb_replication:
         <<: *mysql_params
         login_port: '{{ mysql_replica1_port }}'
         mode: changeprimary
@@ -39,7 +39,7 @@
 
     # Auxiliary step:
     - name: Start replica
-      mysql_replication:
+      mariadb_replication:
         <<: *mysql_params
         login_port: '{{ mysql_replica1_port }}'
         mode: startreplica
@@ -47,7 +47,7 @@
 
     # Check primary_delay:
     - name: Get standby status
-      mysql_replication:
+      mariadb_replication:
         <<: *mysql_params
         login_port: '{{ mysql_replica1_port }}'
         mode: getreplica

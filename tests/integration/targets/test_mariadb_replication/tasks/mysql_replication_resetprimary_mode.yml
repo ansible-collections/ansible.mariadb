@@ -12,20 +12,20 @@
 
     # Needs for further tests:
     - name: Stop replica
-      mysql_replication:
+      mariadb_replication:
         <<: *mysql_params
         login_port: '{{ mysql_replica1_port }}'
         mode: stopreplica
 
     - name: Reset replica all
-      mysql_replication:
+      mariadb_replication:
         <<: *mysql_params
         login_port: '{{ mysql_replica1_port }}'
         mode: resetreplicaall
 
     # Get primary initial status:
     - name: Get primary status
-      mysql_replication:
+      mariadb_replication:
         <<: *mysql_params
         login_port: '{{ mysql_primary_port }}'
         mode: getprimary
@@ -33,7 +33,7 @@
 
     # Test resetprimary mode:
     - name: Reset primary
-      mysql_replication:
+      mariadb_replication:
         <<: *mysql_params
         login_port: '{{ mysql_primary_port }}'
         mode: resetprimary
@@ -60,7 +60,7 @@
 
     # Get primary final status:
     - name: Get primary status
-      mysql_replication:
+      mariadb_replication:
         <<: *mysql_params
         login_port: '{{ mysql_primary_port }}'
         mode: getprimary

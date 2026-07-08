@@ -30,7 +30,7 @@
 
     # Access by default cred file
     - name: mysql_info - collect default cred file
-      mysql_info:
+      mariadb_info:
         login_user: '{{ mysql_user }}'
         login_host: '{{ mysql_host }}'
         login_port: '{{ mysql_primary_port }}'
@@ -48,7 +48,7 @@
 
     # Access by non-default cred file
     - name: mysql_info - check non-default cred file
-      mysql_info:
+      mariadb_info:
         login_user: '{{ mysql_user }}'
         login_host: '{{ mysql_host }}'
         login_port: '{{ mysql_primary_port }}'
@@ -71,7 +71,7 @@
 
     # Access with password
     - name: mysql_info - check access with password
-      mysql_info:
+      mariadb_info:
         <<: *mysql_params
       register: result
 

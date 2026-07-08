@@ -12,7 +12,7 @@
 
     # ============================================================
     - name: Privs issue 465 | Create a user with parameters that will always cause an exception
-      mysql_user:
+      mariadb_user:
         <<: *mysql_params
         name: user_issue_465
         password: a_test_password_465
