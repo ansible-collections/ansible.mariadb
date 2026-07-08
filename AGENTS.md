@@ -6,11 +6,11 @@ When official documentation is not explicitly provided or it's insufficient, you
 
 ## What This Project Is
 
-An Ansible collection (`ansible.mariadb`) providing modules for managing MySQL and MariaDB databases. No roles exist — only modules and shared utilities.
+An Ansible collection (`ansible.mariadb`) providing modules for managing MariaDB databases. No roles exist — only modules and shared utilities.
 
 ## Development Environment
 
-The collection must reside at `ansible_collections/ansible/mysql/` (relative to a directory on `ANSIBLE_COLLECTIONS_PATHS`) for imports to resolve correctly.
+The collection must reside at `ansible_collections/ansible/mariadb/` (relative to a directory on `ANSIBLE_COLLECTIONS_PATHS`) for imports to resolve correctly.
 
 All required packages are listed in `requirements.txt`.
 

@@ -5,11 +5,10 @@ version: 5.1.0
 readme: README.md
 authors:
   - Ansible community
-description: MySQL and MariaDB collection for Ansible
+description: MariaDB collection for Ansible
 license_file: COPYING
 tags:
   - database
-  - mysql
   - mariadb
 repository: https://github.com/ansible-collections/ansible.mariadb
 documentation: https://github.com/ansible-collections/ansible.mariadb

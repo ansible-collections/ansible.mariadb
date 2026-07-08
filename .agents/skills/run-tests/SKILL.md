@@ -1,13 +1,13 @@
 ---
 name: run-tests
-description: Runs and writes tests (sanity, unit, integration) for the ansible.mysql Ansible collection using ansible-test. Use when asked to run, check, or write tests for a module or utility. Do not use for PR reviews or questions unrelated to testing.
+description: Runs and writes tests (sanity, unit, integration) for the ansible.mariadb Ansible collection using ansible-test. Use when asked to run, check, or write tests for a module or utility. Do not use for PR reviews or questions unrelated to testing.
 ---
 
 # Skill: run-tests
 
 ## Purpose
 
-Run and write tests for the `ansible.mysql` Ansible collection. Covers sanity, unit, and integration tests using `ansible-test`.
+Run and write tests for the `ansible.mariadb` Ansible collection. Covers sanity, unit, and integration tests using `ansible-test`.
 
 ## When to Invoke
 
@@ -22,7 +22,7 @@ DO NOT TRIGGER when:
 
 ## Test Infrastructure
 
-All tests run inside Docker/Podman via `ansible-test --docker`. No local package installation is needed. The collection must be installed at `ansible_collections/ansible/mysql/` (relative to a directory on `ANSIBLE_COLLECTIONS_PATHS`) for imports to resolve correctly.
+All tests run inside Docker/Podman via `ansible-test --docker`. No local package installation is needed. The collection must be installed at `ansible_collections/ansible/mariadb/` (relative to a directory on `ANSIBLE_COLLECTIONS_PATHS`) for imports to resolve correctly.
 
 ---
 
@@ -33,7 +33,7 @@ All tests run inside Docker/Podman via `ansible-test --docker`. No local package
 Checks style, documentation, and imports for a changed file:
 
 ```bash
-ansible-test sanity plugins/modules/mysql_db.py --docker -vvv
+ansible-test sanity plugins/modules/mariadb_db.py --docker -vvv
 ```
 
 ### Unit
@@ -44,16 +44,17 @@ Runs unit tests for changed files:
 ansible-test units tests/unit/plugins/modules/test_mysql_info.py --docker -vvv
 ansible-test units tests/unit/plugins/module_utils/test_mysql.py --docker -vvv
 ```
+```
 
 Unit tests live under `tests/unit/plugins/` and use the **PyTest** framework. Every new function or class method MUST have a corresponding unit test.
 
 ### Integration
 
-Runs integration tests against a live MySQL/MariaDB instance (started by Docker):
+Runs integration tests against a live MariaDB instance (started by Docker):
 
 ```bash
-ansible-test integration test_mysql_db --docker default -vvv
-ansible-test integration test_mysql_user --docker default -vvv
+ansible-test integration test_mariadb_db --docker default -vvv
+ansible-test integration test_mariadb_user --docker default -vvv
 ```
 
 Integration tests live under `tests/integration/targets/<module_name>/`. Each target declares `setup_controller` as a dependency in `tests/integration/targets/<name>/meta/main.yml` — this target installs Python dependencies and configures the test environment.
@@ -63,17 +64,14 @@ Integration tests live under `tests/integration/targets/<module_name>/`. Each ta
 The project provides a Makefile (documented in `TESTING.md`) that handles spinning up a primary database and two replicas in Podman containers. This is the recommended way to run integration tests locally:
 
 ```bash
-# Run all targets against MySQL 8.4.9 with pymysql 1.1.1
-make ansible="stable-2.17" db_engine_name="mysql" db_engine_version="8.4.9" connector_name="pymysql" connector_version="1.1.1"
-
-# Run a single target
-make ansible="stable-2.17" db_engine_name="mysql" db_engine_version="8.4.9" connector_name="pymysql" connector_version="1.1.1" target="test_mysql_info"
+# Run all targets against MariaDB 11.8.7 with pymysql 1.1.1
+make ansible="stable-2.17" db_engine_name="mariadb" db_engine_version="11.8.7" connector_name="pymysql" connector_version="1.1.1"
 
 # MariaDB example
 make ansible="stable-2.17" db_engine_name="mariadb" db_engine_version="11.8.7" connector_name="pymysql" connector_version="1.1.1"
 ```
 
-Key Makefile options: `db_engine_name` (mysql/mariadb), `db_engine_version`, `connector_name` (pymysql), `connector_version`, `target` (single test target), `keep_containers_alive=1` (for debugging), `continue_on_errors=1`. See `TESTING.md` for the full list of supported versions and options.
+Key Makefile options: `db_engine_name` (mariadb), `db_engine_version`, `connector_name` (pymysql), `connector_version`, `target` (single test target), `keep_containers_alive=1` (for debugging), `continue_on_errors=1`. See `TESTING.md` for the full list of supported versions and options.
 
 ---
 
@@ -95,13 +93,13 @@ Every integration test target must follow this sequence:
 
 1. Call the module under test → `register: result`
 2. Assert on `result` using `ansible.builtin.assert`
-3. Verify the resulting database state by querying via `ansible.mysql.mysql_query` → `register: result` → `ansible.builtin.assert`
+3. Verify the resulting database state by querying via `ansible.mariadb.mariadb_query` → `register: result` → `ansible.builtin.assert`
 4. This must be done in `check_mode: true` as well
 
 ```yaml
 - name: Create database in check mode
   check_mode: true
-  ansible.mysql.mysql_db:
+  ansible.mariadb.mariadb_db:
     name: testdb
     state: present
   register: result
@@ -112,7 +110,7 @@ Every integration test target must follow this sequence:
       - result is changed
 
 - name: Verify DB does not exist yet
-  ansible.mysql.mysql_query:
+  ansible.mariadb.mariadb_query:
     query: "SHOW DATABASES LIKE 'testdb'"
   register: result
 
@@ -122,7 +120,7 @@ Every integration test target must follow this sequence:
       - result.query_result[0] | length == 0
 
 - name: Create database in real mode
-  ansible.mysql.mysql_db:
+  ansible.mariadb.mariadb_db:
     name: testdb
     state: present
   register: result
@@ -133,7 +131,7 @@ Every integration test target must follow this sequence:
       - result is changed
 
 - name: Verify DB exists
-  ansible.mysql.mysql_query:
+  ansible.mariadb.mariadb_query:
     query: "SHOW DATABASES LIKE 'testdb'"
   register: result
 

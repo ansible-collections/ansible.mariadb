@@ -1,4 +1,4 @@
-# MySQL and MariaDB collection for Ansible
+# MariaDB collection for Ansible
 [![Plugins CI](https://github.com/ansible-collections/ansible.mariadb/actions/workflows/ansible-test-plugins.yml/badge.svg?event=push)](https://github.com/ansible-collections/ansible.mariadb/actions?query=workflow%3A"Plugins+CI") [![Codecov](https://img.shields.io/codecov/c/github/ansible-collections/ansible.mariadb)](https://codecov.io/gh/ansible-collections/ansible.mariadb) [![Discuss on Matrix at #mysql:ansible.com](https://img.shields.io/matrix/mysql:ansible.com.svg?server_fqdn=matrix.org&label=Discuss%20on%20Matrix%20at%20%23mysql:ansible.com&logo=matrix)](https://matrix.to/#/#mysql:ansible.com)
 
 This collection is a part of the Ansible package.
@@ -20,15 +20,15 @@ This project abides by the following policies:
 
 * Join the Ansible forum:
   * [Get Help](https://forum.ansible.com/c/help/6): get help or help others.
-  * [Posts tagged with 'mysql'](https://forum.ansible.com/tag/mysql): leverage tags to narrow the scope.
-  * [MySQL Team](https://forum.ansible.com/g/MySQLTeam): by joining the team you will automatically get subscribed to the posts tagged with [mysql](https://forum.ansible.com/tag/mysql).
+  * [Posts tagged with 'mariadb'](https://forum.ansible.com/tag/mariadb): leverage tags to narrow the scope.
+  * [MySQL/MariaDB Team](https://forum.ansible.com/g/MySQLTeam): by joining the team you will automatically get subscribed to the posts tagged with [mysql](https://forum.ansible.com/tag/mysql).
   * [Social Spaces](https://forum.ansible.com/c/chat/4): gather and interact with fellow enthusiasts.
   * [News & Announcements](https://forum.ansible.com/c/news/5): track project-wide announcements including social events.
 
 * The Ansible [Bullhorn newsletter](https://docs.ansible.com/ansible/devel/community/communication.html#the-bullhorn): used to announce releases and important changes.
 
 * Matrix chat:
-  * [#mysql:ansible.com](https://matrix.to/#/#mysql:ansible.com) room: questions on how to contribute to this collection.
+  * [#mysql:ansible.com](https://matrix.to/#/#mysql:ansible.com) room (yes, we share it with the ansible.mysql collection): questions on how to contribute to this collection.
 
 For more information about communication, see the [Ansible communication guide](https://docs.ansible.com/ansible/devel/community/communication.html).
 
@@ -57,7 +57,7 @@ They also should be subscribed to Ansible's [The Bullhorn newsletter](https://do
 
 ## Governance
 
-We, [the MySQL team](https://forum.ansible.com/g/MySQLTeam), use [the forum](https://forum.ansible.com/tag/mysql) posts tagged with `mysql` for general announcements and discussions.
+We, [the MySQL/MariaDB team](https://forum.ansible.com/g/MySQLTeam), use [the forum](https://forum.ansible.com/tag/mysql) posts tagged with `mariadb` for general announcements and discussions.
 
 The process of decision making in this collection is based on discussing and finding consensus among participants.
 
@@ -135,7 +135,7 @@ The `mysqlclient` connector support has been [deprecated](https://github.com/ans
 
 ### Installing the Collection from Ansible Galaxy
 
-Before using the MySQL collection, you need to install it with the Ansible Galaxy CLI:
+Before using the MariaDB collection, you need to install it with the Ansible Galaxy CLI:
 
 ```bash
 ansible-galaxy collection install ansible.mariadb

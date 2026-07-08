@@ -1,13 +1,13 @@
 ---
 name: pr-review
-description: Reviews pull requests and code changes in the ansible.mysql Ansible collection against project standards and the Ansible Collection Review Checklist. Use when asked to review a PR, patch, diff, or set of code changes. Do not use for GitHub Issues or general Q&A.
+description: Reviews pull requests and code changes in the ansible.mariadb Ansible collection against project standards and the Ansible Collection Review Checklist. Use when asked to review a PR, patch, diff, or set of code changes. Do not use for GitHub Issues or general Q&A.
 ---
 
 # Skill: pr-reviewer
 
 ## Purpose
 
-Review pull requests and code changes in the `ansible.mysql` Ansible collection.
+Review pull requests and code changes in the `ansible.mariadb` Ansible collection.
 
 ## When to Invoke
 
@@ -66,7 +66,7 @@ Architecture and Type Conversion categories are fully covered by `AGENTS.md` —
 
 ### Naming and Style
 
-- Module file names follow the `mysql_<noun>` pattern.
+- Module file names follow the `mariadb_<noun>` pattern.
 - No abbreviations that reduce readability.
 
 ### Idempotency
@@ -82,7 +82,7 @@ Architecture and Type Conversion categories are fully covered by `AGENTS.md` —
 ### Error Handling
 
 - All errors call `module.fail_json(msg=...)` with a descriptive, actionable message — no bare `raise` or `sys.exit()`.
-- `mysql_info` and similar read-only modules handle privilege errors gracefully (return partial results, not a failure).
+- `mariadb_info` and similar read-only modules handle privilege errors gracefully (return partial results, not a failure).
 - Connection and query utilities from `module_utils/mysql.py` are used for database interactions.
 
 ### Testing
@@ -93,7 +93,7 @@ Architecture and Type Conversion categories are fully covered by `AGENTS.md` —
 - Integration test pattern is followed:
   1. Call module → `register: result`
   2. `ansible.builtin.assert` on `result`
-  3. Verify DB state using `ansible.mysql.mysql_query` → `register: result` → `ansible.builtin.assert`
+  3. Verify DB state using `ansible.mariadb.mariadb_query` → `register: result` → `ansible.builtin.assert`
 - Each integration test target has `tests/integration/targets/<name>/meta/main.yml` declaring `setup_controller` as a dependency.
 - Tests cover both the happy path and idempotency (running the same task twice).
 - Tests cover the `state: absent` path where applicable.
