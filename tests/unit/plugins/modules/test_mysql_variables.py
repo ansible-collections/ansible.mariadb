@@ -5,7 +5,7 @@ __metaclass__ = type
 
 import pytest
 
-from ansible_collections.ansible.mysql.plugins.modules.mysql_variables import (
+from ansible_collections.ansible.mariadb.plugins.modules.mariadb_variables import (
     convert_bool_setting_value_wanted,
 )
 

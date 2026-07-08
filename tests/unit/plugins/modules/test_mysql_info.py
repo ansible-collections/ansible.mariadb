@@ -10,7 +10,7 @@ try:
 except ImportError:
     from mock import MagicMock
 
-from ansible_collections.ansible.mysql.plugins.modules.mysql_info import MySQL_Info
+from ansible_collections.ansible.mariadb.plugins.modules.mariadb_info import MySQL_Info
 
 
 @pytest.mark.parametrize(

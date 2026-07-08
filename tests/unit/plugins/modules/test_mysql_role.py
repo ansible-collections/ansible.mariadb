@@ -5,7 +5,7 @@ __metaclass__ = type
 
 import pytest
 
-from ansible_collections.ansible.mysql.plugins.modules.mysql_role import (
+from ansible_collections.ansible.mariadb.plugins.modules.mariadb_role import (
     MariaDBQueryBuilder,
     MySQLQueryBuilder,
     normalize_users,

@@ -5,7 +5,7 @@ __metaclass__ = type
 
 import pytest
 
-from ansible_collections.ansible.mysql.plugins.modules.mysql_slow_log import MySQLSlowLog, typedvalue
+from ansible_collections.ansible.mariadb.plugins.modules.mariadb_slow_log import MySQLSlowLog, typedvalue
 
 
 class FakeCursor(object):

@@ -5,7 +5,7 @@ __metaclass__ = type
 
 import pytest
 
-from ansible_collections.ansible.mysql.plugins.module_utils.user import (
+from ansible_collections.ansible.mariadb.plugins.module_utils.user import (
     handle_grant_on_col,
     has_grant_on_col,
     normalize_col_grants,

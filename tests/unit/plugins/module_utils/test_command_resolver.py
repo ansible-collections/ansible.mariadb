@@ -5,7 +5,7 @@ __metaclass__ = type
 
 import pytest
 
-from ansible_collections.ansible.mysql.plugins.module_utils.command_resolver import (
+from ansible_collections.ansible.mariadb.plugins.module_utils.command_resolver import (
     CommandResolver,
 )
 

@@ -1,0 +1,86 @@
+---
+# Test sql_log_bin parameter for mysql_role module
+# https://github.com/ansible-collections/ansible.mysql/issues/742
+
+- name: Sql_log_bin | Set show_master_status variable
+  ansible.builtin.set_fact:
+    show_master_status: >-
+      {% if db_engine == 'mysql' and db_version is version('8.4', '>=') %}
+        SHOW BINARY LOG STATUS
+      {% else %}
+        SHOW MASTER STATUS
+      {% endif %}
+
+# ============================================================
+# Test sql_log_bin: true (default behavior - binlog events should be written)
+# ============================================================
+- name: Sql_log_bin | Capture binlog position before creating role with sql_log_bin enabled
+  ansible.builtin.command: "{{ mysql_command }} --vertical -e \"{{ show_master_status }}\""
+  register: bin_log_position_1
+
+- name: Sql_log_bin | Create role with sql_log_bin enabled
+  ansible.mariadb.mariadb_role:
+    login_user: '{{ mysql_user }}'
+    login_password: '{{ mysql_password }}'
+    login_host: '{{ mysql_host }}'
+    login_port: '{{ mysql_primary_port }}'
+    name: 'test_role_bin_on'
+    sql_log_bin: true
+    state: present
+
+- name: Sql_log_bin | Capture binlog position after creating role with sql_log_bin enabled
+  ansible.builtin.command: "{{ mysql_command }} --vertical -e \"{{ show_master_status }}\""
+  register: bin_log_position_2
+  failed_when: bin_log_position_1.stdout_lines[2] == bin_log_position_2.stdout_lines[2]
+
+- name: Sql_log_bin | Remove role with sql_log_bin enabled
+  ansible.mariadb.mariadb_role:
+    login_user: '{{ mysql_user }}'
+    login_password: '{{ mysql_password }}'
+    login_host: '{{ mysql_host }}'
+    login_port: '{{ mysql_primary_port }}'
+    name: 'test_role_bin_on'
+    sql_log_bin: true
+    state: absent
+
+- name: Sql_log_bin | Capture binlog position after removing role with sql_log_bin enabled
+  ansible.builtin.command: "{{ mysql_command }} --vertical -e \"{{ show_master_status }}\""
+  register: bin_log_position_3
+  failed_when: bin_log_position_2.stdout_lines[2] == bin_log_position_3.stdout_lines[2]
+
+# ============================================================
+# Test sql_log_bin: false (binlog events should NOT be written)
+# ============================================================
+- name: Sql_log_bin | Capture binlog position before creating role with sql_log_bin disabled
+  ansible.builtin.command: "{{ mysql_command }} --vertical -e \"{{ show_master_status }}\""
+  register: bin_log_position_4
+
+- name: Sql_log_bin | Create role with sql_log_bin disabled
+  ansible.mariadb.mariadb_role:
+    login_user: '{{ mysql_user }}'
+    login_password: '{{ mysql_password }}'
+    login_host: '{{ mysql_host }}'
+    login_port: '{{ mysql_primary_port }}'
+    name: 'test_role_bin_off'
+    sql_log_bin: false
+    state: present
+
+- name: Sql_log_bin | Capture binlog position after creating role with sql_log_bin disabled
+  ansible.builtin.command: "{{ mysql_command }} --vertical -e \"{{ show_master_status }}\""
+  register: bin_log_position_5
+  failed_when: bin_log_position_4.stdout_lines[2] != bin_log_position_5.stdout_lines[2]
+
+- name: Sql_log_bin | Remove role with sql_log_bin disabled
+  ansible.mariadb.mariadb_role:
+    login_user: '{{ mysql_user }}'
+    login_password: '{{ mysql_password }}'
+    login_host: '{{ mysql_host }}'
+    login_port: '{{ mysql_primary_port }}'
+    name: 'test_role_bin_off'
+    sql_log_bin: false
+    state: absent
+
+- name: Sql_log_bin | Capture binlog position after removing role with sql_log_bin disabled
+  ansible.builtin.command: "{{ mysql_command }} --vertical -e \"{{ show_master_status }}\""
+  register: bin_log_position_6
+  failed_when: bin_log_position_5.stdout_lines[2] != bin_log_position_6.stdout_lines[2]

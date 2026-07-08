@@ -18,7 +18,7 @@ try:
 except ImportError:
     patch_module_args = None
 
-MYSQL_REPLICATION_FILTER_MODULE = 'ansible_collections.ansible.mysql.plugins.modules.mysql_replication_filter'
+MYSQL_REPLICATION_FILTER_MODULE = 'ansible_collections.ansible.mariadb.plugins.modules.mariadb_replication_filter'
 
 try:
     mysql_replication_filter_module = importlib.import_module(MYSQL_REPLICATION_FILTER_MODULE)
@@ -28,7 +28,7 @@ except ModuleNotFoundError as exc:
     MySQLReplicationFilter = None
     _IMPORT_ERROR = (
         "mysql_replication_filter module not yet implemented - create "
-        "plugins/modules/mysql_replication_filter.py first. Original error: %s" % exc
+        "plugins/modules/mariadb_replication_filter.py first. Original error: %s" % exc
     )
 else:
     build_mariadb_set_query = mysql_replication_filter_module.build_mariadb_set_query

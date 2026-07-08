@@ -1,0 +1,43 @@
+---
+- vars:
+    mysql_parameters: &mysql_params
+      login_user: '{{ mysql_user }}'
+      login_password: '{{ mysql_password }}'
+      login_host: '{{ mysql_host }}'
+      login_port: '{{ mysql_primary_port }}'
+
+  block:
+    - name: Issue-710 | Create user with DEFAULT privileges
+      ansible.mariadb.mariadb_user:
+        <<: *mysql_params
+        name: "{{ user_name_1 }}"
+        password: "{{ user_password_1 }}"
+        state: present
+
+    - name: Issue-710 | Create role to use as default
+      ansible.mariadb.mariadb_role:
+        <<: *mysql_params
+        name: developers
+        state: present
+        priv: '*.*:ALL'
+        members:
+        - "{{ user_name_1 }}@localhost"
+
+    - name: Issue-710 | Set default role for db_user1
+      ansible.mariadb.mariadb_query:
+        <<: *mysql_params
+        query: >-
+          SET DEFAULT ROLE developers {{ (db_engine == 'mysql') | ternary('TO', 'FOR') }} {{ user_name_1 }}@localhost
+
+    - name: Issue-710 | Ensure db_user1 can still be altered
+      ansible.mariadb.mariadb_user:
+        <<: *mysql_params
+        name: "{{ user_name_1 }}"
+        password: "{{ user_password_1 }}"
+        priv: '*.*:ALL'
+        state: present
+
+    - name: Issue-710 | Ensure mysql_info can still be executed
+      ansible.mariadb.mariadb_info:
+        <<: *mysql_params
+        filter: users_info

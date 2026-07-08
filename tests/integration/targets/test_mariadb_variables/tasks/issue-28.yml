@@ -1,0 +1,82 @@
+---
+- name: set fact tls_enabled
+  ansible.builtin.command:
+    cmd: "{{ mysql_command }} \"-e SHOW VARIABLES LIKE 'have_ssl';\""
+  register: result
+
+- name: Set tls_enabled fact
+  ansible.builtin.set_fact:
+    tls_enabled: "{{ 'YES' in result.stdout | bool | default('false', true) }}"
+
+- vars:
+    mysql_parameters: &mysql_params
+      login_user: '{{ mysql_user }}'
+      login_password: '{{ mysql_password }}'
+      login_host: '{{ mysql_host }}'
+      login_port: '{{ mysql_primary_port }}'
+  when: tls_enabled
+  block:
+
+    # ============================================================
+    - name: get server certificate
+      ansible.builtin.copy:
+        content: "{{ lookup('pipe', \"openssl s_client -starttls mysql -connect localhost:3307 -showcerts 2>/dev/null </dev/null |  sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p'\") }}"
+        dest: /tmp/cert.pem
+      delegate_to: localhost
+
+    - name: Drop mysql user if exists
+      ansible.mariadb.mariadb_user:
+        <<: *mysql_params
+        name: '{{ user_name_1 }}'
+        host_all: true
+        state: absent
+      ignore_errors: true
+
+    - name: create user with ssl requirement
+      ansible.mariadb.mariadb_user:
+        <<: *mysql_params
+        name: "{{ user_name_1 }}"
+        host: '%'
+        password: "{{ user_password_1 }}"
+        priv: '*.*:ALL,GRANT'
+        tls_requires:
+          SSL:
+
+    - name: attempt connection with newly created user (expect failure)
+      ansible.mariadb.mariadb_variables:
+        variable: '{{ set_name }}'
+        login_user: '{{ user_name_1 }}'
+        login_password: '{{ user_password_1 }}'
+        login_host: '{{ mysql_host }}'
+        login_port: '{{ mysql_primary_port }}'
+        ca_cert: /tmp/cert.pem
+      register: result
+      ignore_errors: true
+
+    - name: Assert that result is failed for pymysql
+      ansible.builtin.assert:
+        that:
+          - result is failed
+      when:
+        - connector_name == 'pymysql'
+
+    - name: attempt connection with newly created user ignoring hostname
+      ansible.mariadb.mariadb_variables:
+        variable: '{{ set_name }}'
+        login_user: '{{ user_name_1 }}'
+        login_password: '{{ user_password_1 }}'
+        login_host: '{{ mysql_host }}'
+        login_port: '{{ mysql_primary_port }}'
+        ca_cert: /tmp/cert.pem
+        check_hostname: no
+      register: result
+      ignore_errors: true
+      failed_when:
+        - result is failed or 'pymysql >= 0.7.11 is required' not in result.msg
+
+    - name: Drop mysql user
+      ansible.mariadb.mariadb_user:
+        <<: *mysql_params
+        name: '{{ user_name_1 }}'
+        host_all: true
+        state: absent

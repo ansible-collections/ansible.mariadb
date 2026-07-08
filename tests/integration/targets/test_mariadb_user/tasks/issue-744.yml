@@ -1,0 +1,98 @@
+---
+# Test for https://github.com/ansible-collections/ansible.mysql/issues/664
+# Issue 744: Bug revoking 'WITH GRANT OPTION'
+# The issue occurs when a user has only USAGE with GRANT OPTION on a database
+# and we try to modify their permissions. The revoke logic fails because it
+# tries to revoke USAGE twice.
+
+- vars:
+    mysql_parameters: &mysql_params
+      login_user: '{{ mysql_user }}'
+      login_password: '{{ mysql_password }}'
+      login_host: '{{ mysql_host }}'
+      login_port: '{{ mysql_primary_port }}'
+
+  block:
+    - name: Issue-744 | Create test database
+      ansible.mariadb.mariadb_db:
+        <<: *mysql_params
+        name: issue744_testdb
+        state: present
+
+    - name: Issue-744 | Create user with USAGE privileges only
+      ansible.mariadb.mariadb_user:
+        <<: *mysql_params
+        name: "{{ user_name_1 }}"
+        password: "{{ user_password_1 }}"
+        state: present
+
+    - name: Issue-744 | Grant USAGE with GRANT OPTION on specific database
+      ansible.mariadb.mariadb_user:
+        <<: *mysql_params
+        name: "{{ user_name_1 }}"
+        password: "{{ user_password_1 }}"
+        priv: 'issue744_testdb.*:USAGE,GRANT'
+        state: present
+
+    - name: Issue-744 | Show grants to verify USAGE with GRANT OPTION
+      ansible.mariadb.mariadb_query:
+        <<: *mysql_params
+        query: "SHOW GRANTS FOR '{{ user_name_1 }}'@'localhost'"
+      register: show_grants_result
+
+    - name: Issue-744 | Verify user has USAGE with GRANT OPTION
+      assert:
+        that:
+          - "'issue744_testdb' in (show_grants_result.query_result | string)"
+          - "'WITH GRANT OPTION' in (show_grants_result.query_result | string)"
+
+    # With the fix, this should now succeed
+    - name: Issue-744 | Modify user permissions (this should now succeed with the fix)
+      ansible.mariadb.mariadb_user:
+        <<: *mysql_params
+        name: "{{ user_name_1 }}"
+        password: "{{ user_password_1 }}"
+        priv: 'issue744_testdb.*:SELECT'
+        state: present
+      register: modify_perms_result
+
+    - name: Issue-744 | Debug modification result
+      debug:
+        var: modify_perms_result
+
+    # With the fix, the operation should succeed
+    - name: Issue-744 | Verify that modification succeeded
+      assert:
+        that:
+          - modify_perms_result is succeeded
+          - modify_perms_result is changed
+        fail_msg: "Expected the modification to succeed with the fix, but got: {{ modify_perms_result.msg }}"
+
+    # Verify the final state is correct
+    - name: Issue-744 | Show final grants to verify SELECT privilege
+      ansible.mariadb.mariadb_query:
+        <<: *mysql_params
+        query: "SHOW GRANTS FOR '{{ user_name_1 }}'@'localhost'"
+      register: final_grants_result
+
+    - name: Issue-744 | Verify user now has SELECT privilege
+      assert:
+        that:
+          - "'GRANT SELECT ON' in (final_grants_result.query_result | string)"
+          - "'issue744_testdb' in (final_grants_result.query_result | string)"
+        fail_msg: "Expected user to have SELECT privilege on issue744_testdb, but got: {{ final_grants_result.query_result }}"
+
+  always:
+    - name: Issue-744 | Cleanup - Remove test user
+      ansible.mariadb.mariadb_user:
+        <<: *mysql_params
+        name: "{{ user_name_1 }}"
+        state: absent
+      ignore_errors: true
+
+    - name: Issue-744 | Cleanup - Remove test database
+      ansible.mariadb.mariadb_db:
+        <<: *mysql_params
+        name: issue744_testdb
+        state: absent
+      ignore_errors: true

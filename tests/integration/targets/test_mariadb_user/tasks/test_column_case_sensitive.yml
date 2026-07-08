@@ -1,0 +1,135 @@
+---
+
+- vars:
+    mysql_parameters: &mysql_params
+      login_user: '{{ mysql_user }}'
+      login_password: '{{ mysql_password }}'
+      login_host: '{{ mysql_host }}'
+      login_port: '{{ mysql_primary_port }}'
+
+  block:
+
+    # ========================= Prepare =======================================
+    # We use query to prevent our module of changing the case
+    - name: Mysql_user Column case sensitive | Create a test table
+      ansible.mariadb.mariadb_query:
+        <<: *mysql_params
+        query:
+          - CREATE DATABASE mysql_user_column_case
+          - >-
+            CREATE TABLE mysql_user_column_case.t1
+            (a int, B int, cC int, Dd int)
+          - >-
+            INSERT INTO mysql_user_column_case.t1
+            (a, B, cC, Dd) VALUES (1,2,3,4)
+
+    # ================= Reproduce failure =====================================
+
+    - name: Mysql_user Column case sensitive | Create test user
+      ansible.mariadb.mariadb_user:
+        <<: *mysql_params
+        name: column_case_sensitive
+        host: '%'
+        password: 'msandbox'
+        priv:
+          'mysql_user_column_case.t1': 'SELECT(a, B, cC, Dd)'
+        column_case_sensitive: false
+
+    - name: Mysql_user Column case sensitive | Assert user privileges are all caps
+      ansible.mariadb.mariadb_query:
+        <<: *mysql_params
+        query:
+          - SHOW GRANTS FOR column_case_sensitive@'%'
+      register: column_case_insensitive_grants
+      failed_when:
+        # Column order may vary, thus test each separately
+        - >-
+          column_case_insensitive_grants.query_result[0][1]
+          is not search("A", ignorecase=false)
+          or column_case_insensitive_grants.query_result[0][1]
+          is not search("B", ignorecase=false)
+          or column_case_insensitive_grants.query_result[0][1]
+          is not search("CC", ignorecase=false)
+          or column_case_insensitive_grants.query_result[0][1]
+          is not search("DD", ignorecase=false)
+
+    - name: Mysql_user Column case sensitive | Assert 1 column is accessible on MySQL 5.7
+      ansible.mariadb.mariadb_query:
+        <<: *mysql_params
+        login_user: column_case_sensitive
+        query:
+          - DESC mysql_user_column_case.t1
+      register: assert_1_col_accessible
+      failed_when:
+        - assert_1_col_accessible.rowcount[0] | int != 1
+      when:
+        - db_engine == 'mysql' and db_version is version('5.7', '<=')
+
+    - name: Mysql_user Column case sensitive | Assert 4 column are accessible on MariaDB and MySQL 8+
+      ansible.mariadb.mariadb_query:
+        <<: *mysql_params
+        login_user: column_case_sensitive
+        query:
+          - DESC mysql_user_column_case.t1
+      register: assert_4_col_accessible
+      failed_when:
+        - assert_4_col_accessible.rowcount[0] | int != 4
+      when:
+        - >-
+          db_engine == 'mariadb'
+          or (db_engine == 'mysql' and db_version is version('8.0', '>='))
+
+    # ======================== Test fix  ======================================
+
+    - name: Mysql_user Column case sensitive | Create users with case sensitive
+      ansible.mariadb.mariadb_user:
+        <<: *mysql_params
+        name: column_case_sensitive
+        host: '%'
+        password: 'msandbox'
+        priv:
+          'mysql_user_column_case.t1': 'SELECT(a, B, cC, Dd)'
+        column_case_sensitive: true
+
+    - name: Mysql_user Column case sensitive | Assert user privileges are case sensitive
+      ansible.mariadb.mariadb_query:
+        <<: *mysql_params
+        query:
+          - SHOW GRANTS FOR column_case_sensitive@'%'
+      register: column_case_sensitive_grants
+      failed_when:
+        # Column order may vary, thus test each separately
+        - >-
+          column_case_sensitive_grants.query_result[0][1]
+          is not search("a", ignorecase=false)
+          or column_case_sensitive_grants.query_result[0][1]
+          is not search("B", ignorecase=false)
+          or column_case_sensitive_grants.query_result[0][1]
+          is not search("cC", ignorecase=false)
+          or column_case_sensitive_grants.query_result[0][1]
+          is not search("Dd", ignorecase=false)
+
+    - name: Mysql_user Column case sensitive | Assert 4 columns are accessible
+      ansible.mariadb.mariadb_query:
+        <<: *mysql_params
+        login_user: column_case_sensitive
+        query:
+          - DESC mysql_user_column_case.t1
+      register: assert_4_col_accessible
+      failed_when:
+        - assert_4_col_accessible.rowcount[0] | int != 4
+
+    # ========================= Teardown ======================================
+
+    - name: Mysql_user Column case sensitive | Delete test users
+      ansible.mariadb.mariadb_user:
+        <<: *mysql_params
+        name: column_case_sensitive
+        host_all: true
+        state: absent
+
+    - name: Mysql_user Column case sensitive | Delete test database
+      ansible.mariadb.mariadb_db:
+        <<: *mysql_params
+        name: mysql_user_column_case
+        state: absent

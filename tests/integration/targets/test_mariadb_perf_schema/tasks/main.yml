@@ -1,0 +1,538 @@
+---
+####################################################################
+# WARNING: These are designed specifically for Ansible tests       #
+# and should not be used as examples of how to write Ansible roles #
+####################################################################
+
+- name: Perf schema | Run tests
+  vars:
+    mysql_parameters: &mysql_params
+      login_user: '{{ mysql_user }}'
+      login_password: '{{ mysql_password }}'
+      login_host: '{{ mysql_host }}'
+      login_port: '{{ mysql_primary_port }}'
+    actor_user: ansible_perf_schema
+    actor_host: '%'
+    actor_role: '%'
+    object_type: TABLE
+    object_schema: ansible_perf_schema
+    object_name: sample_%
+
+  block:
+    - name: Perf schema | Check whether performance schema is enabled
+      ansible.mariadb.mariadb_query:
+        <<: *mysql_params
+        query: "SHOW GLOBAL VARIABLES LIKE 'performance_schema'"
+      register: perf_schema_variable
+
+    - name: Perf schema | Skip tests when performance schema is disabled
+      ansible.builtin.meta: end_play
+      when: perf_schema_variable.query_result[0][0]['Value'] | upper != 'ON'
+
+    - name: Perf schema | Select one instrument row
+      ansible.mariadb.mariadb_query:
+        <<: *mysql_params
+        query: >
+          SELECT NAME, ENABLED, TIMED
+          FROM performance_schema.setup_instruments
+          WHERE TIMED IS NOT NULL
+          ORDER BY NAME
+          LIMIT 1
+      register: instrument_row
+
+    - name: Perf schema | Select one consumer row
+      ansible.mariadb.mariadb_query:
+        <<: *mysql_params
+        query: >
+          SELECT NAME, ENABLED
+          FROM performance_schema.setup_consumers
+          ORDER BY NAME
+          LIMIT 1
+      register: consumer_row
+
+    - name: Perf schema | Set desired instrument and consumer facts
+      ansible.builtin.set_fact:
+        instrument_name: "{{ instrument_row.query_result[0][0]['NAME'] }}"
+        instrument_enabled_initial: "{{ instrument_row.query_result[0][0]['ENABLED'] | upper == 'YES' }}"
+        instrument_timed_initial: "{{ instrument_row.query_result[0][0]['TIMED'] | upper == 'YES' }}"
+        instrument_enabled_desired: "{{ not (instrument_row.query_result[0][0]['ENABLED'] | upper == 'YES') }}"
+        instrument_timed_desired: "{{ not (instrument_row.query_result[0][0]['TIMED'] | upper == 'YES') }}"
+        consumer_name: "{{ consumer_row.query_result[0][0]['NAME'] }}"
+        consumer_enabled_initial: "{{ consumer_row.query_result[0][0]['ENABLED'] | upper == 'YES' }}"
+        consumer_enabled_desired: "{{ not (consumer_row.query_result[0][0]['ENABLED'] | upper == 'YES') }}"
+
+    - name: Perf schema | Select one wildcard instrument row
+      ansible.mariadb.mariadb_query:
+        <<: *mysql_params
+        query: >
+          SELECT NAME, ENABLED, TIMED
+          FROM performance_schema.setup_instruments
+          WHERE NAME LIKE '%/%'
+            AND TIMED IS NOT NULL
+          ORDER BY NAME
+          LIMIT 1
+      register: wildcard_instrument_row
+
+    - name: Perf schema | Set wildcard instrument facts
+      ansible.builtin.set_fact:
+        wildcard_instrument_name: "{{ wildcard_instrument_row.query_result[0][0]['NAME'] }}"
+        wildcard_instrument_enabled_initial: "{{ wildcard_instrument_row.query_result[0][0]['ENABLED'] | upper == 'YES' }}"
+        wildcard_instrument_timed_initial: "{{ wildcard_instrument_row.query_result[0][0]['TIMED'] | upper == 'YES' }}"
+        wildcard_instrument_enabled_desired: "{{ not (wildcard_instrument_row.query_result[0][0]['ENABLED'] | upper == 'YES') }}"
+        wildcard_instrument_timed_desired: "{{ not (wildcard_instrument_row.query_result[0][0]['TIMED'] | upper == 'YES') }}"
+
+    - name: Perf schema | Update instrument and consumer in check mode
+      ansible.mariadb.mariadb_perf_schema:
+        <<: *mysql_params
+        instruments:
+          - name: '{{ instrument_name }}'
+            enabled: '{{ instrument_enabled_desired }}'
+            timed: '{{ instrument_timed_desired }}'
+        consumers:
+          - name: '{{ consumer_name }}'
+            enabled: '{{ consumer_enabled_desired }}'
+      check_mode: true
+      register: result
+
+    - name: Perf schema | Assert instrument and consumer check mode result
+      ansible.builtin.assert:
+        that:
+          - result is changed
+          - result.queries | length == 2
+          - result.instruments[0].name == instrument_name
+          - result.instruments[0].enabled == instrument_enabled_desired
+          - result.instruments[0].timed == instrument_timed_desired
+          - result.consumers[0].name == consumer_name
+          - result.consumers[0].enabled == consumer_enabled_desired
+
+    - name: Perf schema | Verify instrument and consumer stayed unchanged after check mode
+      ansible.mariadb.mariadb_query:
+        <<: *mysql_params
+        query:
+          - >
+            SELECT ENABLED, TIMED
+            FROM performance_schema.setup_instruments
+            WHERE NAME = '{{ instrument_name }}'
+          - >
+            SELECT ENABLED
+            FROM performance_schema.setup_consumers
+            WHERE NAME = '{{ consumer_name }}'
+      register: result
+
+    - name: Perf schema | Assert instrument and consumer stayed unchanged after check mode
+      ansible.builtin.assert:
+        that:
+          - (result.query_result[0][0]['ENABLED'] | upper == 'YES') == instrument_enabled_initial
+          - (result.query_result[0][0]['TIMED'] | upper == 'YES') == instrument_timed_initial
+          - (result.query_result[1][0]['ENABLED'] | upper == 'YES') == consumer_enabled_initial
+
+    - name: Perf schema | Update instrument and consumer
+      ansible.mariadb.mariadb_perf_schema:
+        <<: *mysql_params
+        instruments:
+          - name: '{{ instrument_name }}'
+            enabled: '{{ instrument_enabled_desired }}'
+            timed: '{{ instrument_timed_desired }}'
+        consumers:
+          - name: '{{ consumer_name }}'
+            enabled: '{{ consumer_enabled_desired }}'
+      register: result
+
+    - name: Perf schema | Assert instrument and consumer update result
+      ansible.builtin.assert:
+        that:
+          - result is changed
+          - result.instruments[0].enabled == instrument_enabled_desired
+          - result.instruments[0].timed == instrument_timed_desired
+          - result.consumers[0].enabled == consumer_enabled_desired
+
+    - name: Perf schema | Verify instrument and consumer changed in database
+      ansible.mariadb.mariadb_query:
+        <<: *mysql_params
+        query:
+          - >
+            SELECT ENABLED, TIMED
+            FROM performance_schema.setup_instruments
+            WHERE NAME = '{{ instrument_name }}'
+          - >
+            SELECT ENABLED
+            FROM performance_schema.setup_consumers
+            WHERE NAME = '{{ consumer_name }}'
+      register: result
+
+    - name: Perf schema | Assert instrument and consumer changed in database
+      ansible.builtin.assert:
+        that:
+          - (result.query_result[0][0]['ENABLED'] | upper == 'YES') == instrument_enabled_desired
+          - (result.query_result[0][0]['TIMED'] | upper == 'YES') == instrument_timed_desired
+          - (result.query_result[1][0]['ENABLED'] | upper == 'YES') == consumer_enabled_desired
+
+    - name: Perf schema | Re-apply instrument and consumer
+      ansible.mariadb.mariadb_perf_schema:
+        <<: *mysql_params
+        instruments:
+          - name: '{{ instrument_name }}'
+            enabled: '{{ instrument_enabled_desired }}'
+            timed: '{{ instrument_timed_desired }}'
+        consumers:
+          - name: '{{ consumer_name }}'
+            enabled: '{{ consumer_enabled_desired }}'
+      register: result
+
+    - name: Perf schema | Assert idempotent apply for instrument and consumer
+      ansible.builtin.assert:
+        that:
+          - result is not changed
+
+    - name: Perf schema | Update wildcard instrument row
+      ansible.mariadb.mariadb_perf_schema:
+        <<: *mysql_params
+        instruments:
+          - name: '{{ wildcard_instrument_name }}'
+            enabled: '{{ wildcard_instrument_enabled_desired }}'
+            timed: '{{ wildcard_instrument_timed_desired }}'
+      register: result
+
+    - name: Perf schema | Assert wildcard instrument update result
+      ansible.builtin.assert:
+        that:
+          - result is changed
+          - result.instruments[0].name == wildcard_instrument_name
+          - result.instruments[0].enabled == wildcard_instrument_enabled_desired
+          - result.instruments[0].timed == wildcard_instrument_timed_desired
+
+    - name: Perf schema | Verify wildcard instrument changed in database
+      ansible.mariadb.mariadb_query:
+        <<: *mysql_params
+        query: >
+          SELECT ENABLED, TIMED
+          FROM performance_schema.setup_instruments
+          WHERE NAME = '{{ wildcard_instrument_name }}'
+      register: result
+
+    - name: Perf schema | Assert wildcard instrument changed in database
+      ansible.builtin.assert:
+        that:
+          - (result.query_result[0][0]['ENABLED'] | upper == 'YES') == wildcard_instrument_enabled_desired
+          - (result.query_result[0][0]['TIMED'] | upper == 'YES') == wildcard_instrument_timed_desired
+
+    - name: Perf schema | Fail when instrument row does not exist
+      ansible.mariadb.mariadb_perf_schema:
+        <<: *mysql_params
+        instruments:
+          - name: ansible/nonexistent/instrument
+            enabled: true
+            timed: true
+      register: result
+      ignore_errors: true
+
+    - name: Perf schema | Assert missing instrument failure
+      ansible.builtin.assert:
+        that:
+          - result is failed
+          - "'invalid performance schema request:' in result.msg"
+          - "'ansible/nonexistent/instrument' in result.msg"
+
+    - name: Perf schema | Ensure actor and object rows are absent
+      ansible.mariadb.mariadb_perf_schema:
+        <<: *mysql_params
+        actors:
+          - user: '{{ actor_user }}'
+            host: '{{ actor_host }}'
+            role: '{{ actor_role }}'
+            state: absent
+        objects:
+          - object_type: '{{ object_type }}'
+            object_schema: '{{ object_schema }}'
+            object_name: '{{ object_name }}'
+            state: absent
+
+    - name: Perf schema | Create actor and object in check mode
+      ansible.mariadb.mariadb_perf_schema:
+        <<: *mysql_params
+        actors:
+          - user: '{{ actor_user }}'
+            host: '{{ actor_host }}'
+            role: '{{ actor_role }}'
+            enabled: true
+            history: false
+        objects:
+          - object_type: '{{ object_type }}'
+            object_schema: '{{ object_schema }}'
+            object_name: '{{ object_name }}'
+            enabled: true
+            timed: false
+      check_mode: true
+      register: result
+
+    - name: Perf schema | Assert actor and object check mode create result
+      ansible.builtin.assert:
+        that:
+          - result is changed
+          - result.queries | length == 2
+          - result.actors[0].user == actor_user
+          - result.actors[0].host == actor_host
+          - result.actors[0].role == actor_role
+          - result.actors[0].enabled
+          - not result.actors[0].history
+          - result.objects[0].object_type == object_type
+          - result.objects[0].object_schema == object_schema
+          - result.objects[0].object_name == object_name
+          - result.objects[0].enabled
+          - not result.objects[0].timed
+
+    - name: Perf schema | Verify actor and object do not exist after check mode
+      ansible.mariadb.mariadb_query:
+        <<: *mysql_params
+        query:
+          - >
+            SELECT COUNT(*) AS actor_count
+            FROM performance_schema.setup_actors
+            WHERE HOST = '{{ actor_host }}'
+              AND USER = '{{ actor_user }}'
+              AND ROLE = '{{ actor_role }}'
+          - >
+            SELECT COUNT(*) AS object_count
+            FROM performance_schema.setup_objects
+            WHERE OBJECT_TYPE = '{{ object_type }}'
+              AND OBJECT_SCHEMA = '{{ object_schema }}'
+              AND OBJECT_NAME = '{{ object_name }}'
+      register: result
+
+    - name: Perf schema | Assert actor and object absent after check mode
+      ansible.builtin.assert:
+        that:
+          - result.query_result[0][0]['actor_count'] == 0
+          - result.query_result[1][0]['object_count'] == 0
+
+    - name: Perf schema | Create actor and object
+      ansible.mariadb.mariadb_perf_schema:
+        <<: *mysql_params
+        actors:
+          - user: '{{ actor_user }}'
+            host: '{{ actor_host }}'
+            role: '{{ actor_role }}'
+            enabled: true
+            history: false
+        objects:
+          - object_type: '{{ object_type }}'
+            object_schema: '{{ object_schema }}'
+            object_name: '{{ object_name }}'
+            enabled: true
+            timed: false
+      register: result
+
+    - name: Perf schema | Assert actor and object create result
+      ansible.builtin.assert:
+        that:
+          - result is changed
+          - result.actors[0].enabled
+          - not result.actors[0].history
+          - result.objects[0].enabled
+          - not result.objects[0].timed
+
+    - name: Perf schema | Verify actor and object exist in database
+      ansible.mariadb.mariadb_query:
+        <<: *mysql_params
+        query:
+          - >
+            SELECT ENABLED, HISTORY
+            FROM performance_schema.setup_actors
+            WHERE HOST = '{{ actor_host }}'
+              AND USER = '{{ actor_user }}'
+              AND ROLE = '{{ actor_role }}'
+          - >
+            SELECT ENABLED, TIMED
+            FROM performance_schema.setup_objects
+            WHERE OBJECT_TYPE = '{{ object_type }}'
+              AND OBJECT_SCHEMA = '{{ object_schema }}'
+              AND OBJECT_NAME = '{{ object_name }}'
+      register: result
+
+    - name: Perf schema | Assert actor and object exist in database
+      ansible.builtin.assert:
+        that:
+          - result.query_result[0][0]['ENABLED'] | upper == 'YES'
+          - result.query_result[0][0]['HISTORY'] | upper == 'NO'
+          - result.query_result[1][0]['ENABLED'] | upper == 'YES'
+          - result.query_result[1][0]['TIMED'] | upper == 'NO'
+
+    - name: Perf schema | Update actor and object rows
+      ansible.mariadb.mariadb_perf_schema:
+        <<: *mysql_params
+        actors:
+          - user: '{{ actor_user }}'
+            host: '{{ actor_host }}'
+            role: '{{ actor_role }}'
+            enabled: false
+            history: true
+        objects:
+          - object_type: '{{ object_type }}'
+            object_schema: '{{ object_schema }}'
+            object_name: '{{ object_name }}'
+            enabled: false
+            timed: true
+      register: result
+
+    - name: Perf schema | Assert actor and object update result
+      ansible.builtin.assert:
+        that:
+          - result is changed
+          - not result.actors[0].enabled
+          - result.actors[0].history
+          - not result.objects[0].enabled
+          - result.objects[0].timed
+
+    - name: Perf schema | Verify actor and object updates in database
+      ansible.mariadb.mariadb_query:
+        <<: *mysql_params
+        query:
+          - >
+            SELECT ENABLED, HISTORY
+            FROM performance_schema.setup_actors
+            WHERE HOST = '{{ actor_host }}'
+              AND USER = '{{ actor_user }}'
+              AND ROLE = '{{ actor_role }}'
+          - >
+            SELECT ENABLED, TIMED
+            FROM performance_schema.setup_objects
+            WHERE OBJECT_TYPE = '{{ object_type }}'
+              AND OBJECT_SCHEMA = '{{ object_schema }}'
+              AND OBJECT_NAME = '{{ object_name }}'
+      register: result
+
+    - name: Perf schema | Assert actor and object updates in database
+      ansible.builtin.assert:
+        that:
+          - result.query_result[0][0]['ENABLED'] | upper == 'NO'
+          - result.query_result[0][0]['HISTORY'] | upper == 'YES'
+          - result.query_result[1][0]['ENABLED'] | upper == 'NO'
+          - result.query_result[1][0]['TIMED'] | upper == 'YES'
+
+    - name: Perf schema | Re-apply actor and object
+      ansible.mariadb.mariadb_perf_schema:
+        <<: *mysql_params
+        actors:
+          - user: '{{ actor_user }}'
+            host: '{{ actor_host }}'
+            role: '{{ actor_role }}'
+            enabled: false
+            history: true
+        objects:
+          - object_type: '{{ object_type }}'
+            object_schema: '{{ object_schema }}'
+            object_name: '{{ object_name }}'
+            enabled: false
+            timed: true
+      register: result
+
+    - name: Perf schema | Assert idempotent apply for actor and object
+      ansible.builtin.assert:
+        that:
+          - result is not changed
+
+    - name: Perf schema | Remove actor and object in check mode
+      ansible.mariadb.mariadb_perf_schema:
+        <<: *mysql_params
+        actors:
+          - user: '{{ actor_user }}'
+            host: '{{ actor_host }}'
+            role: '{{ actor_role }}'
+            state: absent
+        objects:
+          - object_type: '{{ object_type }}'
+            object_schema: '{{ object_schema }}'
+            object_name: '{{ object_name }}'
+            state: absent
+      check_mode: true
+      register: result
+
+    - name: Perf schema | Assert actor and object absent check mode result
+      ansible.builtin.assert:
+        that:
+          - result is changed
+          - result.queries | length == 2
+          - result.actors | length == 0
+          - result.objects | length == 0
+
+    - name: Perf schema | Verify actor and object still exist after absent check mode
+      ansible.mariadb.mariadb_query:
+        <<: *mysql_params
+        query:
+          - >
+            SELECT COUNT(*) AS actor_count
+            FROM performance_schema.setup_actors
+            WHERE HOST = '{{ actor_host }}'
+              AND USER = '{{ actor_user }}'
+              AND ROLE = '{{ actor_role }}'
+          - >
+            SELECT COUNT(*) AS object_count
+            FROM performance_schema.setup_objects
+            WHERE OBJECT_TYPE = '{{ object_type }}'
+              AND OBJECT_SCHEMA = '{{ object_schema }}'
+              AND OBJECT_NAME = '{{ object_name }}'
+      register: result
+
+    - name: Perf schema | Assert actor and object still exist after absent check mode
+      ansible.builtin.assert:
+        that:
+          - result.query_result[0][0]['actor_count'] == 1
+          - result.query_result[1][0]['object_count'] == 1
+
+    - name: Perf schema | Remove actor and object
+      ansible.mariadb.mariadb_perf_schema:
+        <<: *mysql_params
+        actors:
+          - user: '{{ actor_user }}'
+            host: '{{ actor_host }}'
+            role: '{{ actor_role }}'
+            state: absent
+        objects:
+          - object_type: '{{ object_type }}'
+            object_schema: '{{ object_schema }}'
+            object_name: '{{ object_name }}'
+            state: absent
+      register: result
+
+    - name: Perf schema | Assert actor and object absent result
+      ansible.builtin.assert:
+        that:
+          - result is changed
+
+    - name: Perf schema | Verify actor and object are absent in database
+      ansible.mariadb.mariadb_query:
+        <<: *mysql_params
+        query:
+          - >
+            SELECT COUNT(*) AS actor_count
+            FROM performance_schema.setup_actors
+            WHERE HOST = '{{ actor_host }}'
+              AND USER = '{{ actor_user }}'
+              AND ROLE = '{{ actor_role }}'
+          - >
+            SELECT COUNT(*) AS object_count
+            FROM performance_schema.setup_objects
+            WHERE OBJECT_TYPE = '{{ object_type }}'
+              AND OBJECT_SCHEMA = '{{ object_schema }}'
+              AND OBJECT_NAME = '{{ object_name }}'
+      register: result
+
+    - name: Perf schema | Assert actor and object are absent in database
+      ansible.builtin.assert:
+        that:
+          - result.query_result[0][0]['actor_count'] == 0
+          - result.query_result[1][0]['object_count'] == 0
+
+    - name: Perf schema | Restore original instrument and consumer values
+      ansible.mariadb.mariadb_perf_schema:
+        <<: *mysql_params
+        instruments:
+          - name: '{{ instrument_name }}'
+            enabled: '{{ instrument_enabled_initial }}'
+            timed: '{{ instrument_timed_initial }}'
+          - name: '{{ wildcard_instrument_name }}'
+            enabled: '{{ wildcard_instrument_enabled_initial }}'
+            timed: '{{ wildcard_instrument_timed_initial }}'
+        consumers:
+          - name: '{{ consumer_name }}'
+            enabled: '{{ consumer_enabled_initial }}'

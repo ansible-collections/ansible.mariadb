@@ -1,0 +1,361 @@
+---
+# Copyright: (c) 2019, Andrew Klychkov (@Andersson007) <andrew.a.klychkov@gmail.com>
+# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+
+- vars:
+    mysql_params: &mysql_params
+      login_user: '{{ mysql_user }}'
+      login_password: '{{ mysql_password }}'
+      login_host: '{{ mysql_host }}'
+
+  block:
+
+    # We use iF NOT EXISTS because the GITHUB Action:
+    # "ansible-community/ansible-test-gh-action" uses "--retry-on-error".
+    # If test_mysql_replication fails, test will run again an without the IF
+    # NOT EXISTS, we see "Error 1396 (HY000): Operation CREATE USER failed..."
+    # which is misleading.
+    # MySQL 9.0 removed the mysql_native_password plugin
+    - name: Create user for mysql replication
+      ansible.mariadb.mariadb_query:
+        <<: *mysql_params
+        login_port: '{{ mysql_primary_port }}'
+        query:
+          - >-
+            CREATE USER IF NOT EXISTS
+            '{{ replication_user }}'@'{{ mysql_host }}'
+            IDENTIFIED WITH mysql_native_password BY '{{ replication_pass }}'
+          - >-
+            GRANT REPLICATION SLAVE ON *.*
+            TO '{{ replication_user }}'@'{{ mysql_host }}'
+      when:
+        - db_engine == 'mysql'
+        - db_version is version('9.0', '<')
+
+    - name: Create user for mysql 9+ replication
+      ansible.mariadb.mariadb_query:
+        <<: *mysql_params
+        login_port: '{{ mysql_primary_port }}'
+        query:
+          - >-
+            CREATE USER IF NOT EXISTS
+            '{{ replication_user }}'@'{{ mysql_host }}'
+            IDENTIFIED BY '{{ replication_pass }}'
+          - >-
+            GRANT REPLICATION SLAVE ON *.*
+            TO '{{ replication_user }}'@'{{ mysql_host }}'
+      when:
+        - db_engine == 'mysql'
+        - db_version is version('9.0', '>=')
+
+    - name: Create user for mariadb replication
+      ansible.mariadb.mariadb_query:
+        <<: *mysql_params
+        login_port: '{{ mysql_primary_port }}'
+        query:
+          - >-
+            CREATE USER IF NOT EXISTS
+            '{{ replication_user }}'@'{{ mysql_host }}'
+            IDENTIFIED BY '{{ replication_pass }}'
+          - >-
+            GRANT REPLICATION SLAVE ON *.*
+            TO '{{ replication_user }}'@'{{ mysql_host }}'
+      when: db_engine == 'mariadb'
+
+    - name: Create test database
+      mysql_db:
+        <<: *mysql_params
+        login_port: '{{ mysql_primary_port }}'
+        state: present
+        name: '{{ test_db }}'
+
+    - name: Dump all databases from the primary
+      shell:
+        cmd: >-
+          mysqldump
+          -u{{ mysql_user }}
+          -p{{ mysql_password }}
+          -h{{ mysql_host }}
+          -P{{ mysql_primary_port }}
+          --protocol=tcp
+          --all-databases
+          --ignore-table=mysql.innodb_index_stats
+          --ignore-table=mysql.innodb_table_stats
+          --master-data=2
+          > {{ dump_path }}
+
+    - name: Restore the dump to replica1
+      shell:
+        cmd: >-
+          {{ mysql_command_wo_port }}
+          -P{{ mysql_replica1_port }} < {{ dump_path }}
+
+    - name: Restore the dump to replica2
+      shell:
+        cmd: >-
+          {{ mysql_command_wo_port }}
+          -P{{ mysql_replica2_port }} < {{ dump_path }}
+
+    # Test getprimary mode:
+    - name: Get primary status
+      mysql_replication:
+        <<: *mysql_params
+        login_port: '{{ mysql_primary_port }}'
+        mode: getprimary
+      register: mysql_primary_status
+
+    - name: Assert that primary is in expected state
+      assert:
+        that:
+          - mysql_primary_status.Is_Primary == true
+          - mysql_primary_status.Position != 0
+          - mysql_primary_status is not changed
+
+    # Test startreplica fails without changeprimary first. This needs fail_on_error
+    - name: Start replica and fail because primary is not specified; failing on error as requested
+      mysql_replication:
+        <<: *mysql_params
+        login_port: '{{ mysql_replica1_port }}'
+        mode: startreplica
+        primary_use_gtid: replica_pos
+        fail_on_error: yes
+      register: result
+      ignore_errors: yes
+
+    - name: Assert that startreplica is failed
+      assert:
+        that:
+          - result is failed
+
+    # Test startreplica doesn't fail if fail_on_error: no
+    - name: Start replica and fail without propagating it to ansible as we were asked not to
+      mysql_replication:
+        <<: *mysql_params
+        login_port: '{{ mysql_replica1_port }}'
+        mode: startreplica
+        fail_on_error: no
+      register: result
+
+    - name: Assert that startreplica succeeded
+      assert:
+        that:
+          - result is not failed
+
+    # Test startreplica doesn't fail if there is no fail_on_error.
+    # This is suboptimal because nothing happens, but it's the old behavior.
+    - name: Start replica and fail without propagating it to ansible as previous versions did not fail on error
+      mysql_replication:
+        <<: *mysql_params
+        login_port: '{{ mysql_replica1_port }}'
+        mode: startreplica
+      register: result
+
+    - name: Assert that start replica succeeded again
+      assert:
+        that:
+          - result is not failed
+
+    # primary_ssl_ca will be set as '' to check the module's behaviour for #23976,
+    # must be converted to an empty string
+    - name: Test changeprimary mode with empty primary_ssl_ca
+      ansible.mariadb.mariadb_replication:
+        <<: *mysql_params
+        login_port: '{{ mysql_replica1_port }}'
+        mode: changeprimary
+        primary_host: '{{ mysql_host }}'
+        primary_port: '{{ mysql_primary_port }}'
+        primary_user: '{{ replication_user }}'
+        primary_password: '{{ replication_pass }}'
+        primary_log_file: '{{ mysql_primary_status.File }}'
+        primary_log_pos: '{{ mysql_primary_status.Position }}'
+        primary_ssl_ca: ''
+        primary_ssl: false
+      register: result
+
+    - name: Assert that changeprimmary is changed and return expected query for MariaDB and MySQL < 8.0.23
+      ansible.builtin.assert:
+        that:
+          - result is changed
+          - result.queries == expected_queries
+      when:
+        - >
+          db_engine == 'mariadb' or
+          (db_engine == 'mysql' and db_version is version('8.0.23', '<'))
+      vars:
+        expected_queries: ["CHANGE MASTER TO MASTER_HOST='{{ mysql_host }}',\
+          MASTER_USER='{{ replication_user }}',MASTER_PASSWORD='********',\
+          MASTER_PORT={{ mysql_primary_port }},MASTER_LOG_FILE=\
+          '{{ mysql_primary_status.File }}',MASTER_LOG_POS=\
+          {{ mysql_primary_status.Position }},MASTER_SSL=0,MASTER_SSL_CA=''"]
+
+    - name: Assert that changeprimmary is changed and return expected query for MySQL > 8.0.23
+      ansible.builtin.assert:
+        that:
+          - result is changed
+          - result.queries == expected_queries
+      when:
+        - db_engine == 'mysql'
+        - db_version is version('8.0.23', '>=')
+      vars:
+        expected_queries: ["CHANGE REPLICATION SOURCE TO \
+          SOURCE_HOST='{{ mysql_host }}',\
+          SOURCE_USER='{{ replication_user }}',SOURCE_PASSWORD='********',\
+          SOURCE_PORT={{ mysql_primary_port }},SOURCE_LOG_FILE=\
+          '{{ mysql_primary_status.File }}',SOURCE_LOG_POS=\
+          {{ mysql_primary_status.Position }},SOURCE_SSL=0,SOURCE_SSL_CA=''"]
+
+    # Test startreplica mode:
+    - name: Start replica
+      mysql_replication:
+        <<: *mysql_params
+        login_port: '{{ mysql_replica1_port }}'
+        mode: startreplica
+      register: result
+
+    - name: Assert that startreplica is changed and returns expected query
+      assert:
+        that:
+          - result is changed
+          - result.queries == ["START SLAVE"] or result.queries == ["START REPLICA"]
+
+    # Test getreplica mode:
+    - name: Get replica status
+      mysql_replication:
+        <<: *mysql_params
+        login_port: '{{ mysql_replica1_port }}'
+        mode: getreplica
+      register: replica_status
+
+    - name: Assert that getreplica returns expected values for MySQL older than 8.0.22 and Mariadb
+      assert:
+        that:
+          - replica_status.Is_Replica is truthy(convert_bool=True)
+          - replica_status.Master_Host == mysql_host_value
+          - replica_status.Exec_Master_Log_Pos == mysql_primary_status.Position
+          - replica_status.Master_Port == mysql_primary_port_value
+          - replica_status.Last_IO_Errno == 0
+          - replica_status.Last_IO_Error == ''
+          - replica_status is not changed
+      vars:
+        mysql_host_value: "{{ mysql_host }}"
+        mysql_primary_port_value: "{{ mysql_primary_port }}"
+      when:
+        - >
+          db_engine == 'mariadb' or
+          (db_engine == 'mysql' and db_version is version('8.0.22', '<'))
+
+    - name: Assert that getreplica returns expected values for MySQL newer than 8.0.22
+      assert:
+        that:
+          - replica_status.Is_Replica is truthy(convert_bool=True)
+          - replica_status.Source_Host == mysql_host_value
+          - replica_status.Exec_Source_Log_Pos == mysql_primary_status.Position
+          - replica_status.Source_Port == mysql_primary_port_value
+          - replica_status is not changed
+      vars:
+        mysql_host_value: "{{ mysql_host }}"
+        mysql_primary_port_value: "{{ mysql_primary_port }}"
+      when:
+        - db_engine == 'mysql'
+        - db_version is version('8.0.22', '>=')
+
+    # MySQL 9.0+ defaults to caching_sha2_password which requires SSL or
+    # GET_SOURCE_PUBLIC_KEY for the replication IO thread. The test containers
+    # do not configure either, so the IO thread cannot connect.
+    # TODO: configure SSL for test containers so these assertions can run on MySQL 9.0+.
+    - name: Assert that replication IO thread is healthy (MySQL < 9.0 only)
+      assert:
+        that:
+          - replica_status.Last_IO_Errno == 0
+          - replica_status.Last_IO_Error == ''
+      when:
+        - db_engine == 'mysql'
+        - db_version is version('8.0.22', '>=')
+        - db_version is version('9.0', '<')
+
+    # Create test table and add data to it:
+    - name: Create test table
+      shell: "echo \"CREATE TABLE {{ test_table }} (id int);\" | {{ mysql_command_wo_port }} -P{{ mysql_primary_port }} {{ test_db }}"
+
+    - name: Insert data
+      shell: "echo \"INSERT INTO {{ test_table }} (id) VALUES (1), (2), (3); FLUSH LOGS;\" | {{ mysql_command_wo_port }} -P{{ mysql_primary_port }} {{ test_db }}"
+
+    - name: Small pause to be sure the bin log, which was flushed previously, reached the replica
+      ansible.builtin.wait_for:
+        timeout: 2
+
+    # Test primary log pos has been changed:
+    - name: Get replica status
+      mysql_replication:
+        <<: *mysql_params
+        login_port: '{{ mysql_replica1_port }}'
+        mode: getreplica
+      register: replica_status
+
+    # mysql_primary_status.Position is not actual and it has been changed by the prev step,
+    # so replica_status.Exec_Master_Log_Pos must be different:
+    - name: Assert that getreplica Log_Pos is different for MySQL older than 8.0.22 and MariaDB
+      assert:
+        that:
+          - replica_status.Exec_Master_Log_Pos != mysql_primary_status.Position
+      when:
+        - >
+          db_engine == 'mariadb' or
+          (db_engine == 'mysql' and db_version is version('8.0.22', '<'))
+
+    # MySQL 9.0+ defaults to caching_sha2_password which requires SSL for
+    # replication IO. Without SSL the IO thread cannot connect, so the
+    # replica never receives new data and the log position stays the same.
+    # TODO: configure SSL for test containers so this assertion can run on MySQL 9.0+.
+    - name: Assert that getreplica Log_Pos is different for MySQL newer than 8.0.22
+      assert:
+        that:
+          - replica_status.Exec_Source_Log_Pos != mysql_primary_status.Position
+      when:
+        - db_engine == 'mysql'
+        - db_version is version('8.0.22', '>=')
+        - db_version is version('9.0', '<')
+
+    - name: Start replica that is already running
+      mysql_replication:
+        <<: *mysql_params
+        login_port: '{{ mysql_replica1_port }}'
+        mode: startreplica
+        fail_on_error: true
+      register: result
+
+    # Test stopreplica mode:
+    - name: Stop replica
+      mysql_replication:
+        <<: *mysql_params
+        login_port: '{{ mysql_replica1_port }}'
+        mode: stopreplica
+      register: result
+
+    - name: Assert that stopreplica is changed and returns expected query
+      assert:
+        that:
+          - result is changed
+          - result.queries == ["STOP SLAVE"] or result.queries == ["STOP REPLICA"]
+
+    - name: Pause for 2 seconds to let the replication stop
+      ansible.builtin.wait_for:
+        timeout: 2
+
+    # master / slave related choices were removed in 3.0.0
+    # https://github.com/ansible-collections/ansible.mysql/pull/252
+    - name: Test invoking the module with unsupported choice
+      mysql_replication:
+        <<: *mysql_params
+        login_port: '{{ mysql_replica1_port }}'
+        mode: stopslave
+        fail_on_error: true
+      register: result
+      ignore_errors: yes
+
+    - name: Assert that stopslave returns expected error message
+      assert:
+        that:
+          -
+            "result.msg == 'value of mode must be one of: getprimary, getreplica, changeprimary, stopreplica, startreplica, resetprimary, resetreplica, resetreplicaall, changereplication, got: stopslave'"
+          - result is failed

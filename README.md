@@ -1,11 +1,11 @@
 # MySQL and MariaDB collection for Ansible
-[![Plugins CI](https://github.com/ansible-collections/ansible.mysql/actions/workflows/ansible-test-plugins.yml/badge.svg?event=push)](https://github.com/ansible-collections/ansible.mysql/actions?query=workflow%3A"Plugins+CI") [![Codecov](https://img.shields.io/codecov/c/github/ansible-collections/ansible.mysql)](https://codecov.io/gh/ansible-collections/ansible.mysql) [![Discuss on Matrix at #mysql:ansible.com](https://img.shields.io/matrix/mysql:ansible.com.svg?server_fqdn=matrix.org&label=Discuss%20on%20Matrix%20at%20%23mysql:ansible.com&logo=matrix)](https://matrix.to/#/#mysql:ansible.com)
+[![Plugins CI](https://github.com/ansible-collections/ansible.mariadb/actions/workflows/ansible-test-plugins.yml/badge.svg?event=push)](https://github.com/ansible-collections/ansible.mariadb/actions?query=workflow%3A"Plugins+CI") [![Codecov](https://img.shields.io/codecov/c/github/ansible-collections/ansible.mariadb)](https://codecov.io/gh/ansible-collections/ansible.mariadb) [![Discuss on Matrix at #mysql:ansible.com](https://img.shields.io/matrix/mysql:ansible.com.svg?server_fqdn=matrix.org&label=Discuss%20on%20Matrix%20at%20%23mysql:ansible.com&logo=matrix)](https://matrix.to/#/#mysql:ansible.com)
 
 This collection is a part of the Ansible package.
 
 ## Our mission
 
-The Ansible `ansible.mysql` collection goals are to produce and maintain simple,
+The Ansible `ansible.mariadb` collection goals are to produce and maintain simple,
 flexible, and powerful open-source software for automating MySQL and MariaDB related tasks
 providing good documentation for easy deployment and use.
 
@@ -34,19 +34,19 @@ For more information about communication, see the [Ansible communication guide](
 
 ## Contributing
 
-The content of this collection is made by [people](https://github.com/ansible-collections/ansible.mysql/blob/main/CONTRIBUTORS) just like you, a community of individuals collaborating on making the world better through developing automation software.
+The content of this collection is made by [people](https://github.com/ansible-collections/ansible.mariadb/blob/main/CONTRIBUTORS) just like you, a community of individuals collaborating on making the world better through developing automation software.
 
 We are actively accepting new contributors.
 
 Any kind of contribution is very welcome.
 
-You don't know how to start? Refer to our [contribution guide](https://github.com/ansible-collections/ansible.mysql/blob/main/CONTRIBUTING.md) or ask us in the [#mysql:ansible.com room](https://matrix.to/#/#mysql:ansible.com) on [Matrix](https://docs.ansible.com/ansible/devel/community/communication.html#ansible-community-on-matrix)!
+You don't know how to start? Refer to our [contribution guide](https://github.com/ansible-collections/ansible.mariadb/blob/main/CONTRIBUTING.md) or ask us in the [#mysql:ansible.com room](https://matrix.to/#/#mysql:ansible.com) on [Matrix](https://docs.ansible.com/ansible/devel/community/communication.html#ansible-community-on-matrix)!
 
 ## Collection maintenance
 
-The current maintainers (contributors with `write` or higher access) are listed in the [MAINTAINERS](https://github.com/ansible-collections/ansible.mysql/blob/main/MAINTAINERS) file. If you have questions or need help, feel free to mention them in the proposals.
+The current maintainers (contributors with `write` or higher access) are listed in the [MAINTAINERS](https://github.com/ansible-collections/ansible.mariadb/blob/main/MAINTAINERS) file. If you have questions or need help, feel free to mention them in the proposals.
 
-To learn how to maintain / become a maintainer of this collection, refer to the [Maintainer guidelines](https://github.com/ansible-collections/ansible.mysql/blob/main/MAINTAINING.md).
+To learn how to maintain / become a maintainer of this collection, refer to the [Maintainer guidelines](https://github.com/ansible-collections/ansible.mariadb/blob/main/MAINTAINING.md).
 
 It is necessary for maintainers of this collection to be subscribed to:
 
@@ -66,17 +66,17 @@ Every voice is important and every idea is valuable. If you have something on yo
 ## Included content
 
 - **Modules**:
-  - [mysql_db](https://docs.ansible.com/ansible/devel/collections/ansible/mysql/mysql_db_module.html)
-  - [mysql_info](https://docs.ansible.com/ansible/devel/collections/ansible/mysql/mysql_info_module.html)
-  - [mysql_password_policy](https://docs.ansible.com/ansible/devel/collections/ansible/mysql/mysql_password_policy_module.html)
-  - [mysql_perf_schema](https://docs.ansible.com/ansible/devel/collections/ansible/mysql/mysql_perf_schema_module.html)
-  - [mysql_query](https://docs.ansible.com/ansible/devel/collections/ansible/mysql/mysql_query_module.html)
-  - [mysql_replication](https://docs.ansible.com/ansible/devel/collections/ansible/mysql/mysql_replication_module.html)
-  - [mysql_replication_filter](https://docs.ansible.com/ansible/devel/collections/ansible/mysql/mysql_replication_filter_module.html)
-  - [mysql_role](https://docs.ansible.com/ansible/devel/collections/ansible/mysql/mysql_role_module.html)
-  - [mysql_slow_log](https://docs.ansible.com/ansible/devel/collections/ansible/mysql/mysql_slow_log_module.html)
-  - [mysql_user](https://docs.ansible.com/ansible/devel/collections/ansible/mysql/mysql_user_module.html)
-  - [mysql_variables](https://docs.ansible.com/ansible/devel/collections/ansible/mysql/mysql_variables_module.html)
+  - [mariadb_db](https://docs.ansible.com/ansible/devel/collections/ansible/mariadb/mariadb_db_module.html)
+  - [mariadb_info](https://docs.ansible.com/ansible/devel/collections/ansible/mariadb/mariadb_info_module.html)
+  - [mariadb_password_policy](https://docs.ansible.com/ansible/devel/collections/ansible/mariadb/mariadb_password_policy_module.html)
+  - [mariadb_perf_schema](https://docs.ansible.com/ansible/devel/collections/ansible/mariadb/mariadb_perf_schema_module.html)
+  - [mariadb_query](https://docs.ansible.com/ansible/devel/collections/ansible/mariadb/mariadb_query_module.html)
+  - [mariadb_replication](https://docs.ansible.com/ansible/devel/collections/ansible/mariadb/mariadb_replication_module.html)
+  - [mariadb_replication_filter](https://docs.ansible.com/ansible/devel/collections/ansible/mariadb/mariadb_replication_filter_module.html)
+  - [mariadb_role](https://docs.ansible.com/ansible/devel/collections/ansible/mariadb/mariadb_role_module.html)
+  - [mariadb_slow_log](https://docs.ansible.com/ansible/devel/collections/ansible/mariadb/mariadb_slow_log_module.html)
+  - [mariadb_user](https://docs.ansible.com/ansible/devel/collections/ansible/mariadb/mariadb_user_module.html)
+  - [mariadb_variables](https://docs.ansible.com/ansible/devel/collections/ansible/mariadb/mariadb_variables_module.html)
 
 
 ## Releases Support Timeline
@@ -129,7 +129,7 @@ For MariaDB, only Long Term releases are tested. When multiple LTS are available
 
 The MySQL modules rely on a [PyMySQL](https://github.com/PyMySQL/PyMySQL) connector.
 
-The `mysqlclient` connector support has been [deprecated](https://github.com/ansible-collections/ansible.mysql/issues/654) - use `PyMySQL` connector instead! We will stop testing against it in collection version 4.0.0 and remove the related code in 5.0.0.
+The `mysqlclient` connector support has been [deprecated](https://github.com/ansible-collections/ansible.mariadb/issues/654) - use `PyMySQL` connector instead! We will stop testing against it in collection version 4.0.0 and remove the related code in 5.0.0.
 
 ## Using this collection
 
@@ -138,7 +138,7 @@ The `mysqlclient` connector support has been [deprecated](https://github.com/ans
 Before using the MySQL collection, you need to install it with the Ansible Galaxy CLI:
 
 ```bash
-ansible-galaxy collection install ansible.mysql
+ansible-galaxy collection install ansible.mariadb
 ```
 
 You can also include it in a `requirements.yml` file and install it via `ansible-galaxy collection install -r requirements.yml`, using the format:
@@ -146,19 +146,19 @@ You can also include it in a `requirements.yml` file and install it via `ansible
 ```yaml
 ---
 collections:
-  - name: ansible.mysql
+  - name: ansible.mariadb
 ```
 
 Note that if you install the collection from Ansible Galaxy, it will not be upgraded automatically if you upgrade the Ansible package. To upgrade the collection to the latest available version, run the following command:
 
 ```bash
-ansible-galaxy collection install ansible.mysql --upgrade
+ansible-galaxy collection install ansible.mariadb --upgrade
 ```
 
 You can also install a specific version of the collection, for example, if you need to downgrade when something is broken in the latest version (please report an issue in this repository). Use the following syntax:
 
 ```bash
-ansible-galaxy collection install ansible.mysql:==5.0.0
+ansible-galaxy collection install ansible.mariadb:==5.0.0
 ```
 
 See [Ansible Using collections](https://docs.ansible.com/ansible/latest/user_guide/collections_using.html) for more details.
@@ -166,12 +166,12 @@ See [Ansible Using collections](https://docs.ansible.com/ansible/latest/user_gui
 ## Support
 
 If you obtained this collection from:
-- Ansible community package, Ansible Galaxy, or GitHub: open an issue in this repository or start a forum topic. See the [Communication section](https://github.com/ansible-collections/ansible.mysql#communication) for details.
+- Ansible community package, Ansible Galaxy, or GitHub: open an issue in this repository or start a forum topic. See the [Communication section](https://github.com/ansible-collections/ansible.mariadb#communication) for details.
 - Automation Hub: as Red Hat Ansible Certified Content, this collection is entitled to support through the Ansible Automation Platform (AAP) using the **Create issue** button on the top right corner.
 
 ## Release notes
 
-See the [CHANGELOG.rst](https://github.com/ansible-collections/ansible.mysql/blob/main/CHANGELOG.rst) for all changes.
+See the [CHANGELOG.rst](https://github.com/ansible-collections/ansible.mariadb/blob/main/CHANGELOG.rst) for all changes.
 
 ## Licensing
 

@@ -1,0 +1,1065 @@
+---
+####################################################################
+# WARNING: These are designed specifically for Ansible tests       #
+# and should not be used as examples of how to write Ansible roles #
+####################################################################
+
+- name: Replication filter | Run tests
+  vars:
+    mysql_params: &mysql_params
+      login_user: '{{ mysql_user }}'
+      login_password: '{{ mysql_password }}'
+      login_host: '{{ mysql_host }}'
+    replicate_do_db_values: &replicate_do_db_values
+      - app
+      - reporting
+    replicate_ignore_db_values: &replicate_ignore_db_values
+      - archive
+      - scratch
+    replicate_do_table_values: &replicate_do_table_values
+      - app.orders
+      - reporting.summary
+    replicate_ignore_table_values: &replicate_ignore_table_values
+      - archive.events
+      - tmp.sessions
+    replicate_wild_do_table_values: &replicate_wild_do_table_values
+      - app.%
+      - reporting.sales_%
+    replicate_wild_ignore_table_values: &replicate_wild_ignore_table_values
+      - archive.old_%
+      - tmp.%
+    replicate_do_db_csv: app,reporting
+    replicate_ignore_db_csv: archive,scratch
+    replicate_do_table_csv: app.orders,reporting.summary
+    replicate_ignore_table_csv: archive.events,tmp.sessions
+    replicate_wild_do_table_csv: app.%,reporting.sales_%
+    replicate_wild_ignore_table_csv: archive.old_%,tmp.%
+  block:
+    - name: Replication filter | Clear MySQL global filters baseline
+      ansible.mariadb.mariadb_replication_filter:
+        <<: *mysql_params
+        login_port: '{{ mysql_replica1_port }}'
+        replicate_do_db: []
+        replicate_ignore_db: []
+        replicate_do_table: []
+        replicate_ignore_table: []
+        replicate_wild_do_table: []
+        replicate_wild_ignore_table: []
+      when:
+        - db_engine == 'mysql'
+
+    - name: Replication filter | Re-clear MySQL global filters baseline
+      ansible.mariadb.mariadb_replication_filter:
+        <<: *mysql_params
+        login_port: '{{ mysql_replica1_port }}'
+        replicate_do_db: []
+        replicate_ignore_db: []
+        replicate_do_table: []
+        replicate_ignore_table: []
+        replicate_wild_do_table: []
+        replicate_wild_ignore_table: []
+      register: result
+      when:
+        - db_engine == 'mysql'
+
+    - name: Replication filter | Assert MySQL global baseline clear idempotency
+      ansible.builtin.assert:
+        that:
+          - result is not changed
+      when:
+        - db_engine == 'mysql'
+
+    - name: Replication filter | Apply MySQL global filters in check mode
+      ansible.mariadb.mariadb_replication_filter:
+        <<: *mysql_params
+        login_port: '{{ mysql_replica1_port }}'
+        replicate_do_db: *replicate_do_db_values
+        replicate_ignore_db: *replicate_ignore_db_values
+        replicate_do_table: *replicate_do_table_values
+        replicate_ignore_table: *replicate_ignore_table_values
+        replicate_wild_do_table: *replicate_wild_do_table_values
+        replicate_wild_ignore_table: *replicate_wild_ignore_table_values
+      check_mode: true
+      register: result
+      when:
+        - db_engine == 'mysql'
+
+    - name: Replication filter | Assert MySQL global check mode result
+      ansible.builtin.assert:
+        that:
+          - result is changed
+          - result.queries | length == 6
+          - result.filters.replicate_do_db == replicate_do_db_values
+          - result.filters.replicate_ignore_db == replicate_ignore_db_values
+          - result.filters.replicate_do_table == replicate_do_table_values
+          - result.filters.replicate_ignore_table == replicate_ignore_table_values
+          - result.filters.replicate_wild_do_table == replicate_wild_do_table_values
+          - result.filters.replicate_wild_ignore_table == replicate_wild_ignore_table_values
+      when:
+        - db_engine == 'mysql'
+
+    - name: Replication filter | Verify MySQL global filters stayed unchanged after check mode
+      ansible.mariadb.mariadb_query:
+        <<: *mysql_params
+        login_port: '{{ mysql_replica1_port }}'
+        query:
+          - >
+            SELECT FILTER_RULE
+            FROM performance_schema.replication_applier_global_filters
+            WHERE FILTER_NAME = 'REPLICATE_DO_DB'
+          - >
+            SELECT FILTER_RULE
+            FROM performance_schema.replication_applier_global_filters
+            WHERE FILTER_NAME = 'REPLICATE_IGNORE_DB'
+          - >
+            SELECT FILTER_RULE
+            FROM performance_schema.replication_applier_global_filters
+            WHERE FILTER_NAME = 'REPLICATE_DO_TABLE'
+          - >
+            SELECT FILTER_RULE
+            FROM performance_schema.replication_applier_global_filters
+            WHERE FILTER_NAME = 'REPLICATE_IGNORE_TABLE'
+          - >
+            SELECT FILTER_RULE
+            FROM performance_schema.replication_applier_global_filters
+            WHERE FILTER_NAME = 'REPLICATE_WILD_DO_TABLE'
+          - >
+            SELECT FILTER_RULE
+            FROM performance_schema.replication_applier_global_filters
+            WHERE FILTER_NAME = 'REPLICATE_WILD_IGNORE_TABLE'
+      register: result
+      when:
+        - db_engine == 'mysql'
+
+    - name: Replication filter | Assert MySQL global filters stayed unchanged after check mode
+      ansible.builtin.assert:
+        that:
+          - result.query_result[0] | length == 0 or result.query_result[0][0]['FILTER_RULE'] == ''
+          - result.query_result[1] | length == 0 or result.query_result[1][0]['FILTER_RULE'] == ''
+          - result.query_result[2] | length == 0 or result.query_result[2][0]['FILTER_RULE'] == ''
+          - result.query_result[3] | length == 0 or result.query_result[3][0]['FILTER_RULE'] == ''
+          - result.query_result[4] | length == 0 or result.query_result[4][0]['FILTER_RULE'] == ''
+          - result.query_result[5] | length == 0 or result.query_result[5][0]['FILTER_RULE'] == ''
+      when:
+        - db_engine == 'mysql'
+
+    - name: Replication filter | Apply MySQL global filters
+      ansible.mariadb.mariadb_replication_filter:
+        <<: *mysql_params
+        login_port: '{{ mysql_replica1_port }}'
+        replicate_do_db: *replicate_do_db_values
+        replicate_ignore_db: *replicate_ignore_db_values
+        replicate_do_table: *replicate_do_table_values
+        replicate_ignore_table: *replicate_ignore_table_values
+        replicate_wild_do_table: *replicate_wild_do_table_values
+        replicate_wild_ignore_table: *replicate_wild_ignore_table_values
+      register: result
+      when:
+        - db_engine == 'mysql'
+
+    - name: Replication filter | Assert MySQL global apply result
+      ansible.builtin.assert:
+        that:
+          - result is changed
+          - result.queries | length == 6
+          - result.filters.replicate_do_db == replicate_do_db_values
+          - result.filters.replicate_ignore_db == replicate_ignore_db_values
+          - result.filters.replicate_do_table == replicate_do_table_values
+          - result.filters.replicate_ignore_table == replicate_ignore_table_values
+          - result.filters.replicate_wild_do_table == replicate_wild_do_table_values
+          - result.filters.replicate_wild_ignore_table == replicate_wild_ignore_table_values
+      when:
+        - db_engine == 'mysql'
+
+    - name: Replication filter | Verify MySQL global filters in Performance Schema
+      ansible.mariadb.mariadb_query:
+        <<: *mysql_params
+        login_port: '{{ mysql_replica1_port }}'
+        query:
+          - >
+            SELECT FILTER_RULE
+            FROM performance_schema.replication_applier_global_filters
+            WHERE FILTER_NAME = 'REPLICATE_DO_DB'
+          - >
+            SELECT FILTER_RULE
+            FROM performance_schema.replication_applier_global_filters
+            WHERE FILTER_NAME = 'REPLICATE_IGNORE_DB'
+          - >
+            SELECT FILTER_RULE
+            FROM performance_schema.replication_applier_global_filters
+            WHERE FILTER_NAME = 'REPLICATE_DO_TABLE'
+          - >
+            SELECT FILTER_RULE
+            FROM performance_schema.replication_applier_global_filters
+            WHERE FILTER_NAME = 'REPLICATE_IGNORE_TABLE'
+          - >
+            SELECT FILTER_RULE
+            FROM performance_schema.replication_applier_global_filters
+            WHERE FILTER_NAME = 'REPLICATE_WILD_DO_TABLE'
+          - >
+            SELECT FILTER_RULE
+            FROM performance_schema.replication_applier_global_filters
+            WHERE FILTER_NAME = 'REPLICATE_WILD_IGNORE_TABLE'
+      register: result
+      when:
+        - db_engine == 'mysql'
+
+    - name: Replication filter | Assert MySQL global filter state
+      ansible.builtin.assert:
+        that:
+          - result.query_result[0][0]['FILTER_RULE'] == replicate_do_db_csv
+          - result.query_result[1][0]['FILTER_RULE'] == replicate_ignore_db_csv
+          - result.query_result[2][0]['FILTER_RULE'] == replicate_do_table_csv
+          - result.query_result[3][0]['FILTER_RULE'] == replicate_ignore_table_csv
+          - result.query_result[4][0]['FILTER_RULE'] == replicate_wild_do_table_csv
+          - result.query_result[5][0]['FILTER_RULE'] == replicate_wild_ignore_table_csv
+      when:
+        - db_engine == 'mysql'
+
+    - name: Replication filter | Re-apply MySQL global filters
+      ansible.mariadb.mariadb_replication_filter:
+        <<: *mysql_params
+        login_port: '{{ mysql_replica1_port }}'
+        replicate_do_db: *replicate_do_db_values
+        replicate_ignore_db: *replicate_ignore_db_values
+        replicate_do_table: *replicate_do_table_values
+        replicate_ignore_table: *replicate_ignore_table_values
+        replicate_wild_do_table: *replicate_wild_do_table_values
+        replicate_wild_ignore_table: *replicate_wild_ignore_table_values
+      register: result
+      when:
+        - db_engine == 'mysql'
+
+    - name: Replication filter | Assert MySQL global idempotency
+      ansible.builtin.assert:
+        that:
+          - result is not changed
+      when:
+        - db_engine == 'mysql'
+
+    - name: Replication filter | Clear MySQL global filters
+      ansible.mariadb.mariadb_replication_filter:
+        <<: *mysql_params
+        login_port: '{{ mysql_replica1_port }}'
+        replicate_do_db: []
+        replicate_ignore_db: []
+        replicate_do_table: []
+        replicate_ignore_table: []
+        replicate_wild_do_table: []
+        replicate_wild_ignore_table: []
+      register: result
+      when:
+        - db_engine == 'mysql'
+
+    - name: Replication filter | Assert MySQL global clear result
+      ansible.builtin.assert:
+        that:
+          - result is changed
+          - result.queries | length == 6
+      when:
+        - db_engine == 'mysql'
+
+    - name: Replication filter | Verify MySQL global filters were cleared
+      ansible.mariadb.mariadb_query:
+        <<: *mysql_params
+        login_port: '{{ mysql_replica1_port }}'
+        query:
+          - >
+            SELECT FILTER_RULE
+            FROM performance_schema.replication_applier_global_filters
+            WHERE FILTER_NAME = 'REPLICATE_DO_DB'
+          - >
+            SELECT FILTER_RULE
+            FROM performance_schema.replication_applier_global_filters
+            WHERE FILTER_NAME = 'REPLICATE_IGNORE_DB'
+          - >
+            SELECT FILTER_RULE
+            FROM performance_schema.replication_applier_global_filters
+            WHERE FILTER_NAME = 'REPLICATE_DO_TABLE'
+          - >
+            SELECT FILTER_RULE
+            FROM performance_schema.replication_applier_global_filters
+            WHERE FILTER_NAME = 'REPLICATE_IGNORE_TABLE'
+          - >
+            SELECT FILTER_RULE
+            FROM performance_schema.replication_applier_global_filters
+            WHERE FILTER_NAME = 'REPLICATE_WILD_DO_TABLE'
+          - >
+            SELECT FILTER_RULE
+            FROM performance_schema.replication_applier_global_filters
+            WHERE FILTER_NAME = 'REPLICATE_WILD_IGNORE_TABLE'
+      register: result
+      when:
+        - db_engine == 'mysql'
+
+    - name: Replication filter | Assert MySQL global filters were cleared
+      ansible.builtin.assert:
+        that:
+          - result.query_result[0] | length == 0 or result.query_result[0][0]['FILTER_RULE'] == ''
+          - result.query_result[1] | length == 0 or result.query_result[1][0]['FILTER_RULE'] == ''
+          - result.query_result[2] | length == 0 or result.query_result[2][0]['FILTER_RULE'] == ''
+          - result.query_result[3] | length == 0 or result.query_result[3][0]['FILTER_RULE'] == ''
+          - result.query_result[4] | length == 0 or result.query_result[4][0]['FILTER_RULE'] == ''
+          - result.query_result[5] | length == 0 or result.query_result[5][0]['FILTER_RULE'] == ''
+      when:
+        - db_engine == 'mysql'
+
+    - name: Replication filter | Re-clear MySQL global filters
+      ansible.mariadb.mariadb_replication_filter:
+        <<: *mysql_params
+        login_port: '{{ mysql_replica1_port }}'
+        replicate_do_db: []
+        replicate_ignore_db: []
+        replicate_do_table: []
+        replicate_ignore_table: []
+        replicate_wild_do_table: []
+        replicate_wild_ignore_table: []
+      register: result
+      when:
+        - db_engine == 'mysql'
+
+    - name: Replication filter | Assert MySQL global clear idempotency
+      ansible.builtin.assert:
+        that:
+          - result is not changed
+      when:
+        - db_engine == 'mysql'
+
+    - name: Replication filter | Get primary status for MySQL channel tests
+      ansible.mariadb.mariadb_replication:
+        <<: *mysql_params
+        login_port: '{{ mysql_primary_port }}'
+        mode: getprimary
+      register: mysql_primary_status
+      when:
+        - db_engine == 'mysql'
+
+    - name: Replication filter | Configure MySQL channel on replica2
+      ansible.mariadb.mariadb_replication:
+        <<: *mysql_params
+        login_port: '{{ mysql_replica2_port }}'
+        mode: changeprimary
+        primary_host: '{{ mysql_host }}'
+        primary_port: '{{ mysql_primary_port }}'
+        primary_user: '{{ replication_user }}'
+        primary_password: '{{ replication_pass }}'
+        primary_log_file: '{{ mysql_primary_status.File }}'
+        primary_log_pos: '{{ mysql_primary_status.Position }}'
+        channel: '{{ test_channel }}'
+      register: result
+      when:
+        - db_engine == 'mysql'
+
+    - name: Replication filter | Assert MySQL channel configuration
+      ansible.builtin.assert:
+        that:
+          - result is changed
+          - result.queries | length == 1
+      when:
+        - db_engine == 'mysql'
+
+    - name: Replication filter | Clear MySQL channel filter baseline
+      ansible.mariadb.mariadb_replication_filter:
+        <<: *mysql_params
+        login_port: '{{ mysql_replica2_port }}'
+        channel: '{{ test_channel }}'
+        replicate_do_db: []
+      when:
+        - db_engine == 'mysql'
+
+    - name: Replication filter | Re-clear MySQL channel filter baseline
+      ansible.mariadb.mariadb_replication_filter:
+        <<: *mysql_params
+        login_port: '{{ mysql_replica2_port }}'
+        channel: '{{ test_channel }}'
+        replicate_do_db: []
+      register: result
+      when:
+        - db_engine == 'mysql'
+
+    - name: Replication filter | Assert MySQL channel baseline clear idempotency
+      ansible.builtin.assert:
+        that:
+          - result is not changed
+      when:
+        - db_engine == 'mysql'
+
+    - name: Replication filter | Apply MySQL channel filter in check mode
+      ansible.mariadb.mariadb_replication_filter:
+        <<: *mysql_params
+        login_port: '{{ mysql_replica2_port }}'
+        channel: '{{ test_channel }}'
+        replicate_do_db:
+          - reporting
+      check_mode: true
+      register: result
+      when:
+        - db_engine == 'mysql'
+
+    - name: Replication filter | Assert MySQL channel check mode result
+      ansible.builtin.assert:
+        that:
+          - result is changed
+          - result.queries | length == 1
+          - result.filters.replicate_do_db == ['reporting']
+      when:
+        - db_engine == 'mysql'
+
+    - name: Replication filter | Verify MySQL channel filter stayed unchanged after check mode
+      ansible.mariadb.mariadb_query:
+        <<: *mysql_params
+        login_port: '{{ mysql_replica2_port }}'
+        query: >
+          SELECT FILTER_RULE
+          FROM performance_schema.replication_applier_filters
+          WHERE CHANNEL_NAME = '{{ test_channel }}'
+            AND FILTER_NAME = 'REPLICATE_DO_DB'
+      register: result
+      when:
+        - db_engine == 'mysql'
+
+    - name: Replication filter | Assert MySQL channel filter stayed unchanged after check mode
+      ansible.builtin.assert:
+        that:
+          - result.query_result[0] | length == 0 or result.query_result[0][0]['FILTER_RULE'] == ''
+      when:
+        - db_engine == 'mysql'
+
+    - name: Replication filter | Apply MySQL channel filter
+      ansible.mariadb.mariadb_replication_filter:
+        <<: *mysql_params
+        login_port: '{{ mysql_replica2_port }}'
+        channel: '{{ test_channel }}'
+        replicate_do_db:
+          - reporting
+      register: result
+      when:
+        - db_engine == 'mysql'
+
+    - name: Replication filter | Assert MySQL channel apply result
+      ansible.builtin.assert:
+        that:
+          - result is changed
+          - result.queries | length == 1
+          - result.filters.replicate_do_db == ['reporting']
+      when:
+        - db_engine == 'mysql'
+
+    - name: Replication filter | Verify MySQL channel filter in Performance Schema
+      ansible.mariadb.mariadb_query:
+        <<: *mysql_params
+        login_port: '{{ mysql_replica2_port }}'
+        query: >
+          SELECT FILTER_RULE
+          FROM performance_schema.replication_applier_filters
+          WHERE CHANNEL_NAME = '{{ test_channel }}'
+            AND FILTER_NAME = 'REPLICATE_DO_DB'
+      register: result
+      when:
+        - db_engine == 'mysql'
+
+    - name: Replication filter | Assert MySQL channel filter state
+      ansible.builtin.assert:
+        that:
+          - result.query_result[0][0]['FILTER_RULE'] == 'reporting'
+      when:
+        - db_engine == 'mysql'
+
+    - name: Replication filter | Re-apply MySQL channel filter
+      ansible.mariadb.mariadb_replication_filter:
+        <<: *mysql_params
+        login_port: '{{ mysql_replica2_port }}'
+        channel: '{{ test_channel }}'
+        replicate_do_db:
+          - reporting
+      register: result
+      when:
+        - db_engine == 'mysql'
+
+    - name: Replication filter | Assert MySQL channel idempotency
+      ansible.builtin.assert:
+        that:
+          - result is not changed
+      when:
+        - db_engine == 'mysql'
+
+    - name: Replication filter | Clear MySQL channel filter
+      ansible.mariadb.mariadb_replication_filter:
+        <<: *mysql_params
+        login_port: '{{ mysql_replica2_port }}'
+        channel: '{{ test_channel }}'
+        replicate_do_db: []
+      register: result
+      when:
+        - db_engine == 'mysql'
+
+    - name: Replication filter | Assert MySQL channel clear result
+      ansible.builtin.assert:
+        that:
+          - result is changed
+          - result.queries | length == 1
+      when:
+        - db_engine == 'mysql'
+
+    - name: Replication filter | Verify MySQL channel filter was cleared
+      ansible.mariadb.mariadb_query:
+        <<: *mysql_params
+        login_port: '{{ mysql_replica2_port }}'
+        query: >
+          SELECT FILTER_RULE
+          FROM performance_schema.replication_applier_filters
+          WHERE CHANNEL_NAME = '{{ test_channel }}'
+            AND FILTER_NAME = 'REPLICATE_DO_DB'
+      register: result
+      when:
+        - db_engine == 'mysql'
+
+    - name: Replication filter | Assert MySQL channel filter was cleared
+      ansible.builtin.assert:
+        that:
+          - result.query_result[0] | length == 0 or result.query_result[0][0]['FILTER_RULE'] == ''
+      when:
+        - db_engine == 'mysql'
+
+    - name: Replication filter | Re-clear MySQL channel filter
+      ansible.mariadb.mariadb_replication_filter:
+        <<: *mysql_params
+        login_port: '{{ mysql_replica2_port }}'
+        channel: '{{ test_channel }}'
+        replicate_do_db: []
+      register: result
+      when:
+        - db_engine == 'mysql'
+
+    - name: Replication filter | Assert MySQL channel clear idempotency
+      ansible.builtin.assert:
+        that:
+          - result is not changed
+      when:
+        - db_engine == 'mysql'
+
+    - name: Replication filter | Reset MySQL channel for cleanup
+      ansible.mariadb.mariadb_replication:
+        <<: *mysql_params
+        login_port: '{{ mysql_replica2_port }}'
+        mode: resetreplicaall
+        channel: '{{ test_channel }}'
+      register: result
+      when:
+        - db_engine == 'mysql'
+
+    - name: Replication filter | Assert MySQL channel cleanup reset
+      ansible.builtin.assert:
+        that:
+          - result is changed
+          - result.queries == ["RESET SLAVE ALL FOR CHANNEL '{{ test_channel }}'"] or result.queries == ["RESET REPLICA ALL FOR CHANNEL '{{ test_channel }}'"]
+      when:
+        - db_engine == 'mysql'
+
+    - name: Replication filter | Wait for MySQL primary replica list to clear after channel cleanup
+      ansible.mariadb.mariadb_query:
+        <<: *mysql_params
+        login_port: '{{ mysql_primary_port }}'
+        query: "SHOW REPLICAS"
+      register: result
+      until: result.query_result[0] | length == 0
+      retries: 10
+      delay: 1
+      when:
+        - db_engine == 'mysql'
+
+    - name: Replication filter | Start replica1 before MariaDB global tests
+      ansible.mariadb.mariadb_replication:
+        <<: *mysql_params
+        login_port: '{{ mysql_replica1_port }}'
+        mode: startreplica
+      register: result
+      when: db_engine == 'mariadb'
+
+    - name: Replication filter | Assert replica1 start for MariaDB global tests
+      ansible.builtin.assert:
+        that:
+          - result is changed or 'already started' in (result.msg | default('') | lower)
+          - result.queries == ["START SLAVE"] or result.queries == ["START REPLICA"]
+      when: db_engine == 'mariadb'
+
+    - name: Replication filter | Stop replica1 before MariaDB global tests
+      ansible.mariadb.mariadb_replication:
+        <<: *mysql_params
+        login_port: '{{ mysql_replica1_port }}'
+        mode: stopreplica
+      register: result
+      when: db_engine == 'mariadb'
+
+    - name: Replication filter | Assert replica1 stop for MariaDB global tests
+      ansible.builtin.assert:
+        that:
+          - result is changed
+          - result.queries == ["STOP SLAVE"] or result.queries == ["STOP REPLICA"]
+      when: db_engine == 'mariadb'
+
+    - name: Replication filter | Clear MariaDB global filters baseline
+      ansible.mariadb.mariadb_replication_filter:
+        <<: *mysql_params
+        login_port: '{{ mysql_replica1_port }}'
+        replicate_do_db: []
+        replicate_ignore_db: []
+        replicate_do_table: []
+        replicate_ignore_table: []
+        replicate_wild_do_table: []
+        replicate_wild_ignore_table: []
+      when: db_engine == 'mariadb'
+
+    - name: Replication filter | Re-clear MariaDB global filters baseline
+      ansible.mariadb.mariadb_replication_filter:
+        <<: *mysql_params
+        login_port: '{{ mysql_replica1_port }}'
+        replicate_do_db: []
+        replicate_ignore_db: []
+        replicate_do_table: []
+        replicate_ignore_table: []
+        replicate_wild_do_table: []
+        replicate_wild_ignore_table: []
+      register: result
+      when: db_engine == 'mariadb'
+
+    - name: Replication filter | Assert MariaDB global baseline clear idempotency
+      ansible.builtin.assert:
+        that:
+          - result is not changed
+      when: db_engine == 'mariadb'
+
+    - name: Replication filter | Apply MariaDB global filters in check mode
+      ansible.mariadb.mariadb_replication_filter:
+        <<: *mysql_params
+        login_port: '{{ mysql_replica1_port }}'
+        replicate_do_db: *replicate_do_db_values
+        replicate_ignore_db: *replicate_ignore_db_values
+        replicate_do_table: *replicate_do_table_values
+        replicate_ignore_table: *replicate_ignore_table_values
+        replicate_wild_do_table: *replicate_wild_do_table_values
+        replicate_wild_ignore_table: *replicate_wild_ignore_table_values
+      check_mode: true
+      register: result
+      when: db_engine == 'mariadb'
+
+    - name: Replication filter | Assert MariaDB check mode result
+      ansible.builtin.assert:
+        that:
+          - result is changed
+          - result.queries | length == 6
+          - result.filters.replicate_do_db == replicate_do_db_values
+          - result.filters.replicate_ignore_db == replicate_ignore_db_values
+          - result.filters.replicate_do_table == replicate_do_table_values
+          - result.filters.replicate_ignore_table == replicate_ignore_table_values
+          - result.filters.replicate_wild_do_table == replicate_wild_do_table_values
+          - result.filters.replicate_wild_ignore_table == replicate_wild_ignore_table_values
+      when: db_engine == 'mariadb'
+
+    - name: Replication filter | Verify MariaDB filters stayed unchanged after check mode
+      ansible.mariadb.mariadb_query:
+        <<: *mysql_params
+        login_port: '{{ mysql_replica1_port }}'
+        query:
+          - "SHOW GLOBAL VARIABLES LIKE 'replicate_do_db'"
+          - "SHOW GLOBAL VARIABLES LIKE 'replicate_ignore_db'"
+          - "SHOW GLOBAL VARIABLES LIKE 'replicate_do_table'"
+          - "SHOW GLOBAL VARIABLES LIKE 'replicate_ignore_table'"
+          - "SHOW GLOBAL VARIABLES LIKE 'replicate_wild_do_table'"
+          - "SHOW GLOBAL VARIABLES LIKE 'replicate_wild_ignore_table'"
+      register: result
+      when: db_engine == 'mariadb'
+
+    - name: Replication filter | Assert MariaDB filters stayed unchanged after check mode
+      ansible.builtin.assert:
+        that:
+          - result.query_result[0][0]['Value'] == ''
+          - result.query_result[1][0]['Value'] == ''
+          - result.query_result[2][0]['Value'] == ''
+          - result.query_result[3][0]['Value'] == ''
+          - result.query_result[4][0]['Value'] == ''
+          - result.query_result[5][0]['Value'] == ''
+      when: db_engine == 'mariadb'
+
+    - name: Replication filter | Apply MariaDB global filters
+      ansible.mariadb.mariadb_replication_filter:
+        <<: *mysql_params
+        login_port: '{{ mysql_replica1_port }}'
+        replicate_do_db: *replicate_do_db_values
+        replicate_ignore_db: *replicate_ignore_db_values
+        replicate_do_table: *replicate_do_table_values
+        replicate_ignore_table: *replicate_ignore_table_values
+        replicate_wild_do_table: *replicate_wild_do_table_values
+        replicate_wild_ignore_table: *replicate_wild_ignore_table_values
+      register: result
+      when: db_engine == 'mariadb'
+
+    - name: Replication filter | Assert MariaDB apply result
+      ansible.builtin.assert:
+        that:
+          - result is changed
+          - result.queries | length == 6
+          - result.filters.replicate_do_db == replicate_do_db_values
+          - result.filters.replicate_ignore_db == replicate_ignore_db_values
+          - result.filters.replicate_do_table == replicate_do_table_values
+          - result.filters.replicate_ignore_table == replicate_ignore_table_values
+          - result.filters.replicate_wild_do_table == replicate_wild_do_table_values
+          - result.filters.replicate_wild_ignore_table == replicate_wild_ignore_table_values
+      when: db_engine == 'mariadb'
+
+    - name: Replication filter | Verify MariaDB filter variables
+      ansible.mariadb.mariadb_query:
+        <<: *mysql_params
+        login_port: '{{ mysql_replica1_port }}'
+        query:
+          - "SHOW GLOBAL VARIABLES LIKE 'replicate_do_db'"
+          - "SHOW GLOBAL VARIABLES LIKE 'replicate_ignore_db'"
+          - "SHOW GLOBAL VARIABLES LIKE 'replicate_do_table'"
+          - "SHOW GLOBAL VARIABLES LIKE 'replicate_ignore_table'"
+          - "SHOW GLOBAL VARIABLES LIKE 'replicate_wild_do_table'"
+          - "SHOW GLOBAL VARIABLES LIKE 'replicate_wild_ignore_table'"
+      register: result
+      when: db_engine == 'mariadb'
+
+    - name: Replication filter | Assert MariaDB filter state
+      ansible.builtin.assert:
+        that:
+          - result.query_result[0][0]['Value'].split(',') | sort == replicate_do_db_values | sort
+          - result.query_result[1][0]['Value'].split(',') | sort == replicate_ignore_db_values | sort
+          - result.query_result[2][0]['Value'].split(',') | sort == replicate_do_table_values | sort
+          - result.query_result[3][0]['Value'].split(',') | sort == replicate_ignore_table_values | sort
+          - result.query_result[4][0]['Value'].split(',') | sort == replicate_wild_do_table_values | sort
+          - result.query_result[5][0]['Value'].split(',') | sort == replicate_wild_ignore_table_values | sort
+      when: db_engine == 'mariadb'
+
+    - name: Replication filter | Re-apply MariaDB global filters
+      ansible.mariadb.mariadb_replication_filter:
+        <<: *mysql_params
+        login_port: '{{ mysql_replica1_port }}'
+        replicate_do_db: *replicate_do_db_values
+        replicate_ignore_db: *replicate_ignore_db_values
+        replicate_do_table: *replicate_do_table_values
+        replicate_ignore_table: *replicate_ignore_table_values
+        replicate_wild_do_table: *replicate_wild_do_table_values
+        replicate_wild_ignore_table: *replicate_wild_ignore_table_values
+      register: result
+      when: db_engine == 'mariadb'
+
+    - name: Replication filter | Assert MariaDB idempotency
+      ansible.builtin.assert:
+        that:
+          - result is not changed
+      when: db_engine == 'mariadb'
+
+    - name: Replication filter | Clear MariaDB global filters
+      ansible.mariadb.mariadb_replication_filter:
+        <<: *mysql_params
+        login_port: '{{ mysql_replica1_port }}'
+        replicate_do_db: []
+        replicate_ignore_db: []
+        replicate_do_table: []
+        replicate_ignore_table: []
+        replicate_wild_do_table: []
+        replicate_wild_ignore_table: []
+      register: result
+      when: db_engine == 'mariadb'
+
+    - name: Replication filter | Assert MariaDB clear result
+      ansible.builtin.assert:
+        that:
+          - result is changed
+          - result.queries | length == 6
+      when: db_engine == 'mariadb'
+
+    - name: Replication filter | Verify MariaDB filters were cleared
+      ansible.mariadb.mariadb_query:
+        <<: *mysql_params
+        login_port: '{{ mysql_replica1_port }}'
+        query:
+          - "SHOW GLOBAL VARIABLES LIKE 'replicate_do_db'"
+          - "SHOW GLOBAL VARIABLES LIKE 'replicate_ignore_db'"
+          - "SHOW GLOBAL VARIABLES LIKE 'replicate_do_table'"
+          - "SHOW GLOBAL VARIABLES LIKE 'replicate_ignore_table'"
+          - "SHOW GLOBAL VARIABLES LIKE 'replicate_wild_do_table'"
+          - "SHOW GLOBAL VARIABLES LIKE 'replicate_wild_ignore_table'"
+      register: result
+      when: db_engine == 'mariadb'
+
+    - name: Replication filter | Assert MariaDB filters were cleared
+      ansible.builtin.assert:
+        that:
+          - result.query_result[0][0]['Value'] == ''
+          - result.query_result[1][0]['Value'] == ''
+          - result.query_result[2][0]['Value'] == ''
+          - result.query_result[3][0]['Value'] == ''
+          - result.query_result[4][0]['Value'] == ''
+          - result.query_result[5][0]['Value'] == ''
+      when: db_engine == 'mariadb'
+
+    - name: Replication filter | Re-clear MariaDB global filters
+      ansible.mariadb.mariadb_replication_filter:
+        <<: *mysql_params
+        login_port: '{{ mysql_replica1_port }}'
+        replicate_do_db: []
+        replicate_ignore_db: []
+        replicate_do_table: []
+        replicate_ignore_table: []
+        replicate_wild_do_table: []
+        replicate_wild_ignore_table: []
+      register: result
+      when: db_engine == 'mariadb'
+
+    - name: Replication filter | Assert MariaDB global clear idempotency
+      ansible.builtin.assert:
+        that:
+          - result is not changed
+      when: db_engine == 'mariadb'
+
+    - name: Replication filter | Start replica1 after MariaDB global tests
+      ansible.mariadb.mariadb_replication:
+        <<: *mysql_params
+        login_port: '{{ mysql_replica1_port }}'
+        mode: startreplica
+      register: result
+      when: db_engine == 'mariadb'
+
+    - name: Replication filter | Assert replica1 start after MariaDB global tests
+      ansible.builtin.assert:
+        that:
+          - result is changed or 'already started' in (result.msg | default('') | lower)
+          - result.queries == ["START SLAVE"] or result.queries == ["START REPLICA"]
+      when: db_engine == 'mariadb'
+
+    - name: Replication filter | Get primary status for MariaDB connection_name tests
+      ansible.mariadb.mariadb_replication:
+        <<: *mysql_params
+        login_port: '{{ mysql_primary_port }}'
+        mode: getprimary
+      register: mysql_primary_status
+      when: db_engine == 'mariadb'
+
+    - name: Replication filter | Configure MariaDB named replication connection on replica2
+      ansible.mariadb.mariadb_replication:
+        <<: *mysql_params
+        login_port: '{{ mysql_replica2_port }}'
+        mode: changeprimary
+        primary_host: '{{ mysql_host }}'
+        primary_port: '{{ mysql_primary_port }}'
+        primary_user: '{{ replication_user }}'
+        primary_password: '{{ replication_pass }}'
+        primary_log_file: '{{ mysql_primary_status.File }}'
+        primary_log_pos: '{{ mysql_primary_status.Position }}'
+        connection_name: '{{ test_connection_name }}'
+        fail_on_error: true
+      register: result
+      when: db_engine == 'mariadb'
+
+    - name: Replication filter | Assert MariaDB named connection configuration
+      ansible.builtin.assert:
+        that:
+          - result is changed
+      when: db_engine == 'mariadb'
+
+    - name: Replication filter | Start MariaDB named replication connection on replica2
+      ansible.mariadb.mariadb_replication:
+        <<: *mysql_params
+        login_port: '{{ mysql_replica2_port }}'
+        mode: startreplica
+        connection_name: '{{ test_connection_name }}'
+        fail_on_error: true
+      register: result
+      when: db_engine == 'mariadb'
+
+    - name: Replication filter | Assert MariaDB named connection start
+      ansible.builtin.assert:
+        that:
+          - result is changed or 'already started' in (result.msg | default('') | lower)
+      when: db_engine == 'mariadb'
+
+    - name: Replication filter | Stop MariaDB named replication connection on replica2
+      ansible.mariadb.mariadb_replication:
+        <<: *mysql_params
+        login_port: '{{ mysql_replica2_port }}'
+        mode: stopreplica
+        connection_name: '{{ test_connection_name }}'
+        fail_on_error: true
+      register: result
+      when: db_engine == 'mariadb'
+
+    - name: Replication filter | Assert MariaDB named connection stop
+      ansible.builtin.assert:
+        that:
+          - result is changed
+      when: db_engine == 'mariadb'
+
+    - name: Replication filter | Clear MariaDB connection_name filter baseline
+      ansible.mariadb.mariadb_replication_filter:
+        <<: *mysql_params
+        login_port: '{{ mysql_replica2_port }}'
+        connection_name: '{{ test_connection_name }}'
+        replicate_do_db: []
+      when: db_engine == 'mariadb'
+
+    - name: Replication filter | Re-clear MariaDB connection_name filter baseline
+      ansible.mariadb.mariadb_replication_filter:
+        <<: *mysql_params
+        login_port: '{{ mysql_replica2_port }}'
+        connection_name: '{{ test_connection_name }}'
+        replicate_do_db: []
+      register: result
+      when: db_engine == 'mariadb'
+
+    - name: Replication filter | Assert MariaDB connection_name baseline clear idempotency
+      ansible.builtin.assert:
+        that:
+          - result is not changed
+      when: db_engine == 'mariadb'
+
+    - name: Replication filter | Apply MariaDB connection_name filter in check mode
+      ansible.mariadb.mariadb_replication_filter:
+        <<: *mysql_params
+        login_port: '{{ mysql_replica2_port }}'
+        connection_name: '{{ test_connection_name }}'
+        replicate_do_db:
+          - reporting
+      check_mode: true
+      register: result
+      when: db_engine == 'mariadb'
+
+    - name: Replication filter | Assert MariaDB connection_name check mode result
+      ansible.builtin.assert:
+        that:
+          - result is changed
+          - result.queries == ["SET GLOBAL `replicate_do_db` = 'reporting'"]
+          - result.filters.replicate_do_db == ['reporting']
+      when: db_engine == 'mariadb'
+
+    - name: Replication filter | Verify MariaDB connection_name filter stayed unchanged after check mode
+      ansible.mariadb.mariadb_query:
+        <<: *mysql_params
+        login_port: '{{ mysql_replica2_port }}'
+        query:
+          - "SET @@default_master_connection='{{ test_connection_name }}'"
+          - "SHOW GLOBAL VARIABLES LIKE 'replicate_do_db'"
+          - "SET @@default_master_connection=''"
+      register: result
+      when: db_engine == 'mariadb'
+
+    - name: Replication filter | Assert MariaDB connection_name filter stayed unchanged after check mode
+      ansible.builtin.assert:
+        that:
+          - result.query_result[1][0]['Value'] == ''
+      when: db_engine == 'mariadb'
+
+    - name: Replication filter | Apply MariaDB connection_name filter
+      ansible.mariadb.mariadb_replication_filter:
+        <<: *mysql_params
+        login_port: '{{ mysql_replica2_port }}'
+        connection_name: '{{ test_connection_name }}'
+        replicate_do_db:
+          - reporting
+      register: result
+      when: db_engine == 'mariadb'
+
+    - name: Replication filter | Assert MariaDB connection_name apply result
+      ansible.builtin.assert:
+        that:
+          - result is changed
+          - result.queries == ["SET GLOBAL `replicate_do_db` = 'reporting'"]
+          - result.filters.replicate_do_db == ['reporting']
+      when: db_engine == 'mariadb'
+
+    - name: Replication filter | Verify MariaDB connection_name filter after apply
+      ansible.mariadb.mariadb_query:
+        <<: *mysql_params
+        login_port: '{{ mysql_replica2_port }}'
+        query: >-
+          SHOW {{ 'REPLICA' if db_version is version('10.5.1', '>=') else 'SLAVE' }}
+          '{{ test_connection_name }}' STATUS
+      register: result
+      when: db_engine == 'mariadb'
+
+    - name: Replication filter | Assert MariaDB connection_name filter state after apply
+      ansible.builtin.assert:
+        that:
+          - result.query_result[0][0]['Replicate_Do_DB'] == 'reporting'
+      when: db_engine == 'mariadb'
+
+    - name: Replication filter | Re-apply MariaDB connection_name filter
+      ansible.mariadb.mariadb_replication_filter:
+        <<: *mysql_params
+        login_port: '{{ mysql_replica2_port }}'
+        connection_name: '{{ test_connection_name }}'
+        replicate_do_db:
+          - reporting
+      register: result
+      when: db_engine == 'mariadb'
+
+    - name: Replication filter | Assert MariaDB connection_name idempotency
+      ansible.builtin.assert:
+        that:
+          - result is not changed
+      when: db_engine == 'mariadb'
+
+    - name: Replication filter | Clear MariaDB connection_name filter
+      ansible.mariadb.mariadb_replication_filter:
+        <<: *mysql_params
+        login_port: '{{ mysql_replica2_port }}'
+        connection_name: '{{ test_connection_name }}'
+        replicate_do_db: []
+      register: result
+      when: db_engine == 'mariadb'
+
+    - name: Replication filter | Assert MariaDB connection_name clear result
+      ansible.builtin.assert:
+        that:
+          - result is changed
+          - result.queries == ["SET GLOBAL `replicate_do_db` = ''"]
+      when: db_engine == 'mariadb'
+
+    - name: Replication filter | Verify MariaDB connection_name filter after clear
+      ansible.mariadb.mariadb_query:
+        <<: *mysql_params
+        login_port: '{{ mysql_replica2_port }}'
+        query: >-
+          SHOW {{ 'REPLICA' if db_version is version('10.5.1', '>=') else 'SLAVE' }}
+          '{{ test_connection_name }}' STATUS
+      register: result
+      when: db_engine == 'mariadb'
+
+    - name: Replication filter | Assert MariaDB connection_name filter state after clear
+      ansible.builtin.assert:
+        that:
+          - result.query_result[0][0]['Replicate_Do_DB'] == ''
+      when: db_engine == 'mariadb'
+
+    - name: Replication filter | Re-clear MariaDB connection_name filter
+      ansible.mariadb.mariadb_replication_filter:
+        <<: *mysql_params
+        login_port: '{{ mysql_replica2_port }}'
+        connection_name: '{{ test_connection_name }}'
+        replicate_do_db: []
+      register: result
+      when: db_engine == 'mariadb'
+
+    - name: Replication filter | Assert MariaDB connection_name clear idempotency
+      ansible.builtin.assert:
+        that:
+          - result is not changed
+      when: db_engine == 'mariadb'
+
+    - name: Replication filter | Reset MariaDB named replication connection on replica2
+      ansible.mariadb.mariadb_replication:
+        <<: *mysql_params
+        login_port: '{{ mysql_replica2_port }}'
+        mode: resetreplicaall
+        connection_name: '{{ test_connection_name }}'
+        fail_on_error: true
+      register: result
+      when: db_engine == 'mariadb'
+
+    - name: Replication filter | Assert MariaDB named connection reset
+      ansible.builtin.assert:
+        that:
+          - result is changed
+      when: db_engine == 'mariadb'

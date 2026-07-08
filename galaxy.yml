@@ -1,6 +1,6 @@
 ---
 namespace: ansible
-name: mysql
+name: mariadb
 version: 5.1.0
 readme: README.md
 authors:
@@ -11,10 +11,10 @@ tags:
   - database
   - mysql
   - mariadb
-repository: https://github.com/ansible-collections/ansible.mysql
-documentation: https://github.com/ansible-collections/ansible.mysql
-homepage: https://github.com/ansible-collections/ansible.mysql
-issues: https://github.com/ansible-collections/ansible.mysql/issues
+repository: https://github.com/ansible-collections/ansible.mariadb
+documentation: https://github.com/ansible-collections/ansible.mariadb
+homepage: https://github.com/ansible-collections/ansible.mariadb
+issues: https://github.com/ansible-collections/ansible.mariadb/issues
 build_ignore:
   - .vscode
   - tests/integration

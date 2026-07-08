@@ -20,8 +20,8 @@ try:
 except ImportError:
     patch_module_args = None
 
-from ansible_collections.ansible.mysql.plugins.modules import mysql_perf_schema
-from ansible_collections.ansible.mysql.plugins.modules.mysql_perf_schema import MySQLPerfSchema
+from ansible_collections.ansible.mariadb.plugins.modules import mariadb_perf_schema
+from ansible_collections.ansible.mariadb.plugins.modules.mariadb_perf_schema import MySQLPerfSchema
 
 
 class AnsibleExitJson(Exception):
@@ -221,15 +221,15 @@ def test_main_validates_nested_required_fields_before_connect(monkeypatch, modul
     with set_module_args(module_args):
         monkeypatch.setattr(AnsibleModule, 'exit_json', exit_json)
         monkeypatch.setattr(AnsibleModule, 'fail_json', fail_json)
-        monkeypatch.setattr(mysql_perf_schema, 'mysql_driver', object())
+        monkeypatch.setattr(mariadb_perf_schema, 'mysql_driver', object())
 
         def unexpected_connect(*args, **kwargs):
             raise AssertionError('mysql_connect should not be called')
 
-        monkeypatch.setattr(mysql_perf_schema, 'mysql_connect', unexpected_connect)
+        monkeypatch.setattr(mariadb_perf_schema, 'mysql_connect', unexpected_connect)
 
         with pytest.raises(AnsibleFailJson) as exc:
-            mysql_perf_schema.main()
+            mariadb_perf_schema.main()
 
     message = exc.value.args[0]['msg']
     for field in missing_fields:
@@ -245,15 +245,15 @@ def test_main_returns_prefixed_validation_error_for_invalid_perf_schema_request(
     ):
         monkeypatch.setattr(AnsibleModule, 'exit_json', exit_json)
         monkeypatch.setattr(AnsibleModule, 'fail_json', fail_json)
-        monkeypatch.setattr(mysql_perf_schema, 'mysql_driver', object())
-        monkeypatch.setattr(mysql_perf_schema, 'mysql_connect', lambda *args, **kwargs: (MagicMock(), MagicMock()))
+        monkeypatch.setattr(mariadb_perf_schema, 'mysql_driver', object())
+        monkeypatch.setattr(mariadb_perf_schema, 'mysql_connect', lambda *args, **kwargs: (MagicMock(), MagicMock()))
 
         def invalid_request(self, params):
             raise ValueError('bad request')
 
-        monkeypatch.setattr(mysql_perf_schema.MySQLPerfSchema, 'apply', invalid_request)
+        monkeypatch.setattr(mariadb_perf_schema.MySQLPerfSchema, 'apply', invalid_request)
 
         with pytest.raises(AnsibleFailJson) as exc:
-            mysql_perf_schema.main()
+            mariadb_perf_schema.main()
 
     assert exc.value.args[0]['msg'] == 'invalid performance schema request: bad request'

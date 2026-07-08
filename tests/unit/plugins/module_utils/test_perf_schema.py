@@ -8,7 +8,7 @@ try:
 except ImportError:
     from mock import MagicMock
 
-from ansible_collections.ansible.mysql.plugins.module_utils.perf_schema import (
+from ansible_collections.ansible.mariadb.plugins.module_utils.perf_schema import (
     ensure_perf_schema_sections_supported,
     normalize_perf_schema_item,
     normalize_perf_schema_row,

@@ -5,7 +5,7 @@ __metaclass__ = type
 
 import pytest
 
-from ansible_collections.ansible.mysql.plugins.module_utils.implementations.mariadb.user import (
+from ansible_collections.ansible.mariadb.plugins.module_utils.implementations.mariadb.user import (
     server_supports_mysql_native_password,
     supports_identified_by_password,
 )

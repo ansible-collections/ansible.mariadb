@@ -87,16 +87,16 @@ The Makefile accept the following options
 - `target`
   - Mandatory: false
   - Choices:
-    - "test_mysql_binlog_info"
-    - "test_mysql_db"
-    - "test_mysql_info"
-    - "test_mysql_perf_schema"
-    - "test_mysql_query"
-    - "test_mysql_replication"
-    - "test_mysql_role"
-    - "test_mysql_slow_log"
-    - "test_mysql_user"
-    - "test_mysql_variables"
+    - "test_mariadb_binlog_info"
+    - "test_mariadb_db"
+    - "test_mariadb_info"
+    - "test_mariadb_perf_schema"
+    - "test_mariadb_query"
+    - "test_mariadb_replication"
+    - "test_mariadb_role"
+    - "test_mariadb_slow_log"
+    - "test_mariadb_user"
+    - "test_mariadb_variables"
   - Description: If omitted, all test targets will run. But you can limit the tests to a single target to speed up your tests.
 
 - `keep_containers_alive`
@@ -116,11 +116,11 @@ tests will overwrite the 3 databases containers so no need to kill them in advan
 make ansible="stable-2.17" db_engine_name="mysql" db_engine_version="8.4.9" connector_name="pymysql" connector_version="1.1.1"
 
 # A single target
-make ansible="stable-2.17" db_engine_name="mysql" db_engine_version="8.4.9" connector_name="pymysql" connector_version="1.1.1" target="test_mysql_info"
+make ansible="stable-2.17" db_engine_name="mysql" db_engine_version="8.4.9" connector_name="pymysql" connector_version="1.1.1" target="test_mariadb_info"
 
 # Keep databases and ansible tests containers alives
 # A single target and continue on errors
-make ansible="stable-2.17" db_engine_name="mysql" db_engine_version="8.4.9" connector_name="pymysql" connector_version="1.1.1" target="test_mysql_query" keep_containers_alive=1 continue_on_errors=1
+make ansible="stable-2.17" db_engine_name="mysql" db_engine_version="8.4.9" connector_name="pymysql" connector_version="1.1.1" target="test_mariadb_query" keep_containers_alive=1 continue_on_errors=1
 
 # If your system has an usupported version of Python:
 make local_python_version="3.10" ansible="stable-2.17" db_engine_name="mariadb" db_engine_version="11.8.7" connector_name="pymysql" connector_version="1.1.1"
@@ -140,6 +140,6 @@ python run_all_tests.py
 
 ### Add a new Connector or Database version
 
-New components version should be added to this file: [.github/workflows/ansible-test-plugins.yml](https://github.com/ansible-collections/ansible.mysql/tree/main/.github/workflows)
+New components version should be added to this file: [.github/workflows/ansible-test-plugins.yml](https://github.com/ansible-collections/ansible.mariadb/tree/main/.github/workflows)
 
 Be careful to not add too much tests. The matrix creates an exponential number of virtual machines!

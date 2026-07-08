@@ -10,7 +10,7 @@ try:
 except ImportError:
     from mock import MagicMock
 
-from ansible_collections.ansible.mysql.plugins.modules.mysql_binlog_info import MySQL_Binlog_Info
+from ansible_collections.ansible.mariadb.plugins.modules.mariadb_binlog_info import MySQL_Binlog_Info
 
 
 def test_get_info_returns_requested_subsets_with_normalized_totals():

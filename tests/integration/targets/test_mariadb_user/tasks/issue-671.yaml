@@ -1,0 +1,111 @@
+---
+# Due to https://bugs.mysql.com/bug.php?id=115953, in Mysql 8, if ANSI_QUOTES is enabled,
+# backticks will be used instead of double quotes to quote functions or procedures name.
+# As a consequence, mysql_user and mysql_roles will always report "changed" for functions
+# and procedures no matter the privileges are granted or not.
+# Workaround for the mysql bug 116953 is removing ANSI_QUOTES from the module's session 
+# sql_mode. But because issue 671, ANSI_QUOTES is always got from GLOBAL sql_mode, thus 
+# this workaround can't work. Even without the Mysql bug, because sql_mode in session 
+# precedes GLOBAL sql_mode. we should check for sql_mode in session variable instead of 
+# the GLOBAL one.
+- vars:
+    mysql_parameters: &mysql_params
+      login_user: '{{ mysql_user }}'
+      login_password: '{{ mysql_password }}'
+      login_host: '{{ mysql_host }}'
+      login_port: '{{ mysql_primary_port }}'
+
+  block:
+    - name: Issue-671| test setup | drop database
+      ansible.mariadb.mariadb_db:
+        <<: *mysql_params
+        name: "{{ item }}"
+        state: absent
+      loop:
+        - foo
+        - bar
+
+    - name: Issue-671| test setup | create database
+      ansible.mariadb.mariadb_db:
+        <<: *mysql_params
+        name: "{{ item }}"
+        state: present
+      loop:
+        - foo
+        - bar
+
+    - name: Issue-671| test setup | get value of GLOBAL.sql_mode
+      ansible.mariadb.mariadb_query:
+        <<: *mysql_params
+        query: 'select @@GLOBAL.sql_mode AS sql_mode'
+      register: sql_mode_orig
+
+    - name: Issue-671| Assert sql_mode_orig
+      ansible.builtin.assert:
+        that:
+          - sql_mode_orig.query_result[0][0].sql_mode != None  
+
+    - name: Issue-671| enable sql_mode ANSI_QUOTES
+      ansible.mariadb.mariadb_variables:
+        <<: *mysql_params
+        variable: sql_mode
+        value: '{{ sql_mode_orig.query_result[0][0].sql_mode }},ANSI_QUOTES'
+        mode: "{% if db_engine == 'mariadb' %}global{% else %}persist{% endif %}"
+
+    - name: Issue-671| Copy SQL scripts to remote
+      ansible.builtin.copy:
+        src: "{{ item }}"
+        dest: "{{ remote_tmp_dir }}/{{ item | basename }}"
+      loop:
+        - create-function.sql
+        - create-procedure.sql
+
+    - name: Issue-671| Create function for test
+      ansible.builtin.shell:
+        cmd: "{{ mysql_command }} < {{ remote_tmp_dir }}/create-function.sql"
+
+    - name: Issue-671| Create procedure for test
+      ansible.builtin.shell:
+        cmd: "{{ mysql_command }} < {{ remote_tmp_dir }}/create-procedure.sql"
+
+    - name: Issue-671| Create user with FUNCTION and PROCEDURE privileges
+      ansible.mariadb.mariadb_user:
+        <<: *mysql_params
+        name: '{{ user_name_2 }}'
+        password: '{{ user_password_2 }}'
+        state: present
+        priv: 'FUNCTION foo.function:EXECUTE/foo.*:SELECT/PROCEDURE bar.procedure:EXECUTE'
+
+    - name: Issue-671| Grant the privileges again, remove ANSI_QUOTES from the session variable
+      ansible.mariadb.mariadb_user:
+        <<: *mysql_params
+        session_vars:
+          sql_mode: ""
+        name: '{{ user_name_2 }}'
+        state: present
+        priv: 'FUNCTION foo.function:EXECUTE/foo.*:SELECT/PROCEDURE bar.procedure:EXECUTE'
+      register: result
+      failed_when:
+        - result is failed or result is changed
+
+    - name: Issue-671| Test teardown | cleanup databases
+      ansible.mariadb.mariadb_db:
+        <<: *mysql_params
+        name: "{{ item }}"
+        state: absent
+      loop:
+        - foo
+        - bar
+
+    - name: Issue-671| set sql_mode back to original value
+      ansible.mariadb.mariadb_variables:
+        <<: *mysql_params
+        variable: sql_mode
+        value: '{{ sql_mode_orig.query_result[0][0].sql_mode }}'
+        mode: "{% if db_engine == 'mariadb' %}global{% else %}persist{% endif %}"
+
+    - name: Issue-671| Teardown user_name_2
+      ansible.builtin.include_tasks:
+        file: utils/remove_user.yml
+      vars:
+        user_name: "{{ user_name_2 }}"

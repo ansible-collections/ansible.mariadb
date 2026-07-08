@@ -1,0 +1,161 @@
+---
+
+- module_defaults:
+    ansible.mariadb.mariadb_db: &mysql_defaults
+      login_user: "{{ mysql_user }}"
+      login_password: "{{ mysql_password }}"
+      login_host: "{{ mysql_host }}"
+      login_port: "{{ mysql_primary_port }}"
+    ansible.mariadb.mariadb_query: *mysql_defaults
+    ansible.mariadb.mariadb_info: *mysql_defaults
+    ansible.mariadb.mariadb_user: *mysql_defaults
+
+  block:
+
+    # ================================ Prepare ==============================
+    - name: Mysql_info databases | Prepare | Create databases
+      ansible.mariadb.mariadb_db:
+        name:
+          - db_tables_count_empty
+          - db_tables_count_1
+          - db_tables_count_2
+          - db_only_views  # https://github.com/ansible-Getions/ansible.mysql/issues/204
+        state: present
+
+    - name: Mysql_info databases | Prepare | Create tables
+      ansible.mariadb.mariadb_query:
+        query:
+          - >-
+            CREATE TABLE IF NOT EXISTS db_tables_count_1.t1
+            (id int, name varchar(9))
+          - >-
+            CREATE TABLE IF NOT EXISTS db_tables_count_2.t1
+            (id int, name1 varchar(9))
+          - >-
+            CREATE TABLE IF NOT EXISTS db_tables_count_2.t2
+            (id int, name1 varchar(9))
+          - >-
+            CREATE VIEW db_only_views.v_today (today) AS SELECT CURRENT_DATE
+
+    # ================================== Tests ==============================
+
+    - name: Mysql_info databases | Get all non-empty databases fields
+      ansible.mariadb.mariadb_info:
+        filter:
+          - databases
+      register: result
+      failed_when:
+        - >
+          result.databases['db_tables_count_1'].size != 16384 or
+          result.databases['db_tables_count_1'].tables != 1 or
+          result.databases['db_tables_count_2'].size != 32768 or
+          result.databases['db_tables_count_2'].tables != 2 or
+          result.databases['db_only_views'].size != 0 or
+          result.databases['db_only_views'].tables != 1 or
+          'db_tables_count_empty' in result.databases | dict2items
+          | map(attribute='key')
+
+    - name: Mysql_info databases | Get all dbs fields except db_size
+      ansible.mariadb.mariadb_info:
+        filter:
+          - databases
+        exclude_fields:
+          - db_size
+      register: result
+      failed_when:
+        - >
+          result.databases['db_tables_count_1'].size is defined or
+          result.databases['db_tables_count_1'].tables != 1 or
+          result.databases['db_tables_count_2'].size is defined or
+          result.databases['db_tables_count_2'].tables != 2 or
+          result.databases['db_only_views'].size is defined or
+          result.databases['db_only_views'].tables != 1 or
+          'db_tables_count_empty' in result.databases | dict2items
+          | map(attribute='key')
+
+    # 'unsupported' element is passed to check that an unsupported value
+    # won't break anything (will be ignored regarding to the module's
+    # documentation).
+    - name: Mysql_info databases | Get all dbs fields with unsupported value
+      ansible.mariadb.mariadb_info:
+        filter:
+          - databases
+        exclude_fields:
+          - db_size
+          - unsupported
+      register: result
+      failed_when:
+        - >
+          result.databases['db_tables_count_1'].size is defined or
+          result.databases['db_tables_count_1'].tables != 1 or
+          result.databases['db_tables_count_2'].size is defined or
+          result.databases['db_tables_count_2'].tables != 2 or
+          result.databases['db_only_views'].size is defined or
+          result.databases['db_only_views'].tables != 1 or
+          'db_tables_count_empty' in result.databases | dict2items
+          | map(attribute='key')
+
+    - name: Mysql_info databases | Get all dbs fields except tables
+      ansible.mariadb.mariadb_info:
+        filter:
+          - databases
+        exclude_fields:
+          - db_table_count
+      register: result
+      failed_when:
+        - >
+          result.databases['db_tables_count_1'].size != 16384 or
+          result.databases['db_tables_count_1'].tables is defined or
+          result.databases['db_tables_count_2'].size != 32768 or
+          result.databases['db_tables_count_2'].tables is defined or
+          result.databases['db_only_views'].size != 0 or
+          result.databases['db_only_views'].tables is defined or
+          'db_tables_count_empty' in result.databases | dict2items
+          | map(attribute='key')
+
+    - name: Mysql_info databases | Get all dbs even empty ones
+      ansible.mariadb.mariadb_info:
+        filter:
+          - databases
+        return_empty_dbs: true
+      register: result
+      failed_when:
+        - >
+          result.databases['db_tables_count_1'].size != 16384 or
+          result.databases['db_tables_count_1'].tables != 1 or
+          result.databases['db_tables_count_2'].size != 32768 or
+          result.databases['db_tables_count_2'].tables != 2 or
+          result.databases['db_only_views'].size != 0 or
+          result.databases['db_only_views'].tables != 1 or
+          result.databases['db_tables_count_empty'].size != 0 or
+          result.databases['db_tables_count_empty'].tables != 0
+
+    - name: Mysql_info databases | Get all dbs even empty ones without size
+      ansible.mariadb.mariadb_info:
+        filter:
+          - databases
+        exclude_fields:
+          - db_size
+        return_empty_dbs: true
+      register: result
+      failed_when:
+        - >
+          result.databases['db_tables_count_1'].size is defined or
+          result.databases['db_tables_count_1'].tables != 1 or
+          result.databases['db_tables_count_2'].size is defined or
+          result.databases['db_tables_count_2'].tables != 2 or
+          result.databases['db_only_views'].size is defined or
+          result.databases['db_only_views'].tables != 1 or
+          result.databases['db_tables_count_empty'].size is defined or
+          result.databases['db_tables_count_empty'].tables != 0
+
+    # ================================== Cleanup ============================
+
+    - name: Mysql_info databases | Cleanup databases
+      ansible.mariadb.mariadb_db:
+        name:
+          - db_tables_count_empty
+          - db_tables_count_1
+          - db_tables_count_2
+          - db_only_views
+        state: absent
