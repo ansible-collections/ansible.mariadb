@@ -2,14 +2,15 @@
 requires_ansible: '>=2.16.0'
 action_groups:
   all:
-    - mysql_db
-    - mysql_binlog_info
-    - mysql_info
-    - mysql_perf_schema
-    - mysql_query
-    - mysql_replication
-    - mysql_replication_filter
-    - mysql_role
-    - mysql_slow_log
-    - mysql_user
-    - mysql_variables
+    - mariadb_db
+    - mariadb_binlog_info
+    - mariadb_info
+    - mariadb_password_policy
+    - mariadb_perf_schema
+    - mariadb_query
+    - mariadb_replication
+    - mariadb_replication_filter
+    - mariadb_role
+    - mariadb_slow_log
+    - mariadb_user
+    - mariadb_variables
