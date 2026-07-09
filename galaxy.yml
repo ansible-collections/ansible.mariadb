@@ -25,3 +25,12 @@ build_ignore:
   - .claude
   - .gitignore
   - .venv
+  - AGENTS.md
+  - antsibull-nox.toml
+  - codecov.yml
+  - MAINTAINERS
+  - Makefile
+  - noxfile.py
+  - run_all_tests.py
+  - TESTING.md
+  - MAINTAINING.md
