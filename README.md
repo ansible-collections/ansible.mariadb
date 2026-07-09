@@ -69,17 +69,18 @@ Every voice is important and every idea is valuable. If you have something on yo
 ## Included content
 
 - **Modules**:
-  - [mariadb_db](https://docs.ansible.com/ansible/devel/collections/ansible/mariadb/mariadb_db_module.html)
-  - [mariadb_info](https://docs.ansible.com/ansible/devel/collections/ansible/mariadb/mariadb_info_module.html)
-  - [mariadb_password_policy](https://docs.ansible.com/ansible/devel/collections/ansible/mariadb/mariadb_password_policy_module.html)
-  - [mariadb_perf_schema](https://docs.ansible.com/ansible/devel/collections/ansible/mariadb/mariadb_perf_schema_module.html)
-  - [mariadb_query](https://docs.ansible.com/ansible/devel/collections/ansible/mariadb/mariadb_query_module.html)
-  - [mariadb_replication](https://docs.ansible.com/ansible/devel/collections/ansible/mariadb/mariadb_replication_module.html)
-  - [mariadb_replication_filter](https://docs.ansible.com/ansible/devel/collections/ansible/mariadb/mariadb_replication_filter_module.html)
-  - [mariadb_role](https://docs.ansible.com/ansible/devel/collections/ansible/mariadb/mariadb_role_module.html)
-  - [mariadb_slow_log](https://docs.ansible.com/ansible/devel/collections/ansible/mariadb/mariadb_slow_log_module.html)
-  - [mariadb_user](https://docs.ansible.com/ansible/devel/collections/ansible/mariadb/mariadb_user_module.html)
-  - [mariadb_variables](https://docs.ansible.com/ansible/devel/collections/ansible/mariadb/mariadb_variables_module.html)
+  - mariadb_db — Add or remove MariaDB databases from a remote host
+  - mariadb_binlog_info — Gather MariaDB binary log information
+  - mariadb_info — Gather information about MariaDB servers
+  - mariadb_password_policy — Manage MariaDB password policy settings
+  - mariadb_perf_schema — Manage MariaDB Performance Schema setup tables
+  - mariadb_query — Run MariaDB queries
+  - mariadb_replication — Manage MariaDB replication
+  - mariadb_replication_filter — Manage MariaDB replication filters
+  - mariadb_role — Adds, removes, or updates a MariaDB role
+  - mariadb_slow_log — Manage MariaDB slow query log settings
+  - mariadb_user — Adds or removes a user from a MariaDB database
+  - mariadb_variables — Manage MariaDB variables
 
 
 ## Releases Support Timeline
