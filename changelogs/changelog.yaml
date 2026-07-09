@@ -808,3 +808,22 @@ releases:
       name: mysql_slow_log
       namespace: ''
     release_date: '2026-06-25'
+  6.0.0:
+    changes:
+      major_changes:
+      - The mysql_clone, mysql_resource_group, and mysql_resource_group_info have
+        been removed from the `ansible.mariadb` collection because they do not support
+        MariaDB.
+      - This `ansible.mariadb` collection only supports MariaDB. Please do NOT use
+        this collection for MySQL automation - use the `ansible.mysql` collection
+        instead.
+      release_summary: 'This is the first release of the `ansible.mariadb` collection.
+
+        This collection was cloned from the `ansible.mysql` collection to allow its
+        contributors and maintainers to focus on MariaDB-related automation development.
+
+        MySQL is NOT supported by the `ansible.mariadb` collection.'
+    fragments:
+    - 0-remove_modules.yml
+    - 6.0.0.yml
+    release_date: '2026-07-09'
