@@ -834,3 +834,10 @@ releases:
     fragments:
     - 6.0.1.yml
     release_date: '2026-07-09'
+  6.0.2:
+    changes:
+      release_summary: This is a patch release of the ansible.mariadb collection.
+        It only contains documentation fixes.
+    fragments:
+    - 6.0.2.yml
+    release_date: '2026-07-09'
