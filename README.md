@@ -3,6 +3,9 @@
 
 This collection is a part of the Ansible package.
 
+> [!IMPORTANT]
+> This collection was cloned from the [ansible.mysql](https://github.com/ansible-collections/ansible.mysql) collection to allow its contributors and maintainers to focus on MariaDB-related automation development. MySQL is NOT supported by the `ansible.mariadb` collection!
+
 ## Our mission
 
 The Ansible `ansible.mariadb` collection goals are to produce and maintain simple,
