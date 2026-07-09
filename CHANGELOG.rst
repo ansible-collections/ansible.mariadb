@@ -6,6 +6,14 @@ Community MySQL and MariaDB Collection Release Notes
 
 This changelog describes changes after version 2.0.0.
 
+v6.0.1
+======
+
+Release Summary
+---------------
+
+This is a patch release of the ansible.mariadb collection. It only contains fixes of broken links in README.
+
 v6.0.0
 ======
 

@@ -827,3 +827,10 @@ releases:
     - 0-remove_modules.yml
     - 6.0.0.yml
     release_date: '2026-07-09'
+  6.0.1:
+    changes:
+      release_summary: This is a patch release of the ansible.mariadb collection.
+        It only contains fixes of broken links in README.
+    fragments:
+    - 6.0.1.yml
+    release_date: '2026-07-09'
