@@ -6,6 +6,22 @@ Community MySQL and MariaDB Collection Release Notes
 
 This changelog describes changes after version 2.0.0.
 
+v6.0.0
+======
+
+Release Summary
+---------------
+
+This is the first release of the `ansible.mariadb` collection.
+This collection was cloned from the `ansible.mysql` collection to allow its contributors and maintainers to focus on MariaDB-related automation development.
+MySQL is NOT supported by the `ansible.mariadb` collection.
+
+Major Changes
+-------------
+
+- The mysql_clone, mysql_resource_group, and mysql_resource_group_info have been removed from the `ansible.mariadb` collection because they do not support MariaDB.
+- This `ansible.mariadb` collection only supports MariaDB. Please do NOT use this collection for MySQL automation - use the `ansible.mysql` collection instead.
+
 v5.1.0
 ======
 

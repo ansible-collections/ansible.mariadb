@@ -1,2 +1,0 @@
-minor_changes:
-  - The mysql_clone, mysql_resource_group, and mysql_resource_group_info have been removed from ansible.mariadb because they don't support MariaDB.
