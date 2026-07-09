@@ -12,9 +12,10 @@ __metaclass__ = type
 DOCUMENTATION = r'''
 ---
 module: mariadb_info
-short_description: Gather information about MySQL or MariaDB servers
+short_description: Gather information about MariaDB servers
 description:
-- Gathers information about MySQL or MariaDB servers.
+- This module only supports MariaDB; all MySQL-related options will be removed in the next releases. Use the C(ansible.mysql) collection for MySQL automation.
+- Gathers information about MariaDB servers.
 
 options:
   filter:

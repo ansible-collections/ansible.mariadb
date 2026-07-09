@@ -12,9 +12,10 @@ DOCUMENTATION = r'''
 ---
 module: mariadb_variables
 
-short_description: Manage MySQL or MariaDB global variables
+short_description: Manage MariaDB global variables
 description:
-- Query / Set MySQL or MariaDB variables.
+- This module only supports MariaDB; all MySQL-related options will be removed in the next releases. Use the C(ansible.mysql) collection for MySQL automation.
+- Query / Set MariaDB variables.
 author:
 - Balazs Pocze (@banyek)
 options:

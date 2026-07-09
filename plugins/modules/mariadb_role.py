@@ -11,10 +11,12 @@ DOCUMENTATION = r'''
 ---
 module: mariadb_role
 
-short_description: Adds, removes, or updates a MySQL or MariaDB role
+short_description: Adds, removes, or updates a MariaDB role
 
 description:
-   - Adds, removes, or updates a MySQL or MariaDB role.
+   - This module only supports MariaDB; all MySQL-related options will be removed in the next releases.
+     Use the C(ansible.mysql) collection for MySQL automation.
+   - Adds, removes, or updates a MariaDB role.
    - Roles are supported since MySQL 8.0.0 and MariaDB 10.0.5.
 
 version_added: '2.2.0'

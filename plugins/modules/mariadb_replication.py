@@ -13,9 +13,10 @@ __metaclass__ = type
 DOCUMENTATION = r'''
 ---
 module: mariadb_replication
-short_description: Manage MySQL or MariaDB replication
+short_description: Manage MariaDB replication
 description:
-- Manages MySQL or MariaDB server replication, replica, primary status, get and change primary host.
+- This module only supports MariaDB; all MySQL-related options will be removed in the next releases. Use the C(ansible.mysql) collection for MySQL automation.
+- Manages MariaDB server replication, replica, primary status, get and change primary host.
 author:
 - Balazs Pocze (@banyek)
 - Andrew Klychkov (@Andersson007)
@@ -26,7 +27,7 @@ options:
     description:
     - Module operating mode. Could be
       C(changeprimary) (CHANGE MASTER TO) - also works for MySQL 8.0.23 and later since ansible.mysql 3.10.0,
-      C(changereplication) (CHANGE REPLICATION SOURCE TO) - only supported in MySQL 8.0.23 and later,
+      C(changereplication) (CHANGE REPLICATION SOURCE TO) - only supported in MySQL 8.0.23 and later (scheduled for removal),
       C(getprimary) (SHOW MASTER STATUS),
       C(getreplica) (SHOW REPLICA STATUS),
       C(startreplica) (START REPLICA),
@@ -235,13 +236,6 @@ EXAMPLES = r'''
 - name: Change primary to primary server 192.0.2.1 and use binary log 'mysql-bin.000009' with position 4578
   ansible.mariadb.mariadb_replication:
     mode: changeprimary
-    primary_host: 192.0.2.1
-    primary_log_file: mysql-bin.000009
-    primary_log_pos: 4578
-
-- name: Change replication source to replica server 192.0.2.1 and use binary log 'mysql-bin.000009' with position 4578
-  ansible.mariadb.mariadb_replication:
-    mode: changereplication
     primary_host: 192.0.2.1
     primary_log_file: mysql-bin.000009
     primary_log_pos: 4578

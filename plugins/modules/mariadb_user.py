@@ -11,9 +11,11 @@ __metaclass__ = type
 DOCUMENTATION = r'''
 ---
 module: mariadb_user
-short_description: Adds or removes a user from a MySQL or MariaDB database
+short_description: Adds or removes a user from a MariaDB database
 description:
-   - Adds or removes a user from a MySQL or MariaDB database.
+   - This module only supports MariaDB; all MySQL-related options will be removed in the next releases.
+     Use the C(ansible.mysql) collection for MySQL automation.
+   - Adds or removes a user from a MariaDB database.
 options:
   name:
     description:

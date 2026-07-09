@@ -11,10 +11,11 @@ DOCUMENTATION = r'''
 ---
 module: mariadb_slow_log
 
-short_description: Manage MySQL or MariaDB slow query log settings
+short_description: Manage MariaDB slow query log settings
 
 description:
-  - Manage MySQL or MariaDB slow query log runtime settings.
+  - This module only supports MariaDB; all MySQL-related options will be removed in the next releases. Use the C(ansible.mysql) collection for MySQL automation.
+  - Manage MariaDB slow query log runtime settings.
   - Supports enabling the slow query log, setting thresholds and output, and rotating file-based slow logs.
 
 author:

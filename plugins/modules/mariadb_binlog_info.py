@@ -11,10 +11,11 @@ DOCUMENTATION = r'''
 ---
 module: mariadb_binlog_info
 
-short_description: Gather MySQL or MariaDB binary log information
+short_description: Gather MariaDB binary log information
 
 description:
-  - Gather binary log information from MySQL or MariaDB servers.
+  - This module only supports MariaDB; all MySQL-related options will be removed in the next releases. Use the C(ansible.mysql) collection for MySQL automation.
+  - Gather binary log information from MariaDB servers.
   - Returns the current binary log status, available binary log files, aggregate log totals,
     and selected binary-log-related settings.
   - This module is read-only. Use M(ansible.mariadb.mariadb_variables) for mutable binlog settings.

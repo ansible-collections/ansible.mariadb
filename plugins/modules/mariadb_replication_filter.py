@@ -11,9 +11,10 @@ DOCUMENTATION = r'''
 ---
 module: mariadb_replication_filter
 
-short_description: Manage MySQL or MariaDB replication filters
+short_description: Manage MariaDB replication filters
 
 description:
+  - This module only supports MariaDB; all MySQL-related options will be removed in the next releases. Use the C(ansible.mysql) collection for MySQL automation.
   - Manage replica-side replication filters declaratively.
   - MySQL uses C(CHANGE REPLICATION FILTER).
   - MariaDB uses C(SET GLOBAL replicate_*) variables.
@@ -68,6 +69,7 @@ options:
     elements: str
   channel:
     description:
+      - This option is scheduled for removal.
       - MySQL replication channel name.
       - Supported only for MySQL.
     type: str
@@ -123,13 +125,6 @@ EXAMPLES = r'''
       - app
     replicate_ignore_table:
       - archive.events
-
-- name: Set one channel-specific MySQL filter
-  ansible.mariadb.mariadb_replication_filter:
-    login_unix_socket: /run/mysqld/mysqld.sock
-    channel: analytics
-    replicate_do_db:
-      - reporting
 
 - name: Set one named MariaDB replication filter
   ansible.mariadb.mariadb_replication_filter:

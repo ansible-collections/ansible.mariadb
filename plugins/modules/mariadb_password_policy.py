@@ -11,10 +11,11 @@ DOCUMENTATION = r'''
 ---
 module: mariadb_password_policy
 
-short_description: Manage MySQL or MariaDB password policy settings
+short_description: Manage MariaDB password policy settings
 
 description:
-  - Manage password policy settings on MySQL or MariaDB.
+  - This module only supports MariaDB; all MySQL-related options will be removed in the next releases. Use the C(ansible.mysql) collection for MySQL automation.
+  - Manage password policy settings on MariaDB.
   - This module is configuration-only and does not install or uninstall password validation components or plugins.
   - On MySQL, the module manages C(validate_password) settings and related global password policy variables.
   - On MariaDB, the module manages the C(simple_password_check) plugin settings only.
@@ -28,6 +29,7 @@ version_added: '5.2.0'
 options:
   policy:
     description:
+      - This option is scheduled for removal.
       - Password validation policy level on MySQL.
       - Supported only on MySQL.
     type: str
@@ -54,26 +56,31 @@ options:
     type: int
   check_user_name:
     description:
+      - This option is scheduled for removal.
       - Whether passwords are checked against the user name.
       - Supported only on MySQL.
     type: bool
   password_lifetime:
     description:
+      - This option is scheduled for removal.
       - Default password expiration lifetime in days.
       - Supported only on MySQL.
     type: int
   password_history:
     description:
+      - This option is scheduled for removal.
       - Number of previous passwords that cannot be reused.
       - Supported only on MySQL.
     type: int
   reuse_interval:
     description:
+      - This option is scheduled for removal.
       - Number of days before a password can be reused.
       - Supported only on MySQL.
     type: int
   mode:
     description:
+      - This option is scheduled for removal.
       - How supported MySQL variables are set.
       - V(global) uses C(SET GLOBAL) and does not survive restarts by itself.
       - V(persist) uses C(SET PERSIST) on MySQL.
@@ -115,16 +122,6 @@ EXAMPLES = r'''
     mixed_case_count: 2
     number_count: 2
     special_char_count: 1
-
-- name: Configure MySQL-specific password policy settings persistently
-  ansible.mariadb.mariadb_password_policy:
-    login_unix_socket: /run/mysqld/mysqld.sock
-    policy: medium
-    check_user_name: true
-    password_lifetime: 90
-    password_history: 5
-    reuse_interval: 365
-    mode: persist
 
 - name: Configure MariaDB simple_password_check settings
   ansible.mariadb.mariadb_password_policy:

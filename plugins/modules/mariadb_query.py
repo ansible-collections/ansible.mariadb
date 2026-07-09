@@ -10,9 +10,10 @@ __metaclass__ = type
 DOCUMENTATION = r'''
 ---
 module: mariadb_query
-short_description: Run MySQL or MariaDB queries
+short_description: Run MariaDB queries
 description:
-- Runs arbitrary MySQL or MariaDB queries.
+- This module only supports MariaDB; all MySQL-related options will be removed in the next releases. Use the C(ansible.mysql) collection for MySQL automation.
+- Runs arbitrary MariaDB queries.
 - Pay attention, the module does not support check mode!
   All queries will be executed in autocommit mode.
 - To run SQL queries from a file, use M(ansible.mariadb.mariadb_db) module.

@@ -11,9 +11,10 @@ __metaclass__ = type
 DOCUMENTATION = r'''
 ---
 module: mariadb_db
-short_description: Add or remove MySQL or MariaDB databases from a remote host
+short_description: Add or remove MariaDB databases from a remote host
 description:
-- Add or remove MySQL or MariaDB databases from a remote host.
+- This module only supports MariaDB; all MySQL-related options will be removed in the next releases. Use the C(ansible.mysql) collection for MySQL automation.
+- Add or remove MariaDB databases from a remote host.
 options:
   name:
     description:
