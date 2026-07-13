@@ -147,6 +147,10 @@ notes:
   - Pay attention that the module runs C(SET DEFAULT ROLE ALL TO)
     all the I(members) passed by default when the state has changed.
     If you want to avoid this behavior, set I(set_default_role_all) to C(no).
+  - "On MariaDB, C(PUBLIC) is a built-in pseudo-role that is implicitly
+    granted to every user (available since MariaDB 10.11). The module
+    treats it as always existing and only manages its I(priv) option;
+    it cannot be created or removed, so I(state=absent) will fail for it."
 
 attributes:
   check_mode:
@@ -317,6 +321,13 @@ EXAMPLES = r'''
     state: present
     priv: 'fiction.*:SELECT'
     sql_log_bin: false
+
+# PUBLIC is a MariaDB built-in pseudo-role implicitly granted to every
+# user, so only its privileges can be managed with this module.
+- name: Grant the USAGE privilege to every user through the PUBLIC role
+  ansible.mariadb.mariadb_role:
+    name: PUBLIC
+    priv: '*.*:USAGE'
 '''
 
 RETURN = '''#'''
@@ -749,6 +760,14 @@ class Role():
         exists (bool): Indicates if a role exists or not.
         members (set): Set of current role's members.
     """
+
+    # MariaDB's built-in pseudo-role that is implicitly granted to every
+    # user. It cannot be created or dropped (CREATE ROLE / DROP ROLE reject
+    # it with "Invalid role specification" / "Operation ... failed"), and
+    # some servers do not carry a corresponding row in mysql.user, so its
+    # presence there cannot be relied upon to detect that it exists.
+    PUBLIC_ROLE_NAME = 'PUBLIC'
+
     def __init__(self, module, cursor, name, server):
         self.module = module
         self.cursor = cursor
@@ -767,11 +786,24 @@ class Role():
             self.role_impl = MySQLRoleImpl(self.module, self.cursor, self.name, self.host)
             self.full_name = '`%s`@`%s`' % (self.name, self.host)
 
-        self.exists = self.__role_exists()
+        self.is_public = self.is_mariadb and self.__is_public_role_name(self.name)
+        self.exists = self.is_public or self.__role_exists()
         self.members = set()
 
         if self.exists:
             self.members = self.__get_members()
+
+    @classmethod
+    def __is_public_role_name(cls, name):
+        """Check if a role name refers to MariaDB's built-in PUBLIC pseudo-role.
+
+        Args:
+            name (str): Role name.
+
+        Returns:
+            bool: True if name refers to the PUBLIC pseudo-role, False otherwise.
+        """
+        return name.upper() == cls.PUBLIC_ROLE_NAME
 
     def __role_exists(self):
         """Check if a role exists.
@@ -823,6 +855,11 @@ class Role():
         Returns:
             bool: True if the state has changed, False if has not.
         """
+        if self.is_public:
+            self.module.fail_json(
+                msg='The PUBLIC role is a built-in MariaDB pseudo-role '
+                    'that is implicitly granted to every user and cannot be dropped.')
+
         if not self.exists:
             return False
 

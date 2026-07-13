@@ -29,3 +29,10 @@
   ansible.builtin.include_tasks: test_sql_log_bin.yml
   when:
     - db_engine == 'mysql'
+
+# Test managing privileges of the built-in PUBLIC pseudo-role
+# (https://github.com/ansible-collections/ansible.mariadb/issues/17)
+- name: Test managing the PUBLIC pseudo-role
+  ansible.builtin.include_tasks: test_public_role.yml
+  when:
+    - db_engine == 'mariadb'
