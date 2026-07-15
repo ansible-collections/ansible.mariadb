@@ -124,9 +124,9 @@ jobs:
           prima_conf='[mariadb]\\nserver-id=1\\nlog-bin=/var/lib/mysql/primary-bin'
           repl1_conf='[mariadb]\\nserver-id=2\\nlog-bin=/var/lib/mysql/replica1-bin'
           repl2_conf='[mariadb]\\nserver-id=3\\nlog-bin=/var/lib/mysql/replica2-bin'
-          docker exec -e cnf=$prima_conf ${{ job.services.db_primary.id }} bash -c 'echo -e ${cnf//\\n/\n} > /etc/mysql/maraidb.conf.d/replication.cnf'
-          docker exec -e cnf=$repl1_conf ${{ job.services.db_replica1.id }} bash -c 'echo -e ${cnf//\\n/\n} > /etc/mysql/mariadb.conf.d/replication.cnf'
-          docker exec -e cnf=$repl2_conf ${{ job.services.db_replica2.id }} bash -c 'echo -e ${cnf//\\n/\n} > /etc/mysql/mariadb.conf.d/replication.cnf'
+          docker exec -e cnf=$prima_conf ${{ job.services.db_primary.id }} bash -c 'echo -e ${cnf//\\n/\n} > /etc/mysql/conf.d/replication.cnf'
+          docker exec -e cnf=$repl1_conf ${{ job.services.db_replica1.id }} bash -c 'echo -e ${cnf//\\n/\n} > /etc/mysql/conf.d/replication.cnf'
+          docker exec -e cnf=$repl2_conf ${{ job.services.db_replica2.id }} bash -c 'echo -e ${cnf//\\n/\n} > /etc/mysql/conf.d/replication.cnf'
           docker restart -t 30 ${{ job.services.db_primary.id }}
           docker restart -t 30 ${{ job.services.db_replica1.id }}
           docker restart -t 30 ${{ job.services.db_replica2.id }}
