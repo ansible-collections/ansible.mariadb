@@ -34,3 +34,4 @@ build_ignore:
   - run_all_tests.py
   - TESTING.md
   - MAINTAINING.md
+  - CLAUDE.md
