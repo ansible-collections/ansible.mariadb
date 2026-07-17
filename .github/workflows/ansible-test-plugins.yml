@@ -2,6 +2,7 @@
 name: Plugins CI
 on:  # yamllint disable-line rule:truthy
   push:
+    branches: [main]
     paths:
       - 'plugins/**'
       - 'tests/**'

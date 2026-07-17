@@ -5,6 +5,7 @@
 name: Build Execution Environment
 on:  # yamllint disable-line rule:truthy
   push:
+    branches: [main]
     paths:
       - 'meta/execution-environment.yml'
       - 'meta/ee-requirements.txt'
