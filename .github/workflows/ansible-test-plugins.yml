@@ -72,24 +72,17 @@ jobs:
           - db_engine_version: '10.11.8'
             ansible: devel
 
-          - db_engine_version: '10.11.8'
-            connector_version: '2.0.1'
-
-          - db_engine_version: '10.11.8'
-            connector_version: '2.0.1'
-
     services:
       db_primary:
         image: docker.io/library/${{ matrix.db_engine_name }}:${{ matrix.db_engine_version }}
         env:
           MARIADB_ROOT_PASSWORD: msandbox
-          MYSQL_ROOT_PASSWORD: msandbox
         ports:
           - 3307:3306
         # We write our own health-cmd because the mariadb container does not
         # provide a healthcheck
         options: >-
-          --health-cmd "${{ matrix.db_engine_name == 'mysql' && 'mysqladmin' || 'mariadb-admin' }} ping -P 3306 -pmsandbox |grep alive || exit 1"
+          --health-cmd "mariadb-admin ping -P 3306 -pmsandbox |grep alive || exit 1"
           --health-start-period 10s
           --health-interval 10s
           --health-timeout 5s
@@ -99,11 +92,10 @@ jobs:
         image: docker.io/library/${{ matrix.db_engine_name }}:${{ matrix.db_engine_version }}
         env:
           MARIADB_ROOT_PASSWORD: msandbox
-          MYSQL_ROOT_PASSWORD: msandbox
         ports:
           - 3308:3306
         options: >-
-          --health-cmd "${{ matrix.db_engine_name == 'mysql' && 'mysqladmin' || 'mariadb-admin' }} ping -P 3306 -pmsandbox |grep alive || exit 1"
+          --health-cmd "mariadb-admin ping -P 3306 -pmsandbox |grep alive || exit 1"
           --health-start-period 10s
           --health-interval 10s
           --health-timeout 5s
@@ -113,11 +105,10 @@ jobs:
         image: docker.io/library/${{ matrix.db_engine_name }}:${{ matrix.db_engine_version }}
         env:
           MARIADB_ROOT_PASSWORD: msandbox
-          MYSQL_ROOT_PASSWORD: msandbox
         ports:
           - 3309:3306
         options: >-
-          --health-cmd "${{ matrix.db_engine_name == 'mysql' && 'mysqladmin' || 'mariadb-admin' }} ping -P 3306 -pmsandbox |grep alive || exit 1"
+          --health-cmd "mariadb-admin ping -P 3306 -pmsandbox |grep alive || exit 1"
           --health-start-period 10s
           --health-interval 10s
           --health-timeout 5s
@@ -131,15 +122,9 @@ jobs:
         run: |
           db_ver="${{ matrix.db_engine_version }}"
           maj="${db_ver%.*.*}"
-          if [[ "${{ matrix.db_engine_name }}" == "mysql" && "$maj" -eq 8 ]]; then
-            prima_conf='[mysqld]\\nserver-id=1\\nlog-bin=/var/lib/mysql/primary-bin\\nmysql-native-password=1'
-            repl1_conf='[mysqld]\\nserver-id=2\\nlog-bin=/var/lib/mysql/replica1-bin\\nmysql-native-password=1'
-            repl2_conf='[mysqld]\\nserver-id=3\\nlog-bin=/var/lib/mysql/replica2-bin\\nmysql-native-password=1'
-          else
-            prima_conf='[mysqld]\\nserver-id=1\\nlog-bin=/var/lib/mysql/primary-bin'
-            repl1_conf='[mysqld]\\nserver-id=2\\nlog-bin=/var/lib/mysql/replica1-bin'
-            repl2_conf='[mysqld]\\nserver-id=3\\nlog-bin=/var/lib/mysql/replica2-bin'
-          fi
+          prima_conf='[mariadb]\\nserver-id=1\\nlog-bin=/var/lib/mysql/primary-bin'
+          repl1_conf='[mariadb]\\nserver-id=2\\nlog-bin=/var/lib/mysql/replica1-bin'
+          repl2_conf='[mariadb]\\nserver-id=3\\nlog-bin=/var/lib/mysql/replica2-bin'
           docker exec -e cnf=$prima_conf ${{ job.services.db_primary.id }} bash -c 'echo -e ${cnf//\\n/\n} > /etc/mysql/conf.d/replication.cnf'
           docker exec -e cnf=$repl1_conf ${{ job.services.db_replica1.id }} bash -c 'echo -e ${cnf//\\n/\n} > /etc/mysql/conf.d/replication.cnf'
           docker exec -e cnf=$repl2_conf ${{ job.services.db_replica2.id }} bash -c 'echo -e ${cnf//\\n/\n} > /etc/mysql/conf.d/replication.cnf'
