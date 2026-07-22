@@ -1,0 +1,113 @@
+---
+# Test managing privileges of MariaDB's built-in PUBLIC pseudo-role
+# (https://github.com/ansible-collections/ansible.mariadb/issues/17)
+
+- vars:
+    mysql_parameters: &mysql_params
+      login_user: '{{ mysql_user }}'
+      login_password: '{{ mysql_password }}'
+      login_host: '{{ mysql_host }}'
+      login_port: '{{ mysql_primary_port }}'
+
+  block:
+
+    - name: PUBLIC role | Ensure any leftover PUBLIC privilege from a previous run is gone
+      ansible.mariadb.mariadb_query:
+        <<: *mysql_params
+        query: "REVOKE SELECT ON *.* FROM PUBLIC"
+      ignore_errors: true
+
+    - name: PUBLIC role | Grant SELECT to PUBLIC in check_mode
+      ansible.mariadb.mariadb_role:
+        <<: *mysql_params
+        name: PUBLIC
+        priv: '*.*:SELECT'
+      register: result
+      check_mode: true
+
+    - name: PUBLIC role | Assert grant in check_mode is changed
+      ansible.builtin.assert:
+        that:
+          - result is changed
+
+    - name: PUBLIC role | Query grants for PUBLIC after check_mode run
+      ansible.mariadb.mariadb_query:
+        <<: *mysql_params
+        query: "SHOW GRANTS FOR PUBLIC"
+      register: result
+
+    - name: PUBLIC role | Assert nothing was actually granted in check_mode
+      ansible.builtin.assert:
+        that:
+          - result.rowcount[0] == 0
+
+    - name: PUBLIC role | Grant SELECT to PUBLIC
+      ansible.mariadb.mariadb_role:
+        <<: *mysql_params
+        name: PUBLIC
+        priv: '*.*:SELECT'
+      register: result
+
+    - name: PUBLIC role | Assert grant is changed
+      ansible.builtin.assert:
+        that:
+          - result is changed
+
+    - name: PUBLIC role | Query grants for PUBLIC
+      ansible.mariadb.mariadb_query:
+        <<: *mysql_params
+        query: "SHOW GRANTS FOR PUBLIC"
+      register: result
+
+    - name: PUBLIC role | Assert SELECT is granted to PUBLIC
+      ansible.builtin.assert:
+        that:
+          - result.query_result[0][0]['Grants for PUBLIC'] == "GRANT SELECT ON *.* TO PUBLIC"
+          - result.rowcount[0] == 1
+
+    - name: PUBLIC role | Grant SELECT to PUBLIC again in check_mode
+      ansible.mariadb.mariadb_role:
+        <<: *mysql_params
+        name: PUBLIC
+        priv: '*.*:SELECT'
+      register: result
+      check_mode: true
+
+    - name: PUBLIC role | Assert grant again in check_mode is not changed
+      ansible.builtin.assert:
+        that:
+          - result is not changed
+
+    - name: PUBLIC role | Grant SELECT to PUBLIC again
+      ansible.mariadb.mariadb_role:
+        <<: *mysql_params
+        name: PUBLIC
+        priv: '*.*:SELECT'
+      register: result
+
+    - name: PUBLIC role | Assert grant again is not changed
+      ansible.builtin.assert:
+        that:
+          - result is not changed
+
+    - name: PUBLIC role | Try to drop the PUBLIC role
+      ansible.mariadb.mariadb_role:
+        <<: *mysql_params
+        name: PUBLIC
+        state: absent
+      register: result
+      ignore_errors: true
+
+    - name: PUBLIC role | Assert dropping PUBLIC fails cleanly
+      ansible.builtin.assert:
+        that:
+          - result is failed
+          - result.msg is search('cannot be dropped')
+
+  always:
+
+    - name: PUBLIC role | Clean up granted privileges
+      ansible.mariadb.mariadb_query:
+        <<: *mysql_params
+        query: "REVOKE SELECT ON *.* FROM PUBLIC"
+      ignore_errors: true

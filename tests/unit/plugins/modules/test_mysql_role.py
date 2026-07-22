@@ -8,6 +8,7 @@ import pytest
 from ansible_collections.ansible.mariadb.plugins.modules.mariadb_role import (
     MariaDBQueryBuilder,
     MySQLQueryBuilder,
+    Role,
     normalize_users,
 )
 
@@ -117,3 +118,19 @@ def test_normalize_users_failing(input_, is_mariadb, err_msg):
 
     normalize_users(module, input_, is_mariadb)
     assert err_msg in module.msg
+
+
+@pytest.mark.parametrize(
+    'name,expected',
+    [
+        ('PUBLIC', True),
+        ('public', True),
+        ('Public', True),
+        ('role0', False),
+        ('PUBLIC_ROLE', False),
+        ('MY_PUBLIC', False),
+    ]
+)
+def test_role_is_public_role_name(name, expected):
+    """Test the private helper that detects MariaDB's PUBLIC pseudo-role by name."""
+    assert Role._Role__is_public_role_name(name) == expected
