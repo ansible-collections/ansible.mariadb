@@ -1,0 +1,5 @@
+bugfixes:
+  - mariadb_role - fix ``Invalid role specification`` error when managing privileges
+    of MariaDB's built-in ``PUBLIC`` pseudo-role. The module now treats ``PUBLIC``
+    as always existing and never attempts to create or drop it
+    (https://github.com/ansible-collections/ansible.mariadb/issues/17).
