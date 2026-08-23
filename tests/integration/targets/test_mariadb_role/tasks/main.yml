@@ -4,11 +4,14 @@
 ####################################################################
 
 # mysql_role module initial CI tests
-# TODO, many tests fails with MariaDB, debug them then remove the 
-# when clause and swap include_tasks for import_tasks.
+
+# mariadb_role_initial.yml is disabled as there are issues running on
+# MariaDB hosts. TODO: fix issues with tests and remove 'when' clause.
 - include_tasks: mariadb_role_initial.yml
   when:
     - db_engine != 'mariadb'
+
+- include_tasks: test_sql_log_bin.yml
 
 # Test that subtract_privs will only revoke the grants given by priv
 # (https://github.com/ansible-collections/ansible.mysql/issues/331)
