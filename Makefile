@@ -105,7 +105,7 @@ test-integration:
 	python$(local_python_version) -m pip install --disable-pip-version-check \
 	https://github.com/ansible/ansible/archive/$(ansible).tar.gz; \
 	set -x; \
-	ansible-test integration $(target) -v --color --coverage --diff \
+	ANSIBLE_TEST_PREFER_PODMAN=true ansible-test integration $(target) -v --color --coverage --diff \
 	--docker $(_docker_image) \
 	--docker-network podman $(_continue_on_errors) $(_keep_containers_alive); \
 	set +x
