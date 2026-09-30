@@ -36,6 +36,7 @@
         that:
           - result is changed
           - result.queries == expected_queries
+          - replication_pass not in result.queries[0]
       vars:
         expected_queries: ["CHANGE REPLICATION SOURCE TO SOURCE_HOST='{{ mysql_host }}',\
           SOURCE_USER='{{ replication_user }}',SOURCE_PASSWORD='********',\
@@ -60,6 +61,7 @@
         that:
           - with_channel_result_queries is changed
           - with_channel_result_queries.queries == expected_queries
+          - replication_pass not in with_channel_result_queries.queries[0]
       vars:
         expected_queries: ["CHANGE REPLICATION SOURCE TO SOURCE_USER='{{ replication_user }}',\
           SOURCE_PASSWORD='********' FOR CHANNEL '{{ test_channel }}'"]

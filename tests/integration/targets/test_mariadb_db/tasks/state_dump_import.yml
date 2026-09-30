@@ -132,6 +132,12 @@
     - db_engine == 'mysql'
     - db_version is version('8.2', '>=')
 
+- name: Dump and Import | Assert password is masked in dump executed commands
+  assert:
+    that:
+      - result.executed_commands[0] is search("--password=\*\*\*\*\*\*\*\*")
+      - db_user_unsafe_password not in result.executed_commands[0]
+
 - name: Dump and Import | State dump/import - file name should exist (db_file_name)
   file:
     name: '{{ db_file_name }}'
@@ -245,6 +251,12 @@
     use_shell: yes
   register: result
 
+- name: Dump and Import | Assert password is masked in import executed commands
+  assert:
+    that:
+      - result.executed_commands[0] is search("--password=\*\*\*\*\*\*\*\*")
+      - db_user_unsafe_password not in result.executed_commands[0]
+
 - name: Dump and Import | Show the tables
   command: "{{ mysql_command }} {{ db_name }} \"-e show tables\""
   register: result
@@ -270,6 +282,8 @@
   assert:
     that:
       - import_result is changed
+      - import_result.executed_commands[0] is search("--password=\*\*\*\*\*\*\*\*")
+      - mysql_password not in import_result.executed_commands[0]
 
 - name: Dump and Import | Remove database
   mariadb_db:

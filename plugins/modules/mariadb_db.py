@@ -365,6 +365,9 @@ from ansible.module_utils.common.text.converters import to_native
 
 executed_commands = []
 
+# Masks passwords in return values instead of relying on Ansible's no_log masking
+PASSWORD_MASK = '********'
+
 # ===========================================
 # MySQL module specific support methods.
 #
@@ -483,7 +486,10 @@ def db_dump(module, host, user, password, db_name, target, all_databases, port,
     else:
         cmd += " > %s" % shlex.quote(target)
 
-    executed_commands.append(cmd)
+    if password:
+        executed_commands.append(cmd.replace(password, PASSWORD_MASK))
+    else:
+        executed_commands.append(cmd)
 
     if pipefail:
         rc, stdout, stderr = module.run_command(cmd, use_unsafe_shell=True, executable='bash')
@@ -557,8 +563,10 @@ def db_import(module, host, user, password, db_name, target, all_databases, port
     elif os.path.splitext(target)[-1] == '.zst':
         comp_prog_path = module.get_bin_path('zstd', required=True)
     if comp_prog_path:
-        # The line below is for returned data only:
-        executed_commands.append('%s -dc %s | %s' % (comp_prog_path, target, cmd))
+        logged_cmd = '%s -dc %s | %s' % (comp_prog_path, target, cmd)
+        if password:
+            logged_cmd = logged_cmd.replace(password, PASSWORD_MASK)
+        executed_commands.append(logged_cmd)
 
         if not use_shell:
             p1 = subprocess.Popen([comp_prog_path, '-dc', target], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -585,7 +593,10 @@ def db_import(module, host, user, password, db_name, target, all_databases, port
     else:
         cmd = ' '.join(cmd)
         cmd += " < %s" % shlex.quote(target)
-        executed_commands.append(cmd)
+        if password:
+            executed_commands.append(cmd.replace(password, PASSWORD_MASK))
+        else:
+            executed_commands.append(cmd)
         rc, stdout, stderr = module.run_command(cmd, use_unsafe_shell=True)
         return rc, stdout, stderr
 
