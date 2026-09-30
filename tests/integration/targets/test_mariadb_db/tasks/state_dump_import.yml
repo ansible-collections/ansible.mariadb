@@ -1,4 +1,4 @@
-# test code for state dump and import for mysql_db module
+# test code for state dump and import for mariadb_db module
 # (c) 2014,  Wayne Rosario <wrosario@ansible.com>
 
 # This file is part of Ansible
@@ -26,17 +26,16 @@
     db_user: "test"
     db_user_unsafe_password: "pass!word"
     config_file: "{{ playbook_dir }}/root/.my.cnf"
-    gtid_purged_off: "{{ '--set-gtid-purged=OFF' if db_engine == 'mysql' else '' }}"
 
 - name: Dump and Import | Create custom config file
   shell: 'echo "[client]" > {{ config_file }}'
 
 - name: Dump and Import | Create user for test unsafe_login_password parameter
   mariadb_user:
-    login_user: '{{ mysql_user }}'
-    login_password: '{{ mysql_password }}'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
+    login_user: '{{ mariadb_user }}'
+    login_password: '{{ mariadb_password }}'
+    login_host: '{{ mariadb_host }}'
+    login_port: '{{ mariadb_primary_port }}'
     name: '{{ db_user }}'
     host: '%'
     password: '{{ db_user_unsafe_password }}'
@@ -45,35 +44,35 @@
 
 - name: Dump and Import | State dump/import - create database
   mariadb_db:
-    login_user: '{{ mysql_user }}'
-    login_password: '{{ mysql_password }}'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
+    login_user: '{{ mariadb_user }}'
+    login_password: '{{ mariadb_password }}'
+    login_host: '{{ mariadb_host }}'
+    login_port: '{{ mariadb_primary_port }}'
     name: '{{ db_name }}'
     state: present
     check_implicit_admin: yes
 
 - name: Dump and Import | Create database
   mariadb_db:
-    login_user: '{{ mysql_user }}'
-    login_password: '{{ mysql_password }}'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
+    login_user: '{{ mariadb_user }}'
+    login_password: '{{ mariadb_password }}'
+    login_host: '{{ mariadb_host }}'
+    login_port: '{{ mariadb_primary_port }}'
     name: '{{ db_name2 }}'
     state: present
     check_implicit_admin: no
 
 - name: Dump and Import | State dump/import - create table department
-  command: "{{ mysql_command }} {{ db_name }} \"-e create table department(id int, name varchar(100))\""
+  command: "{{ mariadb_command }} {{ db_name }} \"-e create table department(id int, name varchar(100))\""
 
 - name: Dump and Import | State dump/import - create table employee
-  command: "{{ mysql_command }} {{ db_name }} \"-e create table employee(id int, name varchar(100))\""
+  command: "{{ mariadb_command }} {{ db_name }} \"-e create table employee(id int, name varchar(100))\""
 
 - name: Dump and Import | State dump/import - insert data into table employee
-  command: "{{ mysql_command }} {{ db_name }} \"-e insert into employee value(47,'Joe Smith')\""
+  command: "{{ mariadb_command }} {{ db_name }} \"-e insert into employee value(47,'Joe Smith')\""
 
 - name: Dump and Import | State dump/import - insert data into table department
-  command: "{{ mysql_command }} {{ db_name }} \"-e insert into department value(2,'Engineering')\""
+  command: "{{ mariadb_command }} {{ db_name }} \"-e insert into department value(2,'Engineering')\""
 
 - name: Dump and Import | State dump/import - file name should not exist
   file:
@@ -94,8 +93,8 @@
   mariadb_db:
     login_user: '{{ db_user }}'
     login_password: '{{ db_user_unsafe_password }}'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
+    login_host: '{{ mariadb_host }}'
+    login_port: '{{ mariadb_primary_port }}'
     unsafe_login_password: yes
     name: '{{ db_name }}'
     state: dump
@@ -105,32 +104,16 @@
     force: yes
     master_data: 1
     skip_lock_tables: yes
-    dump_extra_args: >-
-      --skip-triggers {{ gtid_purged_off }}
     config_file: '{{ config_file }}'
     restrict_config_file: yes
     check_implicit_admin: no
   register: result
 
-- name: Dump and Import | Assert successful completion of dump operation for MariaDB and MySQL < 8.2
+- name: Dump and Import | Assert successful completion of dump operation
   assert:
     that:
       - result is changed
-      - result.executed_commands[0] is search(".department --master-data=1 --skip-triggers")
-  when:
-    - >
-      db_engine == 'mariadb' or
-      (db_engine == 'mysql' and db_version is version('8.2', '<'))
-
-- name: Dump and Import | Assert successful completion of dump operation for MySQL >= 8.2
-  assert:
-    that:
-      - result is changed
-      - result.executed_commands[0] is search(".department --source-data=1 --skip-triggers")
-      - result.executed_commands[0] is search("--set-gtid-purged=OFF")
-  when:
-    - db_engine == 'mysql'
-    - db_version is version('8.2', '>=')
+      - result.executed_commands[0] is search(".department --master-data=1")
 
 - name: Dump and Import | Assert password is masked in dump executed commands
   assert:
@@ -143,17 +126,16 @@
     name: '{{ db_file_name }}'
     state: file
 
-- name: Dump and Import | State dump with multiple databases in comma separated form for MySQL.
+- name: Dump and Import | State dump with multiple databases in comma separated form.
   mariadb_db:
-    login_user: '{{ mysql_user }}'
-    login_password: '{{ mysql_password }}'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
+    login_user: '{{ mariadb_user }}'
+    login_password: '{{ mariadb_password }}'
+    login_host: '{{ mariadb_host }}'
+    login_port: '{{ mariadb_primary_port }}'
     name: "{{ db_name }},{{ db_name2 }}"
     state: dump
     target: '{{ dump_file1 }}'
     check_implicit_admin: yes
-    dump_extra_args: "{{ gtid_purged_off }}"
   register: dump_result1
 
 - name: Dump and Import | Assert successful completion of dump operation (with multiple databases in comma separated form)
@@ -169,10 +151,10 @@
 
 - name: Dump and Import | State dump with multiple databases in list form via check_mode
   mariadb_db:
-    login_user: '{{ mysql_user }}'
-    login_password: '{{ mysql_password }}'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
+    login_user: '{{ mariadb_user }}'
+    login_password: '{{ mariadb_password }}'
+    login_host: '{{ mariadb_host }}'
+    login_port: '{{ mariadb_primary_port }}'
     name:
       - '{{ db_name }}'
       - '{{ db_name2 }}'
@@ -198,16 +180,15 @@
 
 - name: Dump and Import | State dump with multiple databases in list form.
   mariadb_db:
-    login_user: '{{ mysql_user }}'
-    login_password: '{{ mysql_password }}'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
+    login_user: '{{ mariadb_user }}'
+    login_password: '{{ mariadb_password }}'
+    login_host: '{{ mariadb_host }}'
+    login_port: '{{ mariadb_primary_port }}'
     name:
       - '{{ db_name }}'
       - '{{ db_name2 }}'
     state: dump
     target: '{{ dump_file2 }}'
-    dump_extra_args: "{{ gtid_purged_off }}"
   register: dump_result2
 
 - name: Dump and Import | Assert successful completion of dump operation (with multiple databases in list form)
@@ -222,19 +203,19 @@
 
 - name: Dump and Import | State dump/import - remove database
   mariadb_db:
-    login_user: '{{ mysql_user }}'
-    login_password: '{{ mysql_password }}'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
+    login_user: '{{ mariadb_user }}'
+    login_password: '{{ mariadb_password }}'
+    login_host: '{{ mariadb_host }}'
+    login_port: '{{ mariadb_primary_port }}'
     name: '{{ db_name }}'
     state: absent
 
 - name: Dump and Import | Remove database
   mariadb_db:
-    login_user: '{{ mysql_user }}'
-    login_password: '{{ mysql_password }}'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
+    login_user: '{{ mariadb_user }}'
+    login_password: '{{ mariadb_password }}'
+    login_host: '{{ mariadb_host }}'
+    login_port: '{{ mariadb_primary_port }}'
     name: '{{ db_name2 }}'
     state: absent
 
@@ -242,8 +223,8 @@
   mariadb_db:
     login_user: '{{ db_user }}'
     login_password: '{{ db_user_unsafe_password }}'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
+    login_host: '{{ mariadb_host }}'
+    login_port: '{{ mariadb_primary_port }}'
     unsafe_login_password: yes
     name: '{{ db_name }}'
     state: import
@@ -258,7 +239,7 @@
       - db_user_unsafe_password not in result.executed_commands[0]
 
 - name: Dump and Import | Show the tables
-  command: "{{ mysql_command }} {{ db_name }} \"-e show tables\""
+  command: "{{ mariadb_command }} {{ db_name }} \"-e show tables\""
   register: result
 
 - name: Dump and Import | Assert that the department table is absent.
@@ -268,10 +249,10 @@
 
 - name: Dump and Import | Test state=import to restore a database from multiple database dumped file1
   mariadb_db:
-    login_user: '{{ mysql_user }}'
-    login_password: '{{ mysql_password }}'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
+    login_user: '{{ mariadb_user }}'
+    login_password: '{{ mariadb_password }}'
+    login_host: '{{ mariadb_host }}'
+    login_port: '{{ mariadb_primary_port }}'
     name: '{{ db_name2 }}'
     state: import
     target: '{{ dump_file1 }}'
@@ -283,32 +264,32 @@
     that:
       - import_result is changed
       - import_result.executed_commands[0] is search("--password=\*\*\*\*\*\*\*\*")
-      - mysql_password not in import_result.executed_commands[0]
+      - mariadb_password not in import_result.executed_commands[0]
 
 - name: Dump and Import | Remove database
   mariadb_db:
-    login_user: '{{ mysql_user }}'
-    login_password: '{{ mysql_password }}'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
+    login_user: '{{ mariadb_user }}'
+    login_password: '{{ mariadb_password }}'
+    login_host: '{{ mariadb_host }}'
+    login_port: '{{ mariadb_primary_port }}'
     name: '{{ db_name2 }}'
     state: absent
 
 - name: Dump and Import | Run command to list databases
-  command: "{{ mysql_command }} \"-e show databases like 'data%'\""
-  register: mysql_result
+  command: "{{ mariadb_command }} \"-e show databases like 'data%'\""
+  register: mariadb_result
 
 - name: Dump and Import | Assert that db_name2 database does not exist
   assert:
     that:
-      - db_name2 not in mysql_result.stdout
+      - db_name2 not in mariadb_result.stdout
 
 - name: Dump and Import | Test state=import to restore a database from dumped file2 (check mode)
   mariadb_db:
-    login_user: '{{ mysql_user }}'
-    login_password: '{{ mysql_password }}'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
+    login_user: '{{ mariadb_user }}'
+    login_password: '{{ mariadb_password }}'
+    login_host: '{{ mariadb_host }}'
+    login_port: '{{ mariadb_primary_port }}'
     name: '{{ db_name2 }}'
     state: import
     target: '{{ dump_file2 }}'
@@ -321,20 +302,20 @@
       - check_import_result is changed
 
 - name: Dump and Import | Run command to list databases
-  command: "{{ mysql_command }} \"-e show databases like 'data%'\""
-  register: mysql_result
+  command: "{{ mariadb_command }} \"-e show databases like 'data%'\""
+  register: mariadb_result
 
 - name: Dump and Import | Assert that db_name2 database does not exist (check mode)
   assert:
     that:
-      - db_name2 not in mysql_result.stdout
+      - db_name2 not in mariadb_result.stdout
 
 - name: Dump and Import | Test state=import to restore a database from multiple database dumped file2
   mariadb_db:
-    login_user: '{{ mysql_user }}'
-    login_password: '{{ mysql_password }}'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
+    login_user: '{{ mariadb_user }}'
+    login_password: '{{ mariadb_password }}'
+    login_host: '{{ mariadb_host }}'
+    login_port: '{{ mariadb_primary_port }}'
     name: '{{ db_name2 }}'
     state: import
     target: '{{ dump_file2 }}'
@@ -347,24 +328,23 @@
       - import_result2.db_list == [db_name2]
 
 - name: Dump and Import | Run command to list databases
-  command: "{{ mysql_command }} \"-e show databases like 'data%'\""
-  register: mysql_result
+  command: "{{ mariadb_command }} \"-e show databases like 'data%'\""
+  register: mariadb_result
 
 - name: Dump and Import | Assert that db_name2 database does exist after import
   assert:
     that:
-      - db_name2 in mysql_result.stdout
+      - db_name2 in mariadb_result.stdout
 
 - name: Dump and Import | Test state=dump to backup the database of type {{ format_type }} (expect changed=true)
   mariadb_db:
-    login_user: '{{ mysql_user }}'
-    login_password: '{{ mysql_password }}'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
+    login_user: '{{ mariadb_user }}'
+    login_password: '{{ mariadb_password }}'
+    login_host: '{{ mariadb_host }}'
+    login_port: '{{ mariadb_primary_port }}'
     name: '{{ db_name }}'
     state: dump
     target: '{{ db_file_name }}'
-    dump_extra_args: "{{ gtid_purged_off }}"
   register: result
 
 - name: Dump and Import | Assert output message backup the database
@@ -373,24 +353,15 @@
       - result is changed
       - result.db == db_name
 
-# - name: Dump and Import | Assert database was backed up successfully
-#   command: "file {{ db_file_name }}"
-#   register: result
-#
-# - name: Dump and Import | Assert file format type
-#   assert:
-#     that:
-#       - "'{{ format_msg_type }}' in result.stdout"
-
 - name: Dump and Import | Update database table employee
-  command: "{{ mysql_command }} {{ db_name }} \"-e update employee set name='John Doe' where id=47\""
+  command: "{{ mariadb_command }} {{ db_name }} \"-e update employee set name='John Doe' where id=47\""
 
 - name: Dump and Import | Test state=import to restore the database of type {{ format_type }} (expect changed=true)
   mariadb_db:
-    login_user: '{{ mysql_user }}'
-    login_password: '{{ mysql_password }}'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
+    login_user: '{{ mariadb_user }}'
+    login_password: '{{ mariadb_password }}'
+    login_host: '{{ mariadb_host }}'
+    login_port: '{{ mariadb_primary_port }}'
     name: '{{ db_name }}'
     state: import
     target: '{{ db_file_name }}'
@@ -402,7 +373,7 @@
       - result is changed
 
 - name: Dump and Import | Select data from table employee
-  command: "{{ mysql_command }} {{ db_name }} \"-e select * from  employee\""
+  command: "{{ mariadb_command }} {{ db_name }} \"-e select * from  employee\""
   register: result
 
 - name: Dump and Import | Assert data in database is from the restore database
@@ -420,10 +391,10 @@
 
 - name: Dump and Import | Try to import without force parameter, must fail
   mariadb_db:
-    login_user: '{{ mysql_user }}'
-    login_password: '{{ mysql_password }}'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
+    login_user: '{{ mariadb_user }}'
+    login_password: '{{ mariadb_password }}'
+    login_host: '{{ mariadb_host }}'
+    login_port: '{{ mariadb_primary_port }}'
     name: '{{ db_name }}'
     state: import
     target: '{{ wrong_sql_file }}'
@@ -437,10 +408,10 @@
 
 - name: Dump and Import | Try to import with force parameter
   mariadb_db:
-    login_user: '{{ mysql_user }}'
-    login_password: '{{ mysql_password }}'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
+    login_user: '{{ mariadb_user }}'
+    login_password: '{{ mariadb_password }}'
+    login_host: '{{ mariadb_host }}'
+    login_port: '{{ mariadb_primary_port }}'
     name: '{{ db_name }}'
     state: import
     target: '{{ wrong_sql_file }}'
@@ -453,51 +424,49 @@
 
 ########################
 # Test import with chdir
-# MySQL 9.7+ no longer supports the SOURCE command in batch mode
-- when: db_engine == 'mariadb' or (db_engine == 'mysql' and db_version is version('9.7', '<'))
-  block:
+- block:
 
-    - name: Dump and Import | Create dir
-      file:
-        path: ~/subdir
-        state: directory
+  - name: Dump and Import | Create dir
+    file:
+      path: ~/subdir
+      state: directory
 
-    - name: Dump and Import | Create test dump
-      shell: 'echo "SOURCE ./subdir_test.sql" > ~/original_test.sql'
+  - name: Dump and Import | Create test dump
+    shell: 'echo "SOURCE ./subdir_test.sql" > ~/original_test.sql'
 
-    - name: Dump and Import | Create test source
-      shell: 'echo "SELECT 1" > ~/subdir/subdir_test.sql'
+  - name: Dump and Import | Create test source
+    shell: 'echo "SELECT 1" > ~/subdir/subdir_test.sql'
 
-    - name: Dump and Import | Try to restore without chdir argument, must fail
-      mariadb_db:
-        login_user: '{{ mysql_user }}'
-        login_password: '{{ mysql_password }}'
-        login_host: '{{ mysql_host }}'
-        login_port: '{{ mysql_primary_port }}'
-        name: '{{ db_name }}'
-        state: import
-        target: '~/original_test.sql'
-      ignore_errors: yes
-      register: result
-    - assert:
-        that:
-          - result is failed
-          - result.msg is search('Failed to open file')
+  - name: Dump and Import | Try to restore without chdir argument, must fail
+    mariadb_db:
+      login_user: '{{ mariadb_user }}'
+      login_password: '{{ mariadb_password }}'
+      login_host: '{{ mariadb_host }}'
+      login_port: '{{ mariadb_primary_port }}'
+      name: '{{ db_name }}'
+      state: import
+      target: '~/original_test.sql'
+    ignore_errors: yes
+    register: result
+  - assert:
+      that:
+        - result is failed
+        - result.msg is search('Failed to open file')
 
-    - name: Dump and Import | Restore with chdir argument, must pass
-      mariadb_db:
-        login_user: '{{ mysql_user }}'
-        login_password: '{{ mysql_password }}'
-        login_host: '{{ mysql_host }}'
-        login_port: '{{ mysql_primary_port }}'
-        name: '{{ db_name }}'
-        state: import
-        target: '~/original_test.sql'
-        chdir: ~/subdir
-      register: result
-    - assert:
-        that:
-          - result is succeeded
+  - name: Dump and Import | Restore with chdir argument, must pass
+    mariadb_db:
+      login_user: '{{ mariadb_user }}'
+      login_password: '{{ mariadb_password }}'
+      login_host: '{{ mariadb_host }}'
+      login_port: '{{ mariadb_primary_port }}'
+      name: '{{ db_name }}'
+      state: import
+      target: '~/original_test.sql'
+      chdir: ~/subdir
+    register: result
+  - assert:
+      that:
+        - result is succeeded
 
 ##########
 # Clean up
@@ -505,10 +474,10 @@
 
 - name: Dump and Import | Clean up databases
   mariadb_db:
-    login_user: '{{ mysql_user }}'
-    login_password: '{{ mysql_password }}'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
+    login_user: '{{ mariadb_user }}'
+    login_password: '{{ mariadb_password }}'
+    login_host: '{{ mariadb_host }}'
+    login_port: '{{ mariadb_primary_port }}'
     name: '{{ cleanup_db }}'
     state: absent
   loop:

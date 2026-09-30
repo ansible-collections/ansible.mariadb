@@ -1,5 +1,5 @@
 ---
-# test code for privileges for mysql_user module
+# test code for privileges for mariadb_user module
 # (c) 2014,  Wayne Rosario <wrosario@ansible.com>
 
 # This file is part of Ansible
@@ -18,17 +18,17 @@
 # along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
 
 - vars:
-    mysql_parameters: &mysql_params
-      login_user: '{{ mysql_user }}'
-      login_password: '{{ mysql_password }}'
-      login_host: '{{ mysql_host }}'
-      login_port: '{{ mysql_primary_port }}'
+    mariadb_parameters: &mariadb_params
+      login_user: '{{ mariadb_user }}'
+      login_password: '{{ mariadb_password }}'
+      login_host: '{{ mariadb_host }}'
+      login_port: '{{ mariadb_primary_port }}'
 
   block:
 
     - name: Privs | Ensure test database is absent before testing
       mariadb_db:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: '{{ db_name }}'
         state: absent
       ignore_errors: true
@@ -36,7 +36,7 @@
     # ============================================================
     - name: Privs | Create user with basic select privileges
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: '{{ user_name_2 }}'
         host: '%'
         password: '{{ user_password_2 }}'
@@ -53,7 +53,7 @@
 
     - name: Privs | Create user with current privileges (expect changed=true)
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: '{{ user_name_2 }}'
         host: '%'
         password: '{{ user_password_2 }}'
@@ -68,7 +68,7 @@
           - result is changed
 
     - name: Privs | Run command to show privileges for user (expect privileges in stdout)
-      command: "{{ mysql_command }} -e \"SHOW GRANTS FOR '{{user_name_2}}'@'%'\""
+      command: "{{ mariadb_command }} -e \"SHOW GRANTS FOR '{{user_name_2}}'@'%'\""
       register: result
 
     - name: Privs | Assert user has correct privileges
@@ -87,14 +87,14 @@
       mariadb_db:
         login_user: '{{ user_name_2 }}'
         login_password: '{{ user_password_2 }}'
-        login_host: '{{ mysql_host }}'
-        login_port: '{{ mysql_primary_port }}'
+        login_host: '{{ mariadb_host }}'
+        login_port: '{{ mariadb_primary_port }}'
         name: '{{ db_name }}'
         state: present
       ignore_errors: true
 
     - name: Privs | Run command to test that database was not created
-      command: "{{ mysql_command }} -e \"show databases like '{{ db_name }}'\""
+      command: "{{ mariadb_command }} -e \"show databases like '{{ db_name }}'\""
       register: result
 
     - name: Privs | Assert database was not created
@@ -105,7 +105,7 @@
     # ============================================================
     - name: Privs | Add privs to a specific table (expect changed)
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: '{{ user_name_2 }}'
         host: '%'
         priv: 'jmainguy.jmainguy:ALL'
@@ -119,7 +119,7 @@
 
     - name: Privs | Add privs to a specific table (expect ok)
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: '{{ user_name_2 }}'
         host: '%'
         priv: 'jmainguy.jmainguy:ALL'
@@ -134,7 +134,7 @@
     # ============================================================
     - name: Privs | Grant ALL to user {{ user_name_2 }}
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: '{{ user_name_2 }}'
         host: '%'
         password: '{{ user_password_2 }}'
@@ -147,27 +147,27 @@
       mariadb_db:
         login_user: '{{ user_name_2 }}'
         login_password: '{{ user_password_2 }}'
-        login_host: '{{ mysql_host }}'
-        login_port: '{{ mysql_primary_port }}'
+        login_host: '{{ mariadb_host }}'
+        login_port: '{{ mariadb_primary_port }}'
         name: '{{ db_name }}'
         state: present
 
     - name: Privs | Run command to test database was created using user new privileges
-      command: "{{ mysql_command }} -e \"SHOW CREATE DATABASE {{ db_name }}\""
+      command: "{{ mariadb_command }} -e \"SHOW CREATE DATABASE {{ db_name }}\""
 
     - name: Privs | Drop database using user {{ user_name_2 }}
       mariadb_db:
         login_user: '{{ user_name_2 }}'
         login_password: '{{ user_password_2 }}'
-        login_host: '{{ mysql_host }}'
-        login_port: '{{ mysql_primary_port }}'
+        login_host: '{{ mariadb_host }}'
+        login_port: '{{ mariadb_primary_port }}'
         name: '{{ db_name }}'
         state: absent
 
     # ============================================================
     - name: Privs | Update user with a long privileges list (mysql has a special multiline grant output)
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: '{{ user_name_2 }}'
         host: '%'
         priv: '*.*:CREATE USER,FILE,PROCESS,RELOAD,REPLICATION CLIENT,REPLICATION SLAVE,SHOW DATABASES,SHUTDOWN,SUPER,CREATE,DROP,EVENT,LOCK TABLES,INSERT,UPDATE,DELETE,SELECT,SHOW VIEW,GRANT'
@@ -181,7 +181,7 @@
 
     - name: Privs | Test idempotency with a long privileges list (expect ok)
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: '{{ user_name_2 }}'
         host: '%'
         priv: '*.*:CREATE USER,FILE,PROCESS,RELOAD,REPLICATION CLIENT,REPLICATION SLAVE,SHOW DATABASES,SHUTDOWN,SUPER,CREATE,DROP,EVENT,LOCK TABLES,INSERT,UPDATE,DELETE,SELECT,SHOW VIEW,GRANT'
@@ -202,7 +202,7 @@
     # ============================================================
     - name: Privs | Grant all privileges with grant option
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: '{{ user_name_2 }}'
         password: '{{ user_password_2 }}'
         priv: '*.*:ALL,GRANT'
@@ -216,46 +216,44 @@
 
     - name: Privs | Collect user info by host
       ansible.mariadb.mariadb_info:
-        <<: *mysql_params
+        <<: *mariadb_params
         filter: "users"
-      register: mysql_info_about_users
+      register: mariadb_info_about_users
 
     - name: Privs | Assert that 'GRANT' permission is present
       assert:
         that:
-          - mysql_info_about_users.users.localhost.db_user2.Grant_priv == 'Y'
+          - mariadb_info_about_users.users.localhost.db_user2.Grant_priv == 'Y'
 
     - name: Privs | Test idempotency (expect ok)
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: '{{ user_name_2 }}'
         password: '{{ user_password_2 }}'
         priv: '*.*:ALL,GRANT'
         state: present
       register: result
 
-    # FIXME: on mysql >=8 there's always a change (ALL PRIVILEGES -> specific privileges)
     - name: Privs | Assert that priv did not change
       assert:
         that:
           - result is not changed
-      when: db_version is version('9.7', '<') or db_engine == 'mariadb'
 
     - name: Privs | Collect user info by host
       ansible.mariadb.mariadb_info:
-        <<: *mysql_params
+        <<: *mariadb_params
         filter: "users"
-      register: mysql_info_about_users
+      register: mariadb_info_about_users
 
     - name: Privs | Assert that 'GRANT' permission is present (by host)
       assert:
         that:
-          - mysql_info_about_users.users.localhost.db_user2.Grant_priv == 'Y'
+          - mariadb_info_about_users.users.localhost.db_user2.Grant_priv == 'Y'
 
     # ============================================================
     - name: Privs | Update user with invalid privileges
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: '{{ user_name_2 }}'
         password: '{{ user_password_2 }}'
         priv: '*.*:INVALID'

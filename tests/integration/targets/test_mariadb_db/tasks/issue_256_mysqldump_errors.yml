@@ -1,15 +1,15 @@
 ---
 
-# When mysqldump encountered an issue, mysql_db was still happy. But the
+# If mariadbdump encountered an issue, mariadb_db was still happy. But the
 # dump produced was empty or worse, only contained `DROP TABLE IF EXISTS...`
 
 - module_defaults:
-    ansible.mariadb.mariadb_db: &mysql_defaults
-      login_user: '{{ mysql_user }}'
-      login_password: '{{ mysql_password }}'
-      login_host: '{{ mysql_host }}'
-      login_port: '{{ mysql_primary_port }}'
-    ansible.mariadb.mariadb_query: *mysql_defaults
+    ansible.mariadb.mariadb_db: &mariadb_defaults
+      login_user: '{{ mariadb_user }}'
+      login_password: '{{ mariadb_password }}'
+      login_host: '{{ mariadb_host }}'
+      login_port: '{{ mariadb_primary_port }}'
+    ansible.mariadb.mariadb_query: *mariadb_defaults
 
   block:
 

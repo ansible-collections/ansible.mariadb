@@ -1,7 +1,7 @@
 ---
 
 - name: Utils | Assert user | Query for user {{ user_name }}
-  command: "{{ mysql_command }} -e \"SELECT user FROM mysql.user where user='{{ user_name }}'\""
+  command: "{{ mariadb_command }} -e \"SELECT user FROM mysql.user where user='{{ user_name }}'\""
   register: result
 
 - name: Utils | Assert user | Assert user is present
@@ -10,7 +10,7 @@
       - user_name in result.stdout
 
 - name: Utils | Assert user | Query for privileges of user {{ user_name }}
-  command: "{{ mysql_command }} -e \"SHOW GRANTS FOR '{{ user_name }}'@'{{ user_host }}'\""
+  command: "{{ mariadb_command }} -e \"SHOW GRANTS FOR '{{ user_name }}'@'{{ user_host }}'\""
   register: result
   when: priv is defined
 

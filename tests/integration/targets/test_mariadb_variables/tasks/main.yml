@@ -3,6 +3,6 @@
 # and should not be used as examples of how to write Ansible roles #
 ####################################################################
 
-- import_tasks: mysql_variables.yml
+- import_tasks: mariadb_variables.yml
 
 - include_tasks: issue-28.yml

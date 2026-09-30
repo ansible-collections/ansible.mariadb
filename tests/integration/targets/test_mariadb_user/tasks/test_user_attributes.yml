@@ -1,474 +1,63 @@
 ---
 - vars:
-    mysql_parameters: &mysql_params
-      login_user: '{{ mysql_user }}'
-      login_password: '{{ mysql_password }}'
-      login_host: '{{ mysql_host }}'
-      login_port: '{{ mysql_primary_port }}'
+    mariadb_parameters: &mariadb_params
+      login_user: '{{ mariadb_user }}'
+      login_password: '{{ mariadb_password }}'
+      login_host: '{{ mariadb_host }}'
+      login_port: '{{ mariadb_primary_port }}'
 
   block:
 
-    - when: db_engine == 'mariadb'
-      block:
-
-      # ============================================================
-      # Fail creating a user with mariadb
-      #
-
-      # Check mode
-      - name: Attributes | Attempt to create user with attributes with mariadb in check mode
-        mariadb_user:
-          <<: *mysql_params
-          name: '{{ user_name_2 }}'
-          host: '%'
-          password: '{{ user_password_2 }}'
-          attributes:
-            key1: "value1"
-        ignore_errors: yes
-        register: result_module
-        check_mode: yes
-
-      - name: Attributes | Run query to verify user creation with attributes fails with mariadb in check mode
-        mariadb_query:
-          <<: *mysql_params
-          query: 'SELECT user FROM mysql.user WHERE user = "{{ user_name_2 }}" AND host = "%"'
-        ignore_errors: yes
-        register: result_query
-
-      - name: Attributes | Assert that creating user with attributes fails with mariadb in check mode
-        assert:
-          that:
-            - result_module is failed
-            - not result_query.query_result[0]
-
-      # Real mode
-      - name: Attributes | Attempt to create user with attributes with mariadb
-        mariadb_user:
-          <<: *mysql_params
-          name: '{{ user_name_2 }}'
-          host: '%'
-          password: '{{ user_password_2 }}'
-          attributes:
-            key1: "value1"
-        ignore_errors: yes
-        register: result_module
-
-      - name: Attributes | Run query to verify user creation with attributes fails with mariadb
-        mariadb_query:
-          <<: *mysql_params
-          query: 'SELECT user FROM mysql.user WHERE user = "{{ user_name_2 }}" AND host = "%"'
-        register: result_query
-
-      - name: Attributes | Assert that creating user with attributes fails with mariadb
-        assert:
-          that:
-            - result_module is failed
-            - not result_query.query_result[0]
-
-    - when: db_engine == 'mysql'
-      block:
-
-      # ============================================================
-      # Create user with no attributes (test attributes return type)
-      #
-
-      # Check mode
-      - name: Attributes | Test creating a user with no attributes in check mode
-        mariadb_user:
-          <<: *mysql_params
-          name: '{{ user_name_2 }}'
-          host: '%'
-          password: '{{ user_password_2 }}'
-        register: result_module
-        check_mode: yes
-
-      - name: Attributes | Run query to verify user creation with no attributes did not take place in check mode
-        mariadb_query:
-          <<: *mysql_params
-          query: 'SELECT user FROM mysql.user WHERE user = "{{ user_name_2 }}" AND host = "%"'
-        register: result_query
-
-      - name: Attributes | Assert that user would have been created without attributes
-        assert:
-          that:
-            - result_module is changed
-            - result_module.attributes is none
-            - not result_query.query_result[0]
-
-      # Real mode
-      - name: Attributes | Test creating a user with no attributes
-        mariadb_user:
-          <<: *mysql_params
-          name: '{{ user_name_2 }}'
-          host: '%'
-          password: '{{ user_password_2 }}'
-        register: result_module
-
-      - name: Attributes | Run query to verify created user without attributes
-        mariadb_query:
-          <<: *mysql_params
-          query: 'SELECT attribute FROM INFORMATION_SCHEMA.USER_ATTRIBUTES WHERE user = "{{ user_name_2 }}" AND host = "%"'
-        register: result_query
-
-      - name: Attributes | Assert that user was created without attributes
-        assert:
-          that:
-            - result_module is changed
-            - result_module.attributes is none
-            - result_query.query_result[0][0]['ATTRIBUTE'] is none
-
-      # Clean up user to allow it to be recreated with attributes
-      - include_tasks: utils/remove_user.yml
-        vars:
-          user_name: "{{ user_name_2 }}"
-
-      # ============================================================
-      # Create user with attributes
-      #
-
-      # Check mode
-      - name: Attributes | Test creating a user with attributes in check mode
-        mariadb_user:
-          <<: *mysql_params
-          name: '{{ user_name_2 }}'
-          host: '%'
-          password: '{{ user_password_2 }}'
-          attributes:
-            key1: "value1"
-        register: result_module
-        check_mode: yes
-
-      - name: Attributes | Run query to verify user creation did not take place in check mode
-        mariadb_query:
-          <<: *mysql_params
-          query: 'SELECT user FROM mysql.user WHERE user = "{{ user_name_2 }}" AND host = "%"'
-        register: result_query
-
-      - name: Attributes | Assert that user would have been created with attributes
-        assert:
-          that:
-            - result_module is changed
-            - result_module.attributes.key1 == "value1"
-            - not result_query.query_result[0]
-
-      # Real mode
-      - name: Attributes | Test creating a user with attributes
-        mariadb_user:
-          <<: *mysql_params
-          name: '{{ user_name_2 }}'
-          host: '%'
-          password: '{{ user_password_2 }}'
-          attributes:
-            key1: "value1"
-        register: result_module
-
-      - name: Attributes | Run query to verify created user attributes
-        mariadb_query:
-          <<: *mysql_params
-          query: 'SELECT attribute FROM INFORMATION_SCHEMA.USER_ATTRIBUTES WHERE user = "{{ user_name_2 }}" AND host = "%"'
-        register: result_query
-
-      - name: Attributes | Assert that user was created with attributes
-        assert:
-          that:
-            - result_module is changed
-            - result_module.attributes.key1 == "value1"
-            - (result_query.query_result[0][0]['ATTRIBUTE'] | from_yaml)['key1'] == "value1"
-
-      # ============================================================
-      # Append attributes on an existing user
-      #
-
-      # Check mode
-      - name: Attributes | Test appending attributes to an existing user in check mode
-        mariadb_user:
-          <<: *mysql_params
-          name: '{{ user_name_2 }}'
-          host: '%'
-          attributes:
-            key2: "value2"
-        register: result_module
-        check_mode: yes
-
-      - name: Attributes | Run query to check appended attributes in check mode
-        mariadb_query:
-          <<: *mysql_params
-          query: 'SELECT attribute FROM INFORMATION_SCHEMA.USER_ATTRIBUTES WHERE user = "{{ user_name_2 }}" AND host = "%"'
-        register: result_query
-
-      - name: Attributes | Assert that attribute would have been appended and existing attribute stays
-        assert:
-          that:
-            - result_module is changed
-            - result_module.attributes.key1 == "value1"
-            - result_module.attributes.key2 == "value2"
-            - "'key2' not in result_query.query_result[0][0]['ATTRIBUTE'] | from_yaml"
-
-      # Real mode
-      - name: Attributes | Test appending attributes to an existing user
-        mariadb_user:
-          <<: *mysql_params
-          name: '{{ user_name_2 }}'
-          host: '%'
-          attributes:
-            key2: "value2"
-        register: result_module
-
-      - name: Attributes | Run query to check appended attributes
-        mariadb_query:
-          <<: *mysql_params
-          query: 'SELECT attribute FROM INFORMATION_SCHEMA.USER_ATTRIBUTES WHERE user = "{{ user_name_2 }}" AND host = "%"'
-        register: result_query
-
-      - name: Attributes | Assert that new attribute was appended and existing attribute stays
-        assert:
-          that:
-            - result_module is changed
-            - result_module.attributes.key1 == "value1"
-            - result_module.attributes.key2 == "value2"
-            - (result_query.query_result[0][0]['ATTRIBUTE'] | from_yaml)['key1'] == "value1"
-            - (result_query.query_result[0][0]['ATTRIBUTE'] | from_yaml)['key2'] == "value2"
-
-      # ============================================================
-      # Test updating existing attributes
-      #
-
-      # Check mode
-      - name: Attributes | Test updating attributes on an existing user in check mode
-        mariadb_user:
-          <<: *mysql_params
-          name: '{{ user_name_2 }}'
-          host: '%'
-          attributes:
-            key2: "new_value2"
-        check_mode: yes
-        register: result_module
-
-      - name: Attributes | Run query to verify updated attribute in check mode
-        mariadb_query:
-          <<: *mysql_params
-          query: 'SELECT attribute FROM INFORMATION_SCHEMA.USER_ATTRIBUTES WHERE user = "{{ user_name_2 }}" AND host = "%"'
-        register: result_query
-
-      - name: Attributes | Assert that attribute would have been updated
-        assert:
-          that:
-            - result_module is changed
-            - result_module.attributes.key2 == "new_value2"
-            - (result_query.query_result[0][0]['ATTRIBUTE'] | from_yaml)['key2'] == "value2"
-
-      # Real mode
-      - name: Attributes | Test updating attributes on an existing user
-        mariadb_user:
-          <<: *mysql_params
-          name: '{{ user_name_2 }}'
-          host: '%'
-          attributes:
-            key2: "new_value2"
-        register: result_module
-
-      - name: Attributes | Run query to verify updated attribute
-        mariadb_query:
-          <<: *mysql_params
-          query: 'SELECT attribute FROM INFORMATION_SCHEMA.USER_ATTRIBUTES WHERE user = "{{ user_name_2 }}" AND host = "%"'
-        register: result_query
-
-      - name: Attributes | Assert that attribute was updated
-        assert:
-          that:
-            - result_module is changed
-            - result_module.attributes.key2 == "new_value2"
-            - (result_query.query_result[0][0]['ATTRIBUTE'] | from_yaml)['key2'] == "new_value2"
-
-      # ============================================================
-      # Test attribute idempotency when specifying attributes
-      #
-
-      # Check mode
-      - name: Attributes | Test attribute idempotency by trying to change an already correct attribute in check mode
-        mariadb_user:
-          <<: *mysql_params
-          name: '{{ user_name_2 }}'
-          host: '%'
-          attributes:
-            key1: "value1"
-        register: result_module
-        check_mode: yes
-
-      - name: Attributes | Run query to verify idempotency of already correct attribute in check mode
-        mariadb_query:
-          <<: *mysql_params
-          query: 'SELECT attribute FROM INFORMATION_SCHEMA.USER_ATTRIBUTES WHERE user = "{{ user_name_2 }}" AND host = "%"'
-        register: result_query
-
-      - name: Attributes | Assert that attribute would not have been updated
-        assert:
-          that:
-            - result_module is not changed
-            - result_module.attributes.key1 == "value1"
-            - (result_query.query_result[0][0]['ATTRIBUTE'] | from_yaml)['key1'] == "value1"
-
-      # Real mode
-      - name: Attributes | Test attribute idempotency by trying to change an already correct attribute
-        mariadb_user:
-          <<: *mysql_params
-          name: '{{ user_name_2 }}'
-          host: '%'
-          attributes:
-            key1: "value1"
-        register: result_module
-
-      - name: Attributes | Run query to verify idempotency of already correct attribute
-        mariadb_query:
-          <<: *mysql_params
-          query: 'SELECT attribute FROM INFORMATION_SCHEMA.USER_ATTRIBUTES WHERE user = "{{ user_name_2 }}" AND host = "%"'
-        register: result_query
-
-      - name: Attributes | Assert that attribute was not updated
-        assert:
-          that:
-            - result_module is not changed
-            - result_module.attributes.key1 == "value1"
-            - (result_query.query_result[0][0]['ATTRIBUTE'] | from_yaml)['key1'] == "value1"
-
-      # ============================================================
-      # Test attribute idempotency when not specifying attribute parameter
-      #
-
-      # Check mode
-      - name: Attributes | Test attribute idempotency by not specifying attribute parameter in check mode
-        mariadb_user:
-          <<: *mysql_params
-          name: '{{ user_name_2 }}'
-          host: '%'
-        register: result_module
-        check_mode: yes
-
-      - name: Attributes | Run query to verify idempotency when not specifying attribute parameter in check mode
-        mariadb_query:
-          <<: *mysql_params
-          query: 'SELECT attribute FROM INFORMATION_SCHEMA.USER_ATTRIBUTES WHERE user = "{{ user_name_2 }}" AND host = "%"'
-        register: result_query
-
-      - name: Attributes | Assert that attribute is returned in check mode
-        assert:
-          that:
-            - result_module is not changed
-            - result_module.attributes.key1 == "value1"
-            - (result_query.query_result[0][0]['ATTRIBUTE'] | from_yaml)['key1'] == "value1"
-
-      # Real mode
-      - name: Attributes | Test attribute idempotency by not specifying attribute parameter
-        mariadb_user:
-          <<: *mysql_params
-          name: '{{ user_name_2 }}'
-          host: '%'
-        register: result_module
-
-      - name: Attributes | Run query to verify idempotency when not specifying attribute parameter
-        mariadb_query:
-          <<: *mysql_params
-          query: 'SELECT attribute FROM INFORMATION_SCHEMA.USER_ATTRIBUTES WHERE user = "{{ user_name_2 }}" AND host = "%"'
-        register: result_query
-
-      - name: Attributes | Assert that attribute is returned
-        assert:
-          that:
-            - result_module is not changed
-            - result_module.attributes.key1 == "value1"
-            - (result_query.query_result[0][0]['ATTRIBUTE'] | from_yaml)['key1'] == "value1"
-
-      # ============================================================
-      # Test deleting attributes
-      #
-
-      # Check mode
-      - name: Attributes | Test deleting attributes on an existing user in check mode
-        mariadb_user:
-          <<: *mysql_params
-          name: '{{ user_name_2 }}'
-          host: '%'
-          attributes:
-            key2: null
-        register: result_module
-        check_mode: yes
-
-      - name: Attributes | Run query to verify deleted attribute in check mode
-        mariadb_query:
-          <<: *mysql_params
-          query: 'SELECT attribute FROM INFORMATION_SCHEMA.USER_ATTRIBUTES WHERE user = "{{ user_name_2 }}" AND host = "%"'
-        register: result_query
-
-      - name: Attributes | Assert that attribute would have been deleted
-        assert:
-          that:
-            - result_module is changed
-            - "'key2' not in result_module.attributes"
-            - (result_query.query_result[0][0]['ATTRIBUTE'] | from_yaml)['key2'] == "new_value2"
-
-      # Real mode
-      - name: Attributes | Test deleting attributes on an existing user
-        mariadb_user:
-          <<: *mysql_params
-          name: '{{ user_name_2 }}'
-          host: '%'
-          attributes:
-            key2: null
-        register: result_module
-
-      - name: Attributes | Run query to verify deleted attribute
-        mariadb_query:
-          <<: *mysql_params
-          query: 'SELECT attribute FROM INFORMATION_SCHEMA.USER_ATTRIBUTES WHERE user = "{{ user_name_2 }}" AND host = "%"'
-        register: result_query
-
-      - name: Attributes | Assert that attribute was deleted
-        assert:
-          that:
-            - result_module is changed
-            - "'key2' not in result_module.attributes"
-            - "'key2' not in result_query.query_result[0][0]['ATTRIBUTE'] | from_yaml"
-
-      # ============================================================
-      # Test attribute return value when no attributes exist
-      #
-
-      # Check mode
-      - name: Attributes | Test attributes return value when no attributes exist in check mode
-        mariadb_user:
-          <<: *mysql_params
-          name: '{{ user_name_2 }}'
-          host: '%'
-          attributes:
-            key1: null
-        register: result_module
-        check_mode: yes
-
-      - name: Attributes | Assert attributes return value when no attributes exist in check mode
-        assert:
-          that:
-            - result_module is changed
-            - result_module.attributes is none
-
-      # Real mode
-      - name: Attributes | Test attributes return value when no attributes exist
-        mariadb_user:
-          <<: *mysql_params
-          name: '{{ user_name_2 }}'
-          host: '%'
-          attributes:
-            key1: null
-        register: result_module
-
-      - name: Attributes | Assert attributes return value when no attributes exist
-        assert:
-          that:
-            - result_module is changed
-            - result_module.attributes is none
-
-      # ============================================================
-      # Cleanup
-      #
-      - include_tasks: utils/remove_user.yml
-        vars:
-          user_name: "{{ user_name_2 }}"
+    # ============================================================
+    # Fail creating a user
+    #
+
+    # Check mode
+    - name: Attributes | Attempt to create user with attributes with mariadb in check mode
+      mariadb_user:
+        <<: *mariadb_params
+        name: '{{ user_name_2 }}'
+        host: '%'
+        password: '{{ user_password_2 }}'
+        attributes:
+          key1: "value1"
+      ignore_errors: yes
+      register: result_module
+      check_mode: yes
+
+    - name: Attributes | Run query to verify user creation with attributes fails with mariadb in check mode
+      mariadb_query:
+        <<: *mariadb_params
+        query: 'SELECT user FROM mysql.user WHERE user = "{{ user_name_2 }}" AND host = "%"'
+      ignore_errors: yes
+      register: result_query
+
+    - name: Attributes | Assert that creating user with attributes fails with mariadb in check mode
+      assert:
+        that:
+          - result_module is failed
+          - not result_query.query_result[0]
+
+    # Real mode
+    - name: Attributes | Attempt to create user with attributes with mariadb
+      mariadb_user:
+        <<: *mariadb_params
+        name: '{{ user_name_2 }}'
+        host: '%'
+        password: '{{ user_password_2 }}'
+        attributes:
+          key1: "value1"
+      ignore_errors: yes
+      register: result_module
+
+    - name: Attributes | Run query to verify user creation with attributes fails with mariadb
+      mariadb_query:
+        <<: *mariadb_params
+        query: 'SELECT user FROM mysql.user WHERE user = "{{ user_name_2 }}" AND host = "%"'
+      register: result_query
+
+    - name: Attributes | Assert that creating user with attributes fails with mariadb
+      assert:
+        that:
+          - result_module is failed
+          - not result_query.query_result[0]

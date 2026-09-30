@@ -1,19 +1,19 @@
 ---
 
 - module_defaults:
-    ansible.mariadb.mariadb_db: &mysql_defaults
-      login_user: "{{ mysql_user }}"
-      login_password: "{{ mysql_password }}"
-      login_host: "{{ mysql_host }}"
-      login_port: "{{ mysql_primary_port }}"
-    ansible.mariadb.mariadb_query: *mysql_defaults
-    ansible.mariadb.mariadb_info: *mysql_defaults
-    ansible.mariadb.mariadb_user: *mysql_defaults
+    ansible.mariadb.mariadb_db: &mariadb_defaults
+      login_user: "{{ mariadb_user }}"
+      login_password: "{{ mariadb_password }}"
+      login_host: "{{ mariadb_host }}"
+      login_port: "{{ mariadb_primary_port }}"
+    ansible.mariadb.mariadb_query: *mariadb_defaults
+    ansible.mariadb.mariadb_info: *mariadb_defaults
+    ansible.mariadb.mariadb_user: *mariadb_defaults
 
   block:
 
     # ================================ Prepare ==============================
-    - name: Mysql_info users_info | Create databases
+    - name: mariadb_info users_info | Create databases
       ansible.mariadb.mariadb_db:
         name:
           - users_info_db
@@ -21,7 +21,7 @@
           - users_info_db3
         state: present
 
-    - name: Mysql_info users_info | Create tables
+    - name: mariadb_info users_info | Create tables
       ansible.mariadb.mariadb_query:
         query:
           - >-
@@ -35,18 +35,17 @@
     # users privileges, it will fail with an error "1141 - There is no such
     # grant defined for user 'PUBLIC' on host'%'" if the PUBLIC role is not
     # handled properly by our module.
-    - name: Mysql_info users_info | Grant to PUBLIC for MariaDB 10.11+
+    - name: mariadb_info users_info | Grant to PUBLIC for MariaDB 10.11+
       ansible.mariadb.mariadb_query:
         query:
           - >-
             GRANT SELECT,INSERT,UPDATE,DELETE on users_info_db.* TO PUBLIC
       when:
-        - db_engine == 'mariadb'
         - db_version is version('10.11.1', '>=')
 
     # I failed to create a procedure using ansible.mariadb.mariadb_query.
     # Maybe it's because we must changed the delimiter.
-    - name: Mysql_info users_info | Create procedure SQL file
+    - name: mariadb_info users_info | Create procedure SQL file
       ansible.builtin.template:
         src: files/users_info_create_procedure.sql
         dest: /root/create_procedure.sql
@@ -54,17 +53,15 @@
         group: root
         mode: '0700'
 
-    - name: Mysql_info users_info | Create a procedure
+    - name: mariadb_info users_info | Create a procedure
       ansible.mariadb.mariadb_db:
         name: all
         state: import
         target: /root/create_procedure.sql
 
-    # Use a query instead of mysql_user, because we want to catch differences
-    # at the end and a bug in mysql_user would be invisible to this tests
-    # MySQL 9.0 removed the mysql_native_password plugin
-    - name: Mysql_info users_info | Prepare common tests users
-      when: db_version is version('9.0', '<') or db_engine == 'mariadb'
+    # Use a query instead of mariadb_user, because we want to catch differences
+    # at the end and a bug in mariadb_user would be invisible to this tests
+    - name: mariadb_info users_info | Prepare common tests users
       ansible.mariadb.mariadb_query:
         query:
           - >-
@@ -225,48 +222,23 @@
             GRANT SELECT ON users_info_db.*
             TO users_info_tls_sub_issu_ciph@'host'
 
-    - name: Mysql_info users_info | Prepare tests users for MariaDB
+    - name: mariadb_info users_info | Prepare tests users
       ansible.mariadb.mariadb_query:
         query:
           - >-
             CREATE USER users_info_socket@'users_info.com' IDENTIFIED WITH
             unix_socket
           - GRANT ALL ON *.* to users_info_socket@'users_info.com'
-      when:
-        - db_engine == 'mariadb'
-
-    # MySQL 9.0 removed the sha256_password plugin
-    - name: Mysql_info users_info | Prepare tests users for MySQL
-      ansible.mariadb.mariadb_query:
-        query:
-          - >-
-            CREATE USER users_info_sha256@'users_info.com' IDENTIFIED WITH
-            sha256_password BY 'msandbox'
-          - GRANT ALL ON *.* to users_info_sha256@'users_info.com'
-      when:
-        - db_engine == 'mysql'
-        - db_version is version('9.0', '<')
-
-    - name: Mysql_info users_info | Prepare tests users for MySQL 8+
-      ansible.mariadb.mariadb_query:
-        query:
-          - >-
-            CREATE USER users_info_caching_sha2@'users_info.com' IDENTIFIED WITH
-            caching_sha2_password BY 'msandbox'
-          - GRANT ALL ON *.* to users_info_caching_sha2@'users_info.com'
-      when:
-        - db_engine == 'mysql'
-        - db_version is version('8.0', '>=')
 
     # ================================== Tests ==============================
 
-    - name: Mysql_info users_info | Collect users_info
+    - name: mariadb_info users_info | Collect users_info
       ansible.mariadb.mariadb_info:
         filter:
           - users_info
       register: result
 
-    - name: Mysql_info users_info | Recreate users from mysql_info result
+    - name: mariadb_info users_info | Recreate users from mariadb_info result
       ansible.mariadb.mariadb_user:
         name: "{{ item.name }}"
         host: "{{ item.host }}"
@@ -289,16 +261,12 @@
           recreate_users_result.msg != 'User unchanged'
       when:
         - item.name != 'root'
-        - item.name != 'mysql'
         - item.name != 'mariadb.sys'
-        - item.name != 'mysql.sys'
-        - item.name != 'mysql.infoschema'
-        - item.name != 'mysql.session'
         - item.name != 'PUBLIC'  # MariaDB roles are not supported
 
     # ================================== Cleanup ============================
 
-    - name: Mysql_info users_info | Cleanup users_info
+    - name: mariadb_info users_info | Cleanup users_info
       ansible.mariadb.mariadb_user:
         name: "{{ item }}"
         host_all: true
@@ -324,7 +292,7 @@
         - users_info_tls_subject_issuer
         - users_info_tls_sub_issu_ciph
 
-    - name: Mysql_info users_info | Cleanup databases
+    - name: mariadb_info users_info | Cleanup databases
       ansible.mariadb.mariadb_db:
         name:
           - users_info_db
@@ -332,7 +300,7 @@
           - users_info_db3
         state: absent
 
-    - name: Mysql_info users_info | Cleanup sql file for the procedure
+    - name: mariadb_info users_info | Cleanup sql file for the procedure
       ansible.builtin.file:
         path: /root/create_procedure.sql
         state: absent

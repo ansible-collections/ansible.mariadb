@@ -1,24 +1,24 @@
 ---
 # test code for resource_limits parameter
 - vars:
-    mysql_parameters: &mysql_params
-      login_user: '{{ mysql_user }}'
-      login_password: '{{ mysql_password }}'
-      login_host: '{{ mysql_host }}'
-      login_port: '{{ mysql_primary_port }}'
+    mariadb_parameters: &mariadb_params
+      login_user: '{{ mariadb_user }}'
+      login_password: '{{ mariadb_password }}'
+      login_host: '{{ mariadb_host }}'
+      login_port: '{{ mariadb_primary_port }}'
 
   block:
 
-    - name: Resource limits | Drop mysql user {{ user_name_1 }} if exists
+    - name: Resource limits | Drop mariadb user {{ user_name_1 }} if exists
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: '{{ user_name_1 }}'
         host_all: true
         state: absent
 
-    - name: Resource limits | Create mysql user {{ user_name_1 }} with resource limits in check_mode
+    - name: Resource limits | Create mariadb user {{ user_name_1 }} with resource limits in check_mode
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: '{{ user_name_1 }}'
         password: '{{ user_password_1 }}'
         state: present
@@ -33,9 +33,9 @@
         that:
           - result is changed
 
-    - name: Resource limits | Create mysql user {{ user_name_1 }} with resource limits in actual mode
+    - name: Resource limits | Create mariadb user {{ user_name_1 }} with resource limits in actual mode
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: '{{ user_name_1 }}'
         password: '{{ user_password_1 }}'
         state: present
@@ -50,7 +50,7 @@
 
     - name: Resource limits | Retrieve user
       mariadb_query:
-        <<: *mysql_params
+        <<: *mariadb_params
         query: >
           SELECT User FROM mysql.user
           WHERE User = '{{ user_name_1 }}'
@@ -66,7 +66,7 @@
 
     - name: Resource limits | Try to set the same limits again in check mode
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: '{{ user_name_1 }}'
         state: present
         resource_limits:
@@ -82,7 +82,7 @@
 
     - name: Resource limits | Try to set the same limits again in actual mode
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: '{{ user_name_1 }}'
         state: present
         resource_limits:
@@ -97,7 +97,7 @@
 
     - name: Resource limits | Change limits
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: '{{ user_name_1 }}'
         password: '{{ user_password_1 }}'
         state: present
@@ -113,7 +113,7 @@
 
     - name: Resource limits | Get user limits
       mariadb_query:
-        <<: *mysql_params
+        <<: *mariadb_params
         query: >
           SELECT User FROM mysql.user
           WHERE User = '{{ user_name_1 }}'
@@ -127,16 +127,16 @@
         that:
           - result.rowcount[0] == 1
 
-    - name: Resource limits | Drop mysql user {{ user_name_1 }} if exists
+    - name: Resource limits | Drop mariadb user {{ user_name_1 }} if exists
       ansible.mariadb.mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: '{{ user_name_1 }}'
         host_all: true
         state: absent
 
-    - name: Resource limits | Create mysql user {{ user_name_1 }} with MAX_STATEMENT_TIME in check_mode
+    - name: Resource limits | Create mariadb user {{ user_name_1 }} with MAX_STATEMENT_TIME in check_mode
       ansible.mariadb.mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: '{{ user_name_1 }}'
         password: '{{ user_password_1 }}'
         state: present
@@ -147,21 +147,14 @@
       register: result
       ignore_errors: true
 
-    - name: Resource limits | Assert that create user with MAX_STATEMENT_TIME is changed for mariadb
+    - name: Resource limits | Assert that create user with MAX_STATEMENT_TIME is changed
       ansible.builtin.assert:
         that:
           - result is changed
-      when: db_engine == 'mariadb'
 
-    - name: Resource limits | Assert that create user with MAX_STATEMENT_TIME is failed for mysql
-      ansible.builtin.assert:
-        that:
-          - result is failed
-      when: db_engine == 'mysql'
-
-    - name: Resource limits | Create mysql user {{ user_name_1 }} with MAX_STATEMENT_TIME in actual mode
+    - name: Resource limits | Create mariadb user {{ user_name_1 }} with MAX_STATEMENT_TIME in actual mode
       ansible.mariadb.mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: '{{ user_name_1 }}'
         password: '{{ user_password_1 }}'
         state: present
@@ -171,21 +164,14 @@
       register: result
       ignore_errors: true
 
-    - name: Resource limits | Assert that create user with MAX_STATEMENT_TIME is changed for MariaDB
+    - name: Resource limits | Assert that create user with MAX_STATEMENT_TIME is changed
       ansible.builtin.assert:
         that:
           - result is changed
-      when: db_engine == 'mariadb'
-
-    - name: Resource limits | Assert that create user with MAX_STATEMENT_TIME is failed for MySQL
-      ansible.builtin.assert:
-        that:
-          - result is failed
-      when: db_engine == 'mysql'
 
     - name: Resource limits | Retrieve user with MAX_STATEMENT_TIME
       ansible.mariadb.mariadb_query:
-        <<: *mysql_params
+        <<: *mariadb_params
         query: >
           SELECT User FROM mysql.user
           WHERE User = '{{ user_name_1 }}'
@@ -193,17 +179,15 @@
           AND max_questions = 10
           AND max_statement_time = 1
       register: result
-      when: db_engine == 'mariadb'
 
     - name: Resource limits | Assert that rowcount is 1 with MAX_STATEMENT_TIME
       ansible.builtin.assert:
         that:
           - result.rowcount[0] == 1
-      when: db_engine == 'mariadb'
 
     - name: Resource limits | Try to set the same limits with MAX_STATEMENT_TIME again in check mode
       ansible.mariadb.mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: '{{ user_name_1 }}'
         password: '{{ user_password_1 }}'
         state: present
@@ -212,17 +196,15 @@
           MAX_STATEMENT_TIME: 1
       check_mode: true
       register: result
-      when: db_engine == 'mariadb'
 
     - name: Resource limits | Assert that set same limits with MAX_STATEMENT_TIME again is not changed
       ansible.builtin.assert:
         that:
           - result is not changed
-      when: db_engine == 'mariadb'
 
     - name: Resource limits | Try to set the same limits with MAX_STATEMENT_TIME again in actual mode
       ansible.mariadb.mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: '{{ user_name_1 }}'
         password: '{{ user_password_1 }}'
         state: present
@@ -230,17 +212,15 @@
           MAX_QUERIES_PER_HOUR: 10
           MAX_STATEMENT_TIME: 1
       register: result
-      when: db_engine == 'mariadb'
 
     - name: Resource limits | Assert that set same limits with MAX_STATEMENT_TIME again in actual mode is not changed
       ansible.builtin.assert:
         that:
           - result is not changed
-      when: db_engine == 'mariadb'
 
     - name: Resource limits | Change limits with MAX_STATEMENT_TIME
       ansible.mariadb.mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: '{{ user_name_1 }}'
         password: '{{ user_password_1 }}'
         state: present
@@ -248,17 +228,15 @@
           MAX_QUERIES_PER_HOUR: 5
           MAX_STATEMENT_TIME: 2
       register: result
-      when: db_engine == 'mariadb'
 
     - name: Resource limits | Assert limits with MAX_STATEMENT_TIME changed
       ansible.builtin.assert:
         that:
           - result is changed
-      when: db_engine == 'mariadb'
 
     - name: Resource limits | Get user limits with MAX_STATEMENT_TIME
       ansible.mariadb.mariadb_query:
-        <<: *mysql_params
+        <<: *mariadb_params
         query: >
           SELECT User FROM mysql.user
           WHERE User = '{{ user_name_1 }}'
@@ -266,12 +244,10 @@
           AND max_questions = 5
           AND max_statement_time = 2
       register: result
-      when: db_engine == 'mariadb'
 
     - name: Resource limits | Assert limit with MAX_STATEMENT_TIME row count
       ansible.builtin.assert:
         that:
           - result.rowcount[0] == 1
-      when: db_engine == 'mariadb'
 
   when: (ansible_distribution == 'Ubuntu' and ansible_distribution_major_version >= '18') or (ansible_distribution == 'CentOS' and ansible_distribution_major_version >= '8')

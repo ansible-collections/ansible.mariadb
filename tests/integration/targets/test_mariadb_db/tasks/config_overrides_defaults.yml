@@ -30,10 +30,10 @@
 
 - name: Config overrides | Create database using fake port to connect to, must fail
   mariadb_db:
-    login_user: '{{ mysql_user }}'
-    login_password: '{{ mysql_password }}'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
+    login_user: '{{ mariadb_user }}'
+    login_password: '{{ mariadb_password }}'
+    login_host: '{{ mariadb_host }}'
+    login_port: '{{ mariadb_primary_port }}'
     name: '{{ db_to_create }}'
     state: present
     check_implicit_admin: yes
@@ -50,10 +50,10 @@
 
 - name: Config overrides | Create database using default port
   mariadb_db:
-    login_user: '{{ mysql_user }}'
-    login_password: '{{ mysql_password }}'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
+    login_user: '{{ mariadb_user }}'
+    login_password: '{{ mariadb_password }}'
+    login_host: '{{ mariadb_host }}'
+    login_port: '{{ mariadb_primary_port }}'
     name: '{{ db_to_create }}'
     state: present
     check_implicit_admin: yes
@@ -76,10 +76,10 @@
     Config overrides | Fail to Remove database using fake login_host
     because its default has been overriden by wrong value from config file
   mariadb_db:
-    login_user: '{{ mysql_user }}'
-    login_password: '{{ mysql_password }}'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
+    login_user: '{{ mariadb_user }}'
+    login_password: '{{ mariadb_password }}'
+    login_host: '{{ mariadb_host }}'
+    login_port: '{{ mariadb_primary_port }}'
     name: '{{ db_to_create }}'
     state: absent
     config_file: '{{ config_file }}'
@@ -97,10 +97,10 @@
 
 - name: Config overrides | Clean up test database
   mariadb_db:
-    login_user: '{{ mysql_user }}'
-    login_password: '{{ mysql_password }}'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
+    login_user: '{{ mariadb_user }}'
+    login_password: '{{ mariadb_password }}'
+    login_host: '{{ mariadb_host }}'
+    login_port: '{{ mariadb_primary_port }}'
     name: '{{ db_to_create }}'
     state: absent
     check_implicit_admin: yes

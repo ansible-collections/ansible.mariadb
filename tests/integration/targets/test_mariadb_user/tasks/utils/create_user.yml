@@ -2,10 +2,10 @@
 
 - name: Utils | Create user {{ user_name }}
   mariadb_user:
-    login_user: "{{ mysql_user }}"
-    login_password: "{{ mysql_password }}"
-    login_host: "{{ mysql_host }}"
-    login_port: "{{ mysql_primary_port }}"
+    login_user: "{{ mariadb_user }}"
+    login_password: "{{ mariadb_password }}"
+    login_host: "{{ mariadb_host }}"
+    login_port: "{{ mariadb_primary_port }}"
     name: "{{ user_name }}"
     host: "{{ user_host | default(omit) }}"
     password: "{{ user_password }}"

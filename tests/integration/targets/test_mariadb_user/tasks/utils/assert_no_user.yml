@@ -1,8 +1,8 @@
 ---
 - name: Utils | Assert no user | Query for user {{ user_name }}
-  command: "{{ mysql_command }} -e \"SELECT User FROM mysql.user where user='{{ user_name }}'\""
+  command: "{{ mariadb_command }} -e \"SELECT User FROM mysql.user where user='{{ user_name }}'\""
   register: result
 
-- name: Utils | Assert no user | Assert mysql user is not present
+- name: Utils | Assert no user | Assert mariadb user is not present
   assert:
     that: user_name not in result.stdout

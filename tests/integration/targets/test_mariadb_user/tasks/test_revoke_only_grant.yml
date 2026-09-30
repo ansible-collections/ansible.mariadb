@@ -1,10 +1,10 @@
 ---
 - vars:
-    mysql_parameters: &mysql_params
-      login_user: '{{ mysql_user }}'
-      login_password: '{{ mysql_password }}'
-      login_host: '{{ mysql_host }}'
-      login_port: '{{ mysql_primary_port }}'
+    mariadb_parameters: &mariadb_params
+      login_user: '{{ mariadb_user }}'
+      login_password: '{{ mariadb_password }}'
+      login_host: '{{ mariadb_host }}'
+      login_port: '{{ mariadb_primary_port }}'
   block:
     - include_tasks: utils/remove_user.yml
       vars:
@@ -12,7 +12,7 @@
 
     - name: Revoke only grants | Create user with two grants
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: "{{ user_name_1 }}"
         password: "{{ user_password_1 }}"
         update_password: on_create
@@ -21,7 +21,7 @@
     - name: Revoke only grants | Revoke grant priv from db_user1
       register: result
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: "{{ user_name_1 }}"
         password: "{{ user_password_1 }}"
         update_password: on_create
@@ -36,7 +36,7 @@
     - name: Revoke only grants | Update db_user1 again to test idempotence
       register: result
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: "{{ user_name_1 }}"
         password: "{{ user_password_1 }}"
         update_password: on_create

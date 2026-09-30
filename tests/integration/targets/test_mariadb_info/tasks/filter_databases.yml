@@ -1,19 +1,19 @@
 ---
 
 - module_defaults:
-    ansible.mariadb.mariadb_db: &mysql_defaults
-      login_user: "{{ mysql_user }}"
-      login_password: "{{ mysql_password }}"
-      login_host: "{{ mysql_host }}"
-      login_port: "{{ mysql_primary_port }}"
-    ansible.mariadb.mariadb_query: *mysql_defaults
-    ansible.mariadb.mariadb_info: *mysql_defaults
-    ansible.mariadb.mariadb_user: *mysql_defaults
+    ansible.mariadb.mariadb_db: &mariadb_defaults
+      login_user: "{{ mariadb_user }}"
+      login_password: "{{ mariadb_password }}"
+      login_host: "{{ mariadb_host }}"
+      login_port: "{{ mariadb_primary_port }}"
+    ansible.mariadb.mariadb_query: *mariadb_defaults
+    ansible.mariadb.mariadb_info: *mariadb_defaults
+    ansible.mariadb.mariadb_user: *mariadb_defaults
 
   block:
 
     # ================================ Prepare ==============================
-    - name: Mysql_info databases | Prepare | Create databases
+    - name: mariadb_info databases | Prepare | Create databases
       ansible.mariadb.mariadb_db:
         name:
           - db_tables_count_empty
@@ -22,7 +22,7 @@
           - db_only_views  # https://github.com/ansible-Getions/ansible.mysql/issues/204
         state: present
 
-    - name: Mysql_info databases | Prepare | Create tables
+    - name: mariadb_info databases | Prepare | Create tables
       ansible.mariadb.mariadb_query:
         query:
           - >-
@@ -39,7 +39,7 @@
 
     # ================================== Tests ==============================
 
-    - name: Mysql_info databases | Get all non-empty databases fields
+    - name: mariadb_info databases | Get all non-empty databases fields
       ansible.mariadb.mariadb_info:
         filter:
           - databases
@@ -55,7 +55,7 @@
           'db_tables_count_empty' in result.databases | dict2items
           | map(attribute='key')
 
-    - name: Mysql_info databases | Get all dbs fields except db_size
+    - name: mariadb_info databases | Get all dbs fields except db_size
       ansible.mariadb.mariadb_info:
         filter:
           - databases
@@ -76,7 +76,7 @@
     # 'unsupported' element is passed to check that an unsupported value
     # won't break anything (will be ignored regarding to the module's
     # documentation).
-    - name: Mysql_info databases | Get all dbs fields with unsupported value
+    - name: mariadb_info databases | Get all dbs fields with unsupported value
       ansible.mariadb.mariadb_info:
         filter:
           - databases
@@ -95,7 +95,7 @@
           'db_tables_count_empty' in result.databases | dict2items
           | map(attribute='key')
 
-    - name: Mysql_info databases | Get all dbs fields except tables
+    - name: mariadb_info databases | Get all dbs fields except tables
       ansible.mariadb.mariadb_info:
         filter:
           - databases
@@ -113,7 +113,7 @@
           'db_tables_count_empty' in result.databases | dict2items
           | map(attribute='key')
 
-    - name: Mysql_info databases | Get all dbs even empty ones
+    - name: mariadb_info databases | Get all dbs even empty ones
       ansible.mariadb.mariadb_info:
         filter:
           - databases
@@ -130,7 +130,7 @@
           result.databases['db_tables_count_empty'].size != 0 or
           result.databases['db_tables_count_empty'].tables != 0
 
-    - name: Mysql_info databases | Get all dbs even empty ones without size
+    - name: mariadb_info databases | Get all dbs even empty ones without size
       ansible.mariadb.mariadb_info:
         filter:
           - databases
@@ -151,7 +151,7 @@
 
     # ================================== Cleanup ============================
 
-    - name: Mysql_info databases | Cleanup databases
+    - name: mariadb_info databases | Cleanup databases
       ansible.mariadb.mariadb_db:
         name:
           - db_tables_count_empty

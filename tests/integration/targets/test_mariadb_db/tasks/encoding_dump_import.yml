@@ -6,42 +6,42 @@
 
 - name: Deleting Latin1 encoded Database
   mariadb_db:
-    login_user: '{{ mysql_user }}'
-    login_password: '{{ mysql_password }}'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
+    login_user: '{{ mariadb_user }}'
+    login_password: '{{ mariadb_password }}'
+    login_host: '{{ mariadb_host }}'
+    login_port: '{{ mariadb_primary_port }}'
     name: '{{ db_latin1_name }}'
     state: absent
 
 - name: Encoding | Create Latin1 encoded database
   mariadb_db:
-    login_user: '{{ mysql_user }}'
-    login_password: '{{ mysql_password }}'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
+    login_user: '{{ mariadb_user }}'
+    login_password: '{{ mariadb_password }}'
+    login_host: '{{ mariadb_host }}'
+    login_port: '{{ mariadb_primary_port }}'
     name: '{{ db_latin1_name }}'
     state: present
     encoding: latin1
 
 - name: Encoding | Create a table in Latin1 database
-  command: "{{ mysql_command }} {{ db_latin1_name }} -e \"create table testlatin1(id int, name varchar(100))\""
+  command: "{{ mariadb_command }} {{ db_latin1_name }} -e \"create table testlatin1(id int, name varchar(100))\""
 
 
 # Inserting a string in latin1 into table, , this string be tested later,
 # so report any change of content in the test too
 - name: Encoding | Inserting data into Latin1 database
-  command: "{{ mysql_command }} {{ db_latin1_name }} -e \"insert into testlatin1 value(47,'Amédée Bôlüt')\""
+  command: "{{ mariadb_command }} {{ db_latin1_name }} -e \"insert into testlatin1 value(47,'Amédée Bôlüt')\""
 
 - name: Encoding | Selecting table
-  command: "{{ mysql_command }} {{ db_latin1_name }} -e \"select * from testlatin1\""
+  command: "{{ mariadb_command }} {{ db_latin1_name }} -e \"select * from testlatin1\""
   register: output
 
 - name: Encoding | Dumping a table in Latin1 database
   mariadb_db:
-    login_user: '{{ mysql_user }}'
-    login_password: '{{ mysql_password }}'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
+    login_user: '{{ mariadb_user }}'
+    login_password: '{{ mariadb_password }}'
+    login_host: '{{ mariadb_host }}'
+    login_port: '{{ mariadb_primary_port }}'
     name: "{{ db_latin1_name }}"
     encoding: latin1
     target: "{{ latin1_file1 }}"
@@ -63,19 +63,19 @@
 
 - name: Encoding | Dropping {{ db_latin1_name }} database
   mariadb_db:
-    login_user: '{{ mysql_user }}'
-    login_password: '{{ mysql_password }}'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
+    login_user: '{{ mariadb_user }}'
+    login_password: '{{ mariadb_password }}'
+    login_host: '{{ mariadb_host }}'
+    login_port: '{{ mariadb_primary_port }}'
     name: '{{ db_latin1_name }}'
     state: absent
 
 - name: Encoding | Importing the latin1 mysql script
   mariadb_db:
-    login_user: '{{ mysql_user }}'
-    login_password: '{{ mysql_password }}'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
+    login_user: '{{ mariadb_user }}'
+    login_password: '{{ mariadb_password }}'
+    login_host: '{{ mariadb_host }}'
+    login_port: '{{ mariadb_primary_port }}'
     state: import
     encoding: latin1
     name: '{{ db_latin1_name }}'
@@ -90,7 +90,7 @@
 - name: Encoding | Check encoding of table
   ansible.builtin.command:
     cmd: >
-      {{ mysql_command }}
+      {{ mariadb_command }}
       {{ db_latin1_name }}
       -e "SHOW FULL COLUMNS FROM {{ db_latin1_name }}.testlatin1"
   register: output
@@ -98,9 +98,9 @@
 
 - name: Encoding | Clean up database
   mariadb_db:
-    login_user: '{{ mysql_user }}'
-    login_password: '{{ mysql_password }}'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
+    login_user: '{{ mariadb_user }}'
+    login_password: '{{ mariadb_password }}'
+    login_host: '{{ mariadb_host }}'
+    login_port: '{{ mariadb_primary_port }}'
     name: '{{ db_latin1_name }}'
     state: absent

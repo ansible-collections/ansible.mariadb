@@ -1,31 +1,31 @@
 ---
 
 - vars:
-    mysql_parameters: &mysql_params
-      login_user: '{{ mysql_user }}'
-      login_password: '{{ mysql_password }}'
-      login_host: '{{ mysql_host }}'
-      login_port: '{{ mysql_primary_port }}'
+    mariadb_parameters: &mariadb_params
+      login_user: '{{ mariadb_user }}'
+      login_password: '{{ mariadb_password }}'
+      login_host: '{{ mariadb_host }}'
+      login_port: '{{ mariadb_primary_port }}'
 
   block:
 
     # ========================= Prepare =======================================
     # We use query to prevent our module of changing the case
-    - name: Mysql_role Column case sensitive | Create a test table
+    - name: MariaDB_role Column case sensitive | Create a test table
       ansible.mariadb.mariadb_query:
-        <<: *mysql_params
+        <<: *mariadb_params
         query:
-          - CREATE DATABASE mysql_role_column_case
+          - CREATE DATABASE mariadb_role_column_case
           - >-
-            CREATE TABLE mysql_role_column_case.t1
+            CREATE TABLE mariadb_role_column_case.t1
             (a int, B int, cC int, Dd int)
           - >-
-            INSERT INTO mysql_role_column_case.t1
+            INSERT INTO mariadb_role_column_case.t1
             (a, B, cC, Dd) VALUES (1,2,3,4)
 
-    - name: Mysql_role Column case sensitive | Create users
+    - name: MariaDB_role Column case sensitive | Create users
       ansible.mariadb.mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: column_case_sensitive
         host: '%'
         password: 'msandbox'
@@ -33,20 +33,20 @@
 
     # ================= Reproduce failure =====================================
 
-    - name: Mysql_role Column case sensitive | Create role
+    - name: MariaDB_role Column case sensitive | Create role
       ansible.mariadb.mariadb_role:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: 'role_column_case_sensitive'
         state: present
         members:
           - 'column_case_sensitive@%'
         priv:
-          'mysql_role_column_case.t1': 'SELECT(a, B, cC, Dd)'
+          'mariadb_role_column_case.t1': 'SELECT(a, B, cC, Dd)'
         column_case_sensitive: false
 
-    - name: Mysql_role Column case sensitive | Assert role privileges are all caps
+    - name: MariaDB_role Column case sensitive | Assert role privileges are all caps
       ansible.mariadb.mariadb_query:
-        <<: *mysql_params
+        <<: *mariadb_params
         query:
           - SHOW GRANTS FOR role_column_case_sensitive
       register: column_case_insensitive_grants
@@ -62,47 +62,33 @@
           or column_case_insensitive_grants.query_result[0][1]
           is not search("DD", ignorecase=false)
 
-    - name: Mysql_role Column case sensitive | Assert 1 column is accessible on MySQL
+    - name: MariaDB_role Column case sensitive | Assert 4 column are accessible
       ansible.mariadb.mariadb_query:
-        <<: *mysql_params
-        login_user: column_case_sensitive
-        query:
-          - DESC mysql_role_column_case.t1
-      register: assert_1_col_accessible
-      failed_when:
-        - assert_1_col_accessible.rowcount[0] | int != 1
-      when:
-        - db_engine == 'mysql'
-
-    - name: Mysql_role Column case sensitive | Assert 4 column are accessible on MariaDB
-      ansible.mariadb.mariadb_query:
-        <<: *mysql_params
+        <<: *mariadb_params
         login_user: column_case_sensitive
         query:
           - SET ROLE role_column_case_sensitive
-          - DESC mysql_role_column_case.t1
+          - DESC mariadb_role_column_case.t1
       register: assert_4_col_accessible
       failed_when:
         - assert_4_col_accessible.rowcount[1] | int != 4
-      when:
-        - db_engine == 'mariadb'
 
     # ====================== Test the fix =====================================
 
-    - name: Mysql_role Column case sensitive | Recreate role with case sensitive
+    - name: MariaDB_role Column case sensitive | Recreate role with case sensitive
       ansible.mariadb.mariadb_role:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: 'role_column_case_sensitive'
         state: present
         members:
           - 'column_case_sensitive@%'
         priv:
-          'mysql_role_column_case.t1': 'SELECT(a, B, cC, Dd)'
+          'mariadb_role_column_case.t1': 'SELECT(a, B, cC, Dd)'
         column_case_sensitive: true
 
-    - name: Mysql_role Column case sensitive | Assert role privileges are case sensitive
+    - name: MariaDB_role Column case sensitive | Assert role privileges are case sensitive
       ansible.mariadb.mariadb_query:
-        <<: *mysql_params
+        <<: *mariadb_params
         query:
           - SHOW GRANTS FOR role_column_case_sensitive
       register: column_case_sensitive_grants
@@ -118,34 +104,34 @@
           or column_case_sensitive_grants.query_result[0][1]
           is not search("Dd", ignorecase=false)
 
-    - name: Mysql_role Column case sensitive | Assert 4 columns are accessible
+    - name: MariaDB_role Column case sensitive | Assert 4 columns are accessible
       ansible.mariadb.mariadb_query:
-        <<: *mysql_params
+        <<: *mariadb_params
         login_user: column_case_sensitive
         query:
           - SET ROLE role_column_case_sensitive
-          - DESC mysql_role_column_case.t1
+          - DESC mariadb_role_column_case.t1
       register: assert_4_col_accessible
       failed_when:
         - assert_4_col_accessible.rowcount[1] | int != 4
 
     # ========================= Teardown ======================================
 
-    - name: Mysql_role Column case sensitive | Delete test users
+    - name: MariaDB_role Column case sensitive | Delete test users
       ansible.mariadb.mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: column_case_sensitive
         host_all: true
         state: absent
 
-    - name: Mysql_role Column case sensitive | Delete role
+    - name: MariaDB_role Column case sensitive | Delete role
       ansible.mariadb.mariadb_role:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: 'role_column_case_sensitive'
         state: absent
 
-    - name: Mysql_role Column case sensitive | Delete test database
+    - name: MariaDB_role Column case sensitive | Delete test database
       ansible.mariadb.mariadb_db:
-        <<: *mysql_params
-        name: mysql_role_column_case
+        <<: *mariadb_params
+        name: mariadb_role_column_case
         state: absent

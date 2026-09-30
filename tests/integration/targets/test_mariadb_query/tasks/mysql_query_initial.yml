@@ -1,19 +1,19 @@
 ---
-# Test code for mysql_query module
+# Test code for mariadb_query module
 # Copyright: (c) 2020, Andrew Klychkov (@Andersson007) <andrew.a.klychkov@gmail.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 - vars:
-    mysql_parameters: &mysql_params
-      login_user: '{{ mysql_user }}'
-      login_password: '{{ mysql_password }}'
-      login_host: '{{ mysql_host }}'
-      login_port: '{{ mysql_primary_port }}'
+    mariadb_parameters: &mariadb_params
+      login_user: '{{ mariadb_user }}'
+      login_password: '{{ mariadb_password }}'
+      login_host: '{{ mariadb_host }}'
+      login_port: '{{ mariadb_primary_port }}'
 
   block:
 
   - name: Create db {{ test_db }}
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       query: 'CREATE DATABASE {{ test_db }}'
     register: result
 
@@ -27,7 +27,7 @@
 
   - name: Create {{ test_table1 }}
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       login_db: '{{ test_db }}'
       query: 'CREATE TABLE {{ test_table1 }} (id int)'
     register: result
@@ -43,7 +43,7 @@
 
   - name: Insert test data
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       login_db: '{{ test_db }}'
       query:
         - 'INSERT INTO {{ test_table1 }} VALUES (1), (2)'
@@ -67,7 +67,7 @@
 
   - name: Check data in {{ test_table1 }}
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       login_db: '{{ test_db }}'
       query: 'SELECT * FROM {{ test_table1 }}'
     register: result
@@ -86,7 +86,7 @@
 
   - name: Check data in {{ test_table1 }} using positional args
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       login_db: '{{ test_db }}'
       query: 'SELECT * FROM {{ test_table1 }} WHERE id = %s'
       positional_args:
@@ -105,7 +105,7 @@
 
   - name: Check data in {{ test_table1 }} using named args
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       login_db: '{{ test_db }}'
       query: 'SELECT * FROM {{ test_table1 }} WHERE id = %(some_id)s'
       named_args:
@@ -124,7 +124,7 @@
 
   - name: Update data in {{ test_table1 }}
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       login_db: '{{ test_db }}'
       query: 'UPDATE {{ test_table1 }} SET id = %(new_id)s WHERE id = %(current_id)s'
       named_args:
@@ -143,7 +143,7 @@
 
   - name: Check the prev update - row with value 1 does not exist anymore
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       login_db: '{{ test_db }}'
       query: 'SELECT * FROM {{ test_table1 }} WHERE id = %(some_id)s'
       named_args:
@@ -161,7 +161,7 @@
 
   - name: Check the prev update - row with value - exist
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       login_db: '{{ test_db }}'
       query: 'SELECT * FROM {{ test_table1 }} WHERE id = %(some_id)s'
       named_args:
@@ -179,7 +179,7 @@
 
   - name: Update data in {{ test_table1 }} again
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       login_db: '{{ test_db }}'
       query: 'UPDATE {{ test_table1 }} SET id = %(new_id)s WHERE id = %(current_id)s'
       named_args:
@@ -198,7 +198,7 @@
 
   - name: Delete data from {{ test_table1 }}
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       login_db: '{{ test_db }}'
       query:
       - 'DELETE FROM {{ test_table1 }} WHERE id = 0'
@@ -216,7 +216,7 @@
 
   - name: Delete data from {{ test_table1 }} again
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       login_db: '{{ test_db }}'
       query: 'DELETE FROM {{ test_table1 }} WHERE id = 0'
     register: result
@@ -232,7 +232,7 @@
 
   - name: Truncate {{ test_table1 }}
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       login_db: '{{ test_db }}'
       query:
         - 'TRUNCATE {{ test_table1 }}'
@@ -250,7 +250,7 @@
 
   - name: Rename {{ test_table1 }}
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       login_db: '{{ test_db }}'
       query: 'RENAME TABLE {{ test_table1 }} TO {{ test_table2 }}'
     register: result
@@ -266,7 +266,7 @@
 
   - name: Check the prev rename
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       login_db: '{{ test_db }}'
       query: 'SELECT * FROM {{ test_table1 }}'
     register: result
@@ -279,7 +279,7 @@
 
   - name: Check the prev rename
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       login_db: '{{ test_db }}'
       query: 'SELECT * FROM {{ test_table2 }}'
     register: result
@@ -291,19 +291,19 @@
 
   - name: Create {{ test_table3 }}
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       login_db: '{{ test_db }}'
       query: 'CREATE TABLE {{ test_table3 }} (id int, story text)'
 
   - name: Add data to {{ test_table3 }}
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       login_db: '{{ test_db }}'
       query: "INSERT INTO {{ test_table3 }} (id, story) VALUES (1, 'first'), (2, 'second')"
 
   - name: Select from {{ test_table3 }}
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       login_db: '{{ test_db }}'
       query: 'SELECT id, story FROM {{ test_table3 }}'
     register: result
@@ -315,7 +315,7 @@
 
   - name: Pass wrong query type
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       login_db: '{{ test_db }}'
       query: {'this type is': 'wrong'}
     register: result
@@ -329,7 +329,7 @@
 
   - name: Pass wrong query element
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       login_db: '{{ test_db }}'
       query:
       - 'SELECT now()'
@@ -345,13 +345,13 @@
 
   - name: Create {{ test_table4 }}
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       login_db: '{{ test_db }}'
       query: 'CREATE TABLE {{ test_table4 }} (id int primary key, story text)'
 
   - name: Insert test data using replace statement
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       login_db: '{{ test_db }}'
       query: "REPLACE INTO {{ test_table4 }} VALUES (1, 'first')"
       single_transaction: yes
@@ -365,7 +365,7 @@
 
   - name: Replace test data
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       login_db: '{{ test_db }}'
       query: "REPLACE INTO {{ test_table4 }} VALUES (1, 'one')"
       single_transaction: yes
@@ -379,7 +379,7 @@
   # Issue https://github.com/ansible-collections/ansible.mysql/issues/268
   - name: Create table
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       login_db: '{{ test_db }}'
       query: "CREATE TABLE issue268 (id int)"
       single_transaction: yes
@@ -387,7 +387,7 @@
   # Issue https://github.com/ansible-collections/ansible.mysql/issues/268
   - name: Create table with IF NOT EXISTS
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       login_db: '{{ test_db }}'
       query: "CREATE TABLE IF NOT EXISTS issue268 (id int)"
       single_transaction: yes
@@ -403,7 +403,7 @@
 
   - name: Drop db {{ test_db }}
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       query: 'DROP DATABASE {{ test_db }}'
     register: result
 
@@ -419,5 +419,5 @@
 
     - name: Clean up test_db
       mariadb_query:
-        <<: *mysql_params
+        <<: *mariadb_params
         query: 'DROP DATABASE IF EXISTS {{ test_db }}'

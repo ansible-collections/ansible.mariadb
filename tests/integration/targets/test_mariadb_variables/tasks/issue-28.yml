@@ -1,7 +1,7 @@
 ---
 - name: set fact tls_enabled
   ansible.builtin.command:
-    cmd: "{{ mysql_command }} \"-e SHOW VARIABLES LIKE 'have_ssl';\""
+    cmd: "{{ mariadb_command }} \"-e SHOW VARIABLES LIKE 'have_ssl';\""
   register: result
 
 - name: Set tls_enabled fact
@@ -9,11 +9,11 @@
     tls_enabled: "{{ 'YES' in result.stdout | bool | default('false', true) }}"
 
 - vars:
-    mysql_parameters: &mysql_params
-      login_user: '{{ mysql_user }}'
-      login_password: '{{ mysql_password }}'
-      login_host: '{{ mysql_host }}'
-      login_port: '{{ mysql_primary_port }}'
+    mariadb_parameters: &mariadb_params
+      login_user: '{{ mariadb_user }}'
+      login_password: '{{ mariadb_password }}'
+      login_host: '{{ mariadb_host }}'
+      login_port: '{{ mariadb_primary_port }}'
   when: tls_enabled
   block:
 
@@ -26,7 +26,7 @@
 
     - name: Drop mysql user if exists
       ansible.mariadb.mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: '{{ user_name_1 }}'
         host_all: true
         state: absent
@@ -34,7 +34,7 @@
 
     - name: create user with ssl requirement
       ansible.mariadb.mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: "{{ user_name_1 }}"
         host: '%'
         password: "{{ user_password_1 }}"
@@ -47,8 +47,8 @@
         variable: '{{ set_name }}'
         login_user: '{{ user_name_1 }}'
         login_password: '{{ user_password_1 }}'
-        login_host: '{{ mysql_host }}'
-        login_port: '{{ mysql_primary_port }}'
+        login_host: '{{ mariadb_host }}'
+        login_port: '{{ mariadb_primary_port }}'
         ca_cert: /tmp/cert.pem
       register: result
       ignore_errors: true
@@ -65,8 +65,8 @@
         variable: '{{ set_name }}'
         login_user: '{{ user_name_1 }}'
         login_password: '{{ user_password_1 }}'
-        login_host: '{{ mysql_host }}'
-        login_port: '{{ mysql_primary_port }}'
+        login_host: '{{ mariadb_host }}'
+        login_port: '{{ mariadb_primary_port }}'
         ca_cert: /tmp/cert.pem
         check_hostname: no
       register: result
@@ -76,7 +76,7 @@
 
     - name: Drop mysql user
       ansible.mariadb.mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: '{{ user_name_1 }}'
         host_all: true
         state: absent

@@ -1,7 +1,7 @@
 ---
 
 - name: Utils | Assert plugin | Query for user {{ user_name }}
-  ansible.builtin.command: "{{ mysql_command }} -e \"SELECT plugin FROM mysql.user where user='{{ user_name }}'\""
+  ansible.builtin.command: "{{ mariadb_command }} -e \"SELECT plugin FROM mariadb.user where user='{{ user_name }}'\""
   register: result
   changed_when: False
 

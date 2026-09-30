@@ -1,9 +1,9 @@
-mysql_user: root
-mysql_password: msandbox
-mysql_host: '{{ gateway_addr }}'
-mysql_primary_port: 3307
-mysql_replica1_port: 3308
-mysql_replica2_port: 3309
+mariadb_user: root
+mariadb_password: msandbox
+mariadb_host: '{{ gateway_addr }}'
+mariadb_primary_port: 3307
+mariadb_replica1_port: 3308
+mariadb_replica2_port: 3309
 
 replication_user: replication_user
 replication_pass: replication_pass

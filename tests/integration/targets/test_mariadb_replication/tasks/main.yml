@@ -7,36 +7,21 @@
 # Copyright: (c) 2019, Andrew Klychkov (@Andersson007) <andrew.a.klychkov@gmail.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-# Initial CI tests of mysql_replication module:
-- import_tasks: mysql_replication_initial.yml
+# Initial CI tests of mariadb_replication module:
+- import_tasks: mariadb_replication_initial.yml
 
 # Tests of replication filters and force_context
-# Requires working replication IO thread; MySQL 9.0+ defaults to
-# caching_sha2_password which needs SSL for replication (not configured
-# in the test containers).
-# TODO: configure SSL for test containers so this test can run on MySQL 9.0+.
+# Requires working replication IO thread
 - include_tasks: issue-265.yml
-  when: db_version is version('9.0', '<') or db_engine == 'mariadb'
 
 # primary_ssl_verify_server_cert
-# Must run before mysql add channels in mysql_replication_channel.yml
+# Must run before mysql add channels in mariadb_replication_channel.yml
 - import_tasks: issue-689.yml
 
 # Tests of primary_delay parameter:
-- import_tasks: mysql_replication_primary_delay.yml
-
-# Tests of channel parameter:
-- import_tasks: mysql_replication_channel.yml
-  when:
-    - db_engine == 'mysql'  # FIXME: mariadb introduces FOR CHANNEL in 10.7
+- import_tasks: mariadb_replication_primary_delay.yml
 
 # Tests of resetprimary mode:
-- import_tasks: mysql_replication_resetprimary_mode.yml
+- import_tasks: mariadb_replication_resetprimary_mode.yml
 
 - include_tasks: issue-28.yml
-
-# Tests of changereplication mode:
-- import_tasks: mysql_replication_changereplication_mode.yml
-  when:
-    - db_engine == 'mysql'
-    - db_version is version('8.0.23', '>=')

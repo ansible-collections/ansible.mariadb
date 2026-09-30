@@ -1,17 +1,17 @@
 ---
 # Test code to ensure that subtracting privileges will not result in unnecessary changes.
 - vars:
-    mysql_parameters: &mysql_params
-      login_user: '{{ mysql_user }}'
-      login_password: '{{ mysql_password }}'
-      login_host: '{{ mysql_host }}'
-      login_port: '{{ mysql_primary_port }}'
+    mariadb_parameters: &mariadb_params
+      login_user: '{{ mariadb_user }}'
+      login_password: '{{ mariadb_password }}'
+      login_host: '{{ mariadb_host }}'
+      login_port: '{{ mariadb_primary_port }}'
 
   block:
 
     - name: Priv substract | Create test databases
       mariadb_db:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: '{{ item }}'
         state: present
       loop:
@@ -19,7 +19,7 @@
 
     - name: Priv substract | Create a user with an initial set of privileges
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: '{{ user_name_4 }}'
         host: '%'
         password: '{{ user_password_4 }}'
@@ -27,7 +27,7 @@
         state: present
 
     - name: Priv substract | Run command to show privileges for user (expect privileges in stdout)
-      command: "{{ mysql_command }} -e \"SHOW GRANTS FOR '{{ user_name_4 }}'@'%'\""
+      command: "{{ mariadb_command }} -e \"SHOW GRANTS FOR '{{ user_name_4 }}'@'%'\""
       register: result
 
     - name: Priv substract | Assert that the initial set of privileges matches what is expected
@@ -37,7 +37,7 @@
 
     - name: Priv substract | Subtract privileges that are not in the current privileges, which should be a no-op
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: '{{ user_name_4 }}'
         host: '%'
         priv: 'data1.*:DELETE'
@@ -52,7 +52,7 @@
           - result is not changed
 
     - name: Priv substract | Run command to show privileges for user (expect privileges in stdout)
-      command: "{{ mysql_command }} -e \"SHOW GRANTS FOR '{{ user_name_4 }}'@'%'\""
+      command: "{{ mariadb_command }} -e \"SHOW GRANTS FOR '{{ user_name_4 }}'@'%'\""
       register: result
 
     - name: Priv substract | Assert that the permissions still match what was originally granted
@@ -62,7 +62,7 @@
 
     - name: Priv substract | Subtract existing and not-existing privileges, but not all
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: '{{ user_name_4 }}'
         host: '%'
         password: '{{ user_password_4 }}'
@@ -78,7 +78,7 @@
           - result is changed
 
     - name: Priv substract | Run command to show privileges for user (expect privileges in stdout)
-      command: "{{ mysql_command }} -e \"SHOW GRANTS FOR '{{ user_name_4 }}'@'%'\""
+      command: "{{ mariadb_command }} -e \"SHOW GRANTS FOR '{{ user_name_4 }}'@'%'\""
       register: result
 
     - name: Priv substract | Assert that the permissions were not changed if check_mode is set to 'yes'
@@ -95,7 +95,7 @@
 
     - name: Priv substract | Try to subtract invalid privileges
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: '{{ user_name_4 }}'
         host: '%'
         priv: 'data1.*:INVALID'
@@ -110,7 +110,7 @@
           - result is not changed
 
     - name: Priv substract | Run command to show privileges for user (expect privileges in stdout)
-      command: "{{ mysql_command }} -e \"SHOW GRANTS FOR '{{ user_name_4 }}'@'%'\""
+      command: "{{ mariadb_command }} -e \"SHOW GRANTS FOR '{{ user_name_4 }}'@'%'\""
       register: result
 
     - name: Priv substract | Assert that the permissions were not changed with check_mode=='yes'
@@ -127,7 +127,7 @@
 
     - name: Priv substract | Trigger failure by trying to subtract and append privileges at the same time
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: '{{ user_name_4 }}'
         host: '%'
         password: '{{ user_password_4 }}'
@@ -145,7 +145,7 @@
           - result is failed
 
     - name: Priv substract | Run command to show privileges for user (expect privileges in stdout)
-      command: "{{ mysql_command }} -e \"SHOW GRANTS FOR '{{ user_name_4 }}'@'%'\""
+      command: "{{ mariadb_command }} -e \"SHOW GRANTS FOR '{{ user_name_4 }}'@'%'\""
       register: result
 
     - name: Priv substract | Assert that the permissions stayed the same, with check_mode=='yes'
@@ -164,7 +164,7 @@
     # Clean up
     - name: Priv substract | Drop test databases
       mariadb_db:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: '{{ item }}'
         state: present
       loop:

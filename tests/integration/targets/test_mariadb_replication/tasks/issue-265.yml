@@ -1,19 +1,19 @@
 ---
 
 - vars:
-    mysql_parameters: &mysql_params
-      login_user: '{{ mysql_user }}'
-      login_password: '{{ mysql_password }}'
-      login_host: '{{ mysql_host }}'
-      login_port: '{{ mysql_primary_port }}'
+    mariadb_parameters: &mariadb_params
+      login_user: '{{ mariadb_user }}'
+      login_password: '{{ mariadb_password }}'
+      login_host: '{{ mariadb_host }}'
+      login_port: '{{ mariadb_primary_port }}'
   block:
 
     # start replica so it is available for testing
 
     - name: Start replica
       mariadb_replication:
-        <<: *mysql_params
-        login_port: '{{ mysql_replica1_port }}'
+        <<: *mariadb_params
+        login_port: '{{ mariadb_replica1_port }}'
         mode: startreplica
       register: result
 
@@ -24,7 +24,7 @@
 
     - name: Drop {{ user_name_1 }} if exists
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: '{{ user_name_1 }}'
         host: '{{ gateway_addr }}'
         state: absent
@@ -34,7 +34,7 @@
     # check if user creation works with force_context and is replicated
     - name: create user with force_context
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: "{{ user_name_1 }}"
         host: '{{ gateway_addr }}'
         password: "{{ user_password_1 }}"
@@ -46,8 +46,8 @@
         mode: getprimary
         login_user: '{{ user_name_1 }}'
         login_password: '{{ user_password_1 }}'
-        login_host: '{{ mysql_host }}'
-        login_port: '{{ mysql_replica1_port }}'
+        login_host: '{{ mariadb_host }}'
+        login_port: '{{ mariadb_replica1_port }}'
       register: result
       ignore_errors: yes
 
@@ -57,7 +57,7 @@
 
     - name: Drop user
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: '{{ user_name_1 }}'
         host: '{{ gateway_addr }}'
         state: absent
@@ -68,8 +68,8 @@
         mode: getprimary
         login_user: '{{ user_name_1 }}'
         login_password: '{{ user_password_1 }}'
-        login_host: '{{ mysql_host }}'
-        login_port: '{{ mysql_replica1_port }}'
+        login_host: '{{ mariadb_host }}'
+        login_port: '{{ mariadb_replica1_port }}'
       register: result
       ignore_errors: yes
 
@@ -81,8 +81,8 @@
     # Stop replication, create a filter and restart replication on replica1.
     - name: Stop replica
       mariadb_replication:
-        <<: *mysql_params
-        login_port: '{{ mysql_replica1_port }}'
+        <<: *mariadb_params
+        login_port: '{{ mariadb_replica1_port }}'
         mode: stopreplica
       register: result
 
@@ -91,18 +91,13 @@
           - result is changed
           - result.queries == ["STOP SLAVE"] or result.queries == ["STOP REPLICA"]
 
-    - name: Create replication filter MySQL
-      shell: "echo \"CHANGE REPLICATION FILTER REPLICATE_IGNORE_DB = (mysql);\" | {{ mysql_command_wo_port }} -P{{ mysql_replica1_port }}"
-      when: db_engine == 'mysql'
-
-    - name: Create replication filter MariaDB
-      shell: "echo \"SET GLOBAL replicate_ignore_db = 'mysql';\" | {{ mysql_command_wo_port }} -P{{ mysql_replica1_port }}"
-      when: db_engine == 'mariadb'
+    - name: Create replication filter
+      shell: "echo \"SET GLOBAL replicate_ignore_db = 'mysql';\" | {{ mariadb_command_wo_port }} -P{{ mariadb_replica1_port }}"
 
     - name: Start replica
       mariadb_replication:
-        <<: *mysql_params
-        login_port: '{{ mysql_replica1_port }}'
+        <<: *mariadb_params
+        login_port: '{{ mariadb_replica1_port }}'
         mode: startreplica
       register: result
 
@@ -115,7 +110,7 @@
     # Filter in place, ready to test if user creation is filtered with force_context
     - name: create user with force_context
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: "{{ user_name_1 }}"
         host: "{{ gateway_addr }}"
         password: "{{ user_password_1 }}"
@@ -127,8 +122,8 @@
         mode: getprimary
         login_user: '{{ user_name_1 }}'
         login_password: '{{ user_password_1 }}'
-        login_host: '{{ mysql_host }}'
-        login_port: '{{ mysql_replica1_port }}'
+        login_host: '{{ mariadb_host }}'
+        login_port: '{{ mariadb_replica1_port }}'
       register: result
       ignore_errors: yes
 
@@ -138,7 +133,7 @@
 
     - name: Drop user
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: '{{ user_name_1 }}'
         host: "{{ gateway_addr }}"
         state: absent
@@ -148,8 +143,8 @@
     # Stop replication and remove the filter
     - name: Stop replica
       mariadb_replication:
-        <<: *mysql_params
-        login_port: '{{ mysql_replica1_port }}'
+        <<: *mariadb_params
+        login_port: '{{ mariadb_replica1_port }}'
         mode: stopreplica
       register: result
 
@@ -158,10 +153,5 @@
           - result is changed
           - result.queries == ["STOP SLAVE"] or result.queries == ["STOP REPLICA"]
 
-    - name: Remove replication filter MySQL
-      shell: "echo \"CHANGE REPLICATION FILTER REPLICATE_IGNORE_DB = ();\" | {{ mysql_command_wo_port }} -P{{ mysql_replica1_port }}"
-      when: db_engine == 'mysql'
-
     - name: Remove replication filter MariaDB
-      shell: "echo \"SET GLOBAL replicate_ignore_db = '';\" | {{ mysql_command_wo_port }} -P{{ mysql_replica1_port }}"
-      when: db_engine == 'mariadb'
+      shell: "echo \"SET GLOBAL replicate_ignore_db = '';\" | {{ mariadb_command_wo_port }} -P{{ mariadb_replica1_port }}"

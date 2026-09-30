@@ -1,7 +1,7 @@
-mysql_user: root
-mysql_password: msandbox
-mysql_host: '{{ gateway_addr }}'
-mysql_primary_port: 3307
+mariadb_user: root
+mariadb_password: msandbox
+mariadb_host: '{{ gateway_addr }}'
+mariadb_primary_port: 3307
 
 db_name: data
 test_db: testdb

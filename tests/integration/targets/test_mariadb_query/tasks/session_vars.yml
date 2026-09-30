@@ -1,22 +1,22 @@
 ---
 - vars:
-    mysql_parameters: &mysql_params
-      login_user: '{{ mysql_user }}'
-      login_password: '{{ mysql_password }}'
-      login_host: '{{ mysql_host }}'
-      login_port: '{{ mysql_primary_port }}'
+    mariadb_parameters: &mariadb_params
+      login_user: '{{ mariadb_user }}'
+      login_password: '{{ mariadb_password }}'
+      login_host: '{{ mariadb_host }}'
+      login_port: '{{ mariadb_primary_port }}'
 
   block:
 
   - name: Select sql_log_bin without session vars
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       query: SELECT @@session.sql_log_bin AS sql_log_bin
     register: result_without_vars
 
   - name: Select sql_log_bin with session vars
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       query: SELECT @@session.sql_log_bin AS sql_log_bin
       session_vars:
         sql_log_bin: 0

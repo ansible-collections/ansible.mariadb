@@ -1,16 +1,16 @@
 ---
 - vars:
-    mysql_parameters: &mysql_params
-      login_user: '{{ mysql_user }}'
-      login_password: '{{ mysql_password }}'
-      login_host: '{{ mysql_host }}'
-      login_port: '{{ mysql_primary_port }}'
+    mariadb_parameters: &mariadb_params
+      login_user: '{{ mariadb_user }}'
+      login_password: '{{ mariadb_password }}'
+      login_host: '{{ mariadb_host }}'
+      login_port: '{{ mariadb_primary_port }}'
 
   block:
 
     - name: Issue-64560 | Set root password
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: root
         host: '%'
         password: '{{ root_password }}'
@@ -24,10 +24,10 @@
 
     - name: Issue-64560 | Set root password again
       mariadb_user:
-        login_user: '{{ mysql_user }}'
+        login_user: '{{ mariadb_user }}'
         login_password: '{{ root_password }}'
-        login_host: '{{ mysql_host }}'
-        login_port: '{{ mysql_primary_port }}'
+        login_host: '{{ mariadb_host }}'
+        login_port: '{{ mariadb_primary_port }}'
         name: root
         host: '%'
         password: '{{ root_password }}'
@@ -38,24 +38,15 @@
       assert:
         that:
           - result is not changed
-      when: db_version is version('9.7', '<') or db_engine == 'mariadb'
-
-    - name: Issue-64560 | Assert always-changed behavior on MySQL >= 9.7 (known limitation)
-      assert:
-        that:
-          - result is changed
-      when:
-        - db_engine == 'mysql'
-        - db_version is version('9.7', '>=')
 
     - name: Issue-64560 | Set root password again
       mariadb_user:
-        login_user: '{{ mysql_user }}'
+        login_user: '{{ mariadb_user }}'
         login_password: '{{ root_password }}'
-        login_host: '{{ mysql_host }}'
-        login_port: '{{ mysql_primary_port }}'
+        login_host: '{{ mariadb_host }}'
+        login_port: '{{ mariadb_primary_port }}'
         name: root
         host: '%'
-        password: '{{ mysql_password }}'
+        password: '{{ mariadb_password }}'
         check_implicit_admin: yes
       register: result

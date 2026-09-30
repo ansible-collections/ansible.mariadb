@@ -16,10 +16,10 @@
 # Initial check - To confirm that database does not exist before executing check mode tasks
 - name: Drop databases before test
   mariadb_db:
-    login_user: '{{ mysql_user }}'
-    login_password: '{{ mysql_password }}'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
+    login_user: '{{ mariadb_user }}'
+    login_password: '{{ mariadb_password }}'
+    login_host: '{{ mariadb_host }}'
+    login_port: '{{ mariadb_primary_port }}'
     name:
       - '{{ db1_name }}'
       - '{{ db2_name }}'
@@ -27,24 +27,24 @@
     state: absent
 
 - name: run command to list databases like specified database name
-  command: "{{ mysql_command }} \"-e show databases like 'database%'\""
-  register: mysql_result
+  command: "{{ mariadb_command }} \"-e show databases like 'database%'\""
+  register: mariadb_result
 
 - name: assert that databases does not exist
   assert:
     that:
-      - db1_name not in mysql_result.stdout
-      - db2_name not in mysql_result.stdout
-      - db3_name not in mysql_result.stdout
+      - db1_name not in mariadb_result.stdout
+      - db2_name not in mariadb_result.stdout
+      - db3_name not in mariadb_result.stdout
 
 # ==========================================================================
 # Create multiple databases that does not exists (check mode)
 - name: Create multiple databases that does not exists (check mode)
   mariadb_db:
-    login_user: '{{ mysql_user }}'
-    login_password: '{{ mysql_password }}'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
+    login_user: '{{ mariadb_user }}'
+    login_password: '{{ mariadb_password }}'
+    login_host: '{{ mariadb_host }}'
+    login_port: '{{ mariadb_primary_port }}'
     name:
       - '{{ db1_name }}'
       - '{{ db2_name }}'
@@ -59,24 +59,24 @@
       - check_mode_result is changed
 
 - name: run command to list databases like specified database name
-  command: "{{ mysql_command }} \"-e show databases like 'database%'\""
-  register: mysql_result
+  command: "{{ mariadb_command }} \"-e show databases like 'database%'\""
+  register: mariadb_result
 
 - name: assert that databases does not exist (since created via check mode)
   assert:
     that:
-      - db1_name not in mysql_result.stdout
-      - db2_name not in mysql_result.stdout
-      - db3_name not in mysql_result.stdout
+      - db1_name not in mariadb_result.stdout
+      - db2_name not in mariadb_result.stdout
+      - db3_name not in mariadb_result.stdout
 
 # ==========================================================================
 # Create multiple databases
 - name: Create multiple databases
   mariadb_db:
-    login_user: '{{ mysql_user }}'
-    login_password: '{{ mysql_password }}'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
+    login_user: '{{ mariadb_user }}'
+    login_password: '{{ mariadb_password }}'
+    login_host: '{{ mariadb_host }}'
+    login_port: '{{ mariadb_primary_port }}'
     name:
       - '{{ db1_name }}'
       - '{{ db2_name }}'
@@ -91,24 +91,24 @@
       - result.db_list == [db1_name, db2_name, db3_name]
 
 - name: run command to list databases like specified database name
-  command: "{{ mysql_command }} \"-e show databases like 'database%'\""
-  register: mysql_result
+  command: "{{ mariadb_command }} \"-e show databases like 'database%'\""
+  register: mariadb_result
 
 - name: assert that databases exist after creation
   assert:
     that:
-      - db1_name in mysql_result.stdout
-      - db2_name in mysql_result.stdout
-      - db3_name in mysql_result.stdout
+      - db1_name in mariadb_result.stdout
+      - db2_name in mariadb_result.stdout
+      - db3_name in mariadb_result.stdout
 
 # =========================================================================
 # Recreate already existing databases (check mode)
 - name: Recreate already existing databases (check mode)
   mariadb_db:
-    login_user: '{{ mysql_user }}'
-    login_password: '{{ mysql_password }}'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
+    login_user: '{{ mariadb_user }}'
+    login_password: '{{ mariadb_password }}'
+    login_host: '{{ mariadb_host }}'
+    login_port: '{{ mariadb_primary_port }}'
     name:
       - '{{ db1_name }}'
       - '{{ db2_name }}'
@@ -123,24 +123,24 @@
       - check_mode_result is not changed
 
 - name: run command to list databases like specified database name
-  command: "{{ mysql_command }} \"-e show databases like 'database%'\""
-  register: mysql_result
+  command: "{{ mariadb_command }} \"-e show databases like 'database%'\""
+  register: mariadb_result
 
 - name: assert that databases exist (since performed recreation of existing databases via check mode)
   assert:
     that:
-      - db1_name in mysql_result.stdout
-      - db2_name in mysql_result.stdout
-      - db3_name in mysql_result.stdout
+      - db1_name in mariadb_result.stdout
+      - db2_name in mariadb_result.stdout
+      - db3_name in mariadb_result.stdout
 
 # ==========================================================================
 # Recreate same databases
 - name: Recreate multiple databases
   mariadb_db:
-    login_user: '{{ mysql_user }}'
-    login_password: '{{ mysql_password }}'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
+    login_user: '{{ mariadb_user }}'
+    login_password: '{{ mariadb_password }}'
+    login_host: '{{ mariadb_host }}'
+    login_port: '{{ mariadb_primary_port }}'
     name:
       - '{{ db1_name }}'
       - '{{ db2_name }}'
@@ -154,24 +154,24 @@
       - result is not changed
 
 - name: run command to list databases like specified database name
-  command: "{{ mysql_command }} \"-e show databases like 'database%'\""
-  register: mysql_result
+  command: "{{ mariadb_command }} \"-e show databases like 'database%'\""
+  register: mariadb_result
 
 - name: assert that databases does priorly exist
   assert:
     that:
-      - db1_name in mysql_result.stdout
-      - db2_name in mysql_result.stdout
-      - db3_name in mysql_result.stdout
+      - db1_name in mariadb_result.stdout
+      - db2_name in mariadb_result.stdout
+      - db3_name in mariadb_result.stdout
 
 # ==========================================================================
 # Delete one of the databases (db2 here)
 - name: Delete db2 database
   mariadb_db:
-    login_user: '{{ mysql_user }}'
-    login_password: '{{ mysql_password }}'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
+    login_user: '{{ mariadb_user }}'
+    login_password: '{{ mariadb_password }}'
+    login_host: '{{ mariadb_host }}'
+    login_port: '{{ mariadb_primary_port }}'
     name:
       - '{{ db2_name }}'
     state: absent
@@ -183,24 +183,24 @@
       - result is changed
 
 - name: run command to list databases like specified database name
-  command: "{{ mysql_command }} \"-e show databases like 'database%'\""
-  register: mysql_result
+  command: "{{ mariadb_command }} \"-e show databases like 'database%'\""
+  register: mariadb_result
 
 - name: assert that only db2 database does not exist
   assert:
     that:
-      - db1_name in mysql_result.stdout
-      - db2_name not in mysql_result.stdout
-      - db3_name in mysql_result.stdout
+      - db1_name in mariadb_result.stdout
+      - db2_name not in mariadb_result.stdout
+      - db3_name in mariadb_result.stdout
 
 # =========================================================================
 # Recreate multiple databases in which few databases does not exists (check mode)
 - name: Recreate multiple databases in which few databases does not exists (check mode)
   mariadb_db:
-    login_user: '{{ mysql_user }}'
-    login_password: '{{ mysql_password }}'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
+    login_user: '{{ mariadb_user }}'
+    login_password: '{{ mariadb_password }}'
+    login_host: '{{ mariadb_host }}'
+    login_port: '{{ mariadb_primary_port }}'
     name:
       - '{{ db1_name }}'
       - '{{ db2_name }}'
@@ -215,24 +215,24 @@
       - check_mode_result is changed
 
 - name: run command to list databases like specified database name
-  command: "{{ mysql_command }} \"-e show databases like 'database%'\""
-  register: mysql_result
+  command: "{{ mariadb_command }} \"-e show databases like 'database%'\""
+  register: mariadb_result
 
 - name: assert that recreated non existing databases does not exist (since created via check mode)
   assert:
     that:
-      - db1_name in mysql_result.stdout
-      - db2_name not in mysql_result.stdout
-      - db3_name in mysql_result.stdout
+      - db1_name in mariadb_result.stdout
+      - db2_name not in mariadb_result.stdout
+      - db3_name in mariadb_result.stdout
 
 # ==========================================================================
 # Create multiple databases
 - name: Create multiple databases
   mariadb_db:
-    login_user: '{{ mysql_user }}'
-    login_password: '{{ mysql_password }}'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
+    login_user: '{{ mariadb_user }}'
+    login_password: '{{ mariadb_password }}'
+    login_host: '{{ mariadb_host }}'
+    login_port: '{{ mariadb_primary_port }}'
     name:
       - '{{ db1_name }}'
       - '{{ db2_name }}'
@@ -246,15 +246,15 @@
       - result is changed
 
 - name: run command to list databases like specified database name
-  command: "{{ mysql_command }} \"-e show databases like 'database%'\""
-  register: mysql_result
+  command: "{{ mariadb_command }} \"-e show databases like 'database%'\""
+  register: mariadb_result
 
 - name: assert that databases exist
   assert:
     that:
-      - db1_name in mysql_result.stdout
-      - db2_name in mysql_result.stdout
-      - db3_name in mysql_result.stdout
+      - db1_name in mariadb_result.stdout
+      - db2_name in mariadb_result.stdout
+      - db3_name in mariadb_result.stdout
 
 # ============================== DUMP TEST =================================
 #
@@ -269,10 +269,10 @@
 # Dump existing databases (check mode)
 - name: Dump existing databases (check mode)
   mariadb_db:
-    login_user: '{{ mysql_user }}'
-    login_password: '{{ mysql_password }}'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
+    login_user: '{{ mariadb_user }}'
+    login_password: '{{ mariadb_password }}'
+    login_host: '{{ mariadb_host }}'
+    login_port: '{{ mariadb_primary_port }}'
     name:
       - '{{ db1_name }}'
       - '{{ db3_name }}'
@@ -287,15 +287,15 @@
       - check_mode_dump_result is changed
 
 - name: run command to list databases like specified database name
-  command: "{{ mysql_command }} \"-e show databases like 'database%'\""
-  register: mysql_result
+  command: "{{ mariadb_command }} \"-e show databases like 'database%'\""
+  register: mariadb_result
 
 - name: assert that databases exist (check mode)
   assert:
     that:
-      - db1_name in mysql_result.stdout
-      - db2_name in mysql_result.stdout
-      - db3_name in mysql_result.stdout
+      - db1_name in mariadb_result.stdout
+      - db2_name in mariadb_result.stdout
+      - db3_name in mariadb_result.stdout
 
 - name: state dump - file name should not exist (since dumped via check mode)
   file:
@@ -306,10 +306,10 @@
 # Dump existing and non-existing databases (check mode)
 - name: Dump existing and non-existing databases (check mode)
   mariadb_db:
-    login_user: '{{ mysql_user }}'
-    login_password: '{{ mysql_password }}'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
+    login_user: '{{ mariadb_user }}'
+    login_password: '{{ mariadb_password }}'
+    login_host: '{{ mariadb_host }}'
+    login_port: '{{ mariadb_primary_port }}'
     name:
       - "{{ db1_name }}"
       - "{{ db4_name }}"
@@ -326,16 +326,16 @@
       - "'Cannot dump database' in check_mode_dump_result['msg']"
 
 - name: run command to list databases like specified database name
-  command: "{{ mysql_command }} \"-e show databases like 'database%'\""
-  register: mysql_result
+  command: "{{ mariadb_command }} \"-e show databases like 'database%'\""
+  register: mariadb_result
 
 - name: assert that databases exist (since check mode)
   assert:
     that:
-      - db1_name in mysql_result.stdout
-      - db2_name in mysql_result.stdout
-      - db3_name in mysql_result.stdout
-      - db4_name not in mysql_result.stdout
+      - db1_name in mariadb_result.stdout
+      - db2_name in mariadb_result.stdout
+      - db3_name in mariadb_result.stdout
+      - db4_name not in mariadb_result.stdout
 
 - name: state dump - file name should not exist (since prior dump operation performed via check mode)
   file:
@@ -346,10 +346,10 @@
 # Dump non-existing databases (check mode)
 - name: Dump non-existing databases (check mode)
   mariadb_db:
-    login_user: '{{ mysql_user }}'
-    login_password: '{{ mysql_password }}'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
+    login_user: '{{ mariadb_user }}'
+    login_password: '{{ mariadb_password }}'
+    login_host: '{{ mariadb_host }}'
+    login_port: '{{ mariadb_primary_port }}'
     name:
       - "{{ db4_name }}"
       - "{{ db5_name }}"
@@ -365,17 +365,17 @@
       - "'Cannot dump database' in check_mode_dump_result['msg']"
 
 - name: run command to list databases like specified database name
-  command: "{{ mysql_command }} \"-e show databases like 'database%'\""
-  register: mysql_result
+  command: "{{ mariadb_command }} \"-e show databases like 'database%'\""
+  register: mariadb_result
 
 - name: assert that databases exist (since delete via check mode)
   assert:
     that:
-      - db1_name in mysql_result.stdout
-      - db2_name in mysql_result.stdout
-      - db3_name in mysql_result.stdout
-      - db4_name not in mysql_result.stdout
-      - db5_name not in mysql_result.stdout
+      - db1_name in mariadb_result.stdout
+      - db2_name in mariadb_result.stdout
+      - db3_name in mariadb_result.stdout
+      - db4_name not in mariadb_result.stdout
+      - db5_name not in mariadb_result.stdout
 
 - name: state dump - file name should not exist (since prior dump operation performed via check mode)
   file:
@@ -387,10 +387,10 @@
 
 - name: Dump existing databases
   mariadb_db:
-    login_user: '{{ mysql_user }}'
-    login_password: '{{ mysql_password }}'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
+    login_user: '{{ mariadb_user }}'
+    login_password: '{{ mariadb_password }}'
+    login_host: '{{ mariadb_host }}'
+    login_port: '{{ mariadb_primary_port }}'
     name:
       - '{{ db1_name }}'
       - '{{ db2_name }}'
@@ -406,15 +406,15 @@
       - dump_result.db_list == [db1_name, db2_name, db3_name]
 
 - name: Run command to list databases like specified database name
-  command: "{{ mysql_command }} \"-e show databases like 'database%'\""
-  register: mysql_result
+  command: "{{ mariadb_command }} \"-e show databases like 'database%'\""
+  register: mariadb_result
 
 - name: assert that databases exist
   assert:
     that:
-      - db1_name in mysql_result.stdout
-      - db2_name in mysql_result.stdout
-      - db3_name in mysql_result.stdout
+      - db1_name in mariadb_result.stdout
+      - db2_name in mariadb_result.stdout
+      - db3_name in mariadb_result.stdout
 
 - name: State dump - file name should exist (dump1_file)
   file:
@@ -440,10 +440,10 @@
 
 - name: Dump existing databases
   mariadb_db:
-    login_user: '{{ mysql_user }}'
-    login_password: '{{ mysql_password }}'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
+    login_user: '{{ mariadb_user }}'
+    login_password: '{{ mariadb_password }}'
+    login_host: '{{ mariadb_host }}'
+    login_port: '{{ mariadb_primary_port }}'
     name: all
     state: dump
     target: '{{ dump2_file }}'
@@ -455,17 +455,17 @@
       - dump_result is changed
 
 - name: run command to list databases like specified database name
-  command: "{{ mysql_command }} \"-e show databases like 'database%'\""
-  register: mysql_result
+  command: "{{ mariadb_command }} \"-e show databases like 'database%'\""
+  register: mariadb_result
 
 - name: assert that databases exist
   assert:
     that:
-      - db1_name in mysql_result.stdout
-      - db2_name in mysql_result.stdout
-      - db3_name in mysql_result.stdout
-      - db4_name not in mysql_result.stdout
-      - db5_name not in mysql_result.stdout
+      - db1_name in mariadb_result.stdout
+      - db2_name in mariadb_result.stdout
+      - db3_name in mariadb_result.stdout
+      - db4_name not in mariadb_result.stdout
+      - db5_name not in mariadb_result.stdout
 
 - name: state dump - file name should exist (dump2_file)
   file:
@@ -478,10 +478,10 @@
 # Delete multiple databases which already exists (check mode)
 - name: Delete multiple databases which already exists (check mode)
   mariadb_db:
-    login_user: '{{ mysql_user }}'
-    login_password: '{{ mysql_password }}'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
+    login_user: '{{ mariadb_user }}'
+    login_password: '{{ mariadb_password }}'
+    login_host: '{{ mariadb_host }}'
+    login_port: '{{ mariadb_primary_port }}'
     name:
       - '{{ db2_name }}'
       - '{{ db3_name }}'
@@ -495,23 +495,23 @@
       - check_mode_result is changed
 
 - name: run command to test state=absent for a database name
-  command: "{{ mysql_command }} \"-e show databases like 'database%'\""
-  register: mysql_result
+  command: "{{ mariadb_command }} \"-e show databases like 'database%'\""
+  register: mariadb_result
 
 - name: assert that databases exist even after deleting (since deleted via check mode)
   assert:
     that:
-      - db2_name in mysql_result.stdout
-      - db3_name in mysql_result.stdout
+      - db2_name in mariadb_result.stdout
+      - db3_name in mariadb_result.stdout
 
 # ==========================================================================
 # Delete multiple databases
 - name: Delete multiple databases
   mariadb_db:
-    login_user: '{{ mysql_user }}'
-    login_password: '{{ mysql_password }}'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
+    login_user: '{{ mariadb_user }}'
+    login_password: '{{ mariadb_password }}'
+    login_host: '{{ mariadb_host }}'
+    login_port: '{{ mariadb_primary_port }}'
     name:
       - '{{ db2_name }}'
       - '{{ db3_name }}'
@@ -525,23 +525,23 @@
       - result.db_list == [db2_name, db3_name]
 
 - name: run command to list databases like specified database name
-  command: "{{ mysql_command }} \"-e show databases like 'database%'\""
-  register: mysql_result
+  command: "{{ mariadb_command }} \"-e show databases like 'database%'\""
+  register: mariadb_result
 
 - name: assert that databases does not exist
   assert:
     that:
-      - db2_name not in mysql_result.stdout
-      - db3_name not in mysql_result.stdout
+      - db2_name not in mariadb_result.stdout
+      - db3_name not in mariadb_result.stdout
 
 # ==========================================================================
 # Delete non existing databases (check mode)
 - name: Delete non existing databases (check mode)
   mariadb_db:
-    login_user: '{{ mysql_user }}'
-    login_password: '{{ mysql_password }}'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
+    login_user: '{{ mariadb_user }}'
+    login_password: '{{ mariadb_password }}'
+    login_host: '{{ mariadb_host }}'
+    login_port: '{{ mariadb_primary_port }}'
     name:
       - '{{ db2_name }}'
       - '{{ db4_name }}'
@@ -555,23 +555,23 @@
       - check_mode_result is not changed
 
 - name: run command to test state=absent for a database name
-  command: "{{ mysql_command }} \"-e show databases like 'database%'\""
-  register: mysql_result
+  command: "{{ mariadb_command }} \"-e show databases like 'database%'\""
+  register: mariadb_result
 
 - name: assert that databases does not exist since were deleted priorly (check mode)
   assert:
     that:
-      - db2_name not in mysql_result.stdout
-      - db4_name not in mysql_result.stdout
+      - db2_name not in mariadb_result.stdout
+      - db4_name not in mariadb_result.stdout
 
 # ==========================================================================
 # Delete already deleted databases
 - name: Delete already deleted databases
   mariadb_db:
-    login_user: '{{ mysql_user }}'
-    login_password: '{{ mysql_password }}'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
+    login_user: '{{ mariadb_user }}'
+    login_password: '{{ mariadb_password }}'
+    login_host: '{{ mariadb_host }}'
+    login_port: '{{ mariadb_primary_port }}'
     name:
       - '{{ db2_name }}'
       - '{{ db4_name }}'
@@ -584,23 +584,23 @@
       - result is not changed
 
 - name: run command to list databases like specified database name
-  command: "{{ mysql_command }} \"-e show databases like 'database%'\""
-  register: mysql_result
+  command: "{{ mariadb_command }} \"-e show databases like 'database%'\""
+  register: mariadb_result
 
 - name: assert that databases does not exists
   assert:
     that:
-      - db2_name not in mysql_result.stdout
-      - db4_name not in mysql_result.stdout
+      - db2_name not in mariadb_result.stdout
+      - db4_name not in mariadb_result.stdout
 
 # ==========================================================================
 # Delete all databases
 - name: Delete all databases
   mariadb_db:
-    login_user: '{{ mysql_user }}'
-    login_password: '{{ mysql_password }}'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
+    login_user: '{{ mariadb_user }}'
+    login_password: '{{ mariadb_password }}'
+    login_host: '{{ mariadb_host }}'
+    login_port: '{{ mariadb_primary_port }}'
     name:
       - '{{ db1_name }}'
       - '{{ db2_name }}'
@@ -616,17 +616,17 @@
       - result is changed
 
 - name: run command to list databases like specified database name
-  command: "{{ mysql_command }} \"-e show databases like 'database%'\""
-  register: mysql_result
+  command: "{{ mariadb_command }} \"-e show databases like 'database%'\""
+  register: mariadb_result
 
 - name: assert that specific databases does not exist
   assert:
     that:
-      - db1_name not in mysql_result.stdout
-      - db2_name not in mysql_result.stdout
-      - db3_name not in mysql_result.stdout
-      - db4_name not in mysql_result.stdout
-      - db5_name not in mysql_result.stdout
+      - db1_name not in mariadb_result.stdout
+      - db2_name not in mariadb_result.stdout
+      - db3_name not in mariadb_result.stdout
+      - db4_name not in mariadb_result.stdout
+      - db5_name not in mariadb_result.stdout
 
 - name: state dump - dump 1 file name should be removed
   file:

@@ -1,19 +1,19 @@
 ---
-# test code for privileges for mysql_user module - issue 465
+# test code for privileges for mariadb_user module - issue 465
 
 - vars:
-    mysql_parameters: &mysql_params
-      login_user: '{{ mysql_user }}'
-      login_password: '{{ mysql_password }}'
-      login_host: '{{ mysql_host }}'
-      login_port: '{{ mysql_primary_port }}'
+    mariadb_parameters: &mariadb_params
+      login_user: '{{ mariadb_user }}'
+      login_password: '{{ mariadb_password }}'
+      login_host: '{{ mariadb_host }}'
+      login_port: '{{ mariadb_primary_port }}'
 
   block:
 
     # ============================================================
     - name: Privs issue 465 | Create a user with parameters that will always cause an exception
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: user_issue_465
         password: a_test_password_465
         priv: '*.{{ db_name }}:SELECT'

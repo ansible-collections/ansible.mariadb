@@ -4,7 +4,7 @@
 # and should not be used as examples of how to write Ansible roles #
 ####################################################################
 
-# Test code for mysql_info module
+# Test code for mariadb_info module
 # Copyright: (c) 2019, Andrew Klychkov (@Andersson007) <andrew.a.klychkov@gmail.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
@@ -13,23 +13,23 @@
 #
 
 - vars:
-    mysql_parameters: &mysql_params
-      login_user: '{{ mysql_user }}'
-      login_password: '{{ mysql_password }}'
-      login_host: '{{ mysql_host }}'
-      login_port: '{{ mysql_primary_port }}'
+    mariadb_parameters: &mariadb_params
+      login_user: '{{ mariadb_user }}'
+      login_password: '{{ mariadb_password }}'
+      login_host: '{{ mariadb_host }}'
+      login_port: '{{ mariadb_primary_port }}'
 
   block:
 
-    # Create default MySQL config file with credentials
-    - name: mysql_info - create default config file
+    # Create default MariaDB config file with credentials
+    - name: mariadb_info - create default config file
       template:
         src: my.cnf.j2
         dest: "{{ playbook_dir }}/root/.my.cnf"
         mode: '0400'
 
-    # Create non-default MySQL config file with credentials
-    - name: mysql_info - create non-default config file
+    # Create non-default MariaDB config file with credentials
+    - name: mariadb_info - create non-default config file
       template:
         src: my.cnf.j2
         dest: "{{ playbook_dir }}/root/non-default_my.cnf"
@@ -39,11 +39,11 @@
     # Do tests
 
     # Access by default cred file
-    - name: mysql_info - collect default cred file
+    - name: mariadb_info - collect default cred file
       mariadb_info:
-        login_user: '{{ mysql_user }}'
-        login_host: '{{ mysql_host }}'
-        login_port: '{{ mysql_primary_port }}'
+        login_user: '{{ mariadb_user }}'
+        login_host: '{{ mariadb_host }}'
+        login_port: '{{ mariadb_primary_port }}'
         config_file: "{{ playbook_dir }}/root/.my.cnf"
       register: result
 
@@ -56,18 +56,18 @@
           - result.databases != {}
           - result.engines != {}
           - result.users != {}
-          - result.server_engine == 'MariaDB' or result.server_engine == 'MySQL'
+          - result.server_engine == 'MariaDB'
 
-    - name: mysql_info - Test connector informations display
+    - name: mariadb_info - Test connector informations display
       ansible.builtin.import_tasks:
         file: connector_info.yml
 
     # Access by non-default cred file
-    - name: mysql_info - check non-default cred file
+    - name: mariadb_info - check non-default cred file
       mariadb_info:
-        login_user: '{{ mysql_user }}'
-        login_host: '{{ mysql_host }}'
-        login_port: '{{ mysql_primary_port }}'
+        login_user: '{{ mariadb_user }}'
+        login_host: '{{ mariadb_host }}'
+        login_port: '{{ mariadb_primary_port }}'
         config_file: "{{ playbook_dir }}/root/non-default_my.cnf"
       register: result
 
@@ -77,7 +77,7 @@
         - result.version != {}
 
     # Remove cred files
-    - name: mysql_info - remove cred files
+    - name: mariadb_info - remove cred files
       file:
         path: '{{ item }}'
         state: absent
@@ -86,9 +86,9 @@
         - "{{ playbook_dir }}/non-default_my.cnf"
 
     # Access with password
-    - name: mysql_info - check access with password
+    - name: mariadb_info - check access with password
       mariadb_info:
-        <<: *mysql_params
+        <<: *mariadb_params
       register: result
 
     - assert:
@@ -99,7 +99,7 @@
     # Test excluding
     - name: Collect all info except settings and users
       mariadb_info:
-        <<: *mysql_params
+        <<: *mariadb_params
         filter: '!settings,!users'
       register: result
 
@@ -116,7 +116,7 @@
     # Test including
     - name: Collect info only about version and databases
       mariadb_info:
-        <<: *mysql_params
+        <<: *mariadb_params
         filter:
         - version
         - databases
@@ -141,5 +141,3 @@
     - name: Import tasks file to tests users_info filter
       ansible.builtin.import_tasks:
         file: filter_users_info.yml
-
-    - include_tasks: issue-682.yml

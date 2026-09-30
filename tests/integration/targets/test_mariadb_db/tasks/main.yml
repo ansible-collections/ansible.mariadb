@@ -4,7 +4,7 @@
 # and should not be used as examples of how to write Ansible roles #
 ####################################################################
 
-# test code for the mysql_db module
+# test code for the mariadb_db module
 # (c) 2014,  Wayne Rosario <wrosario@ansible.com>
 
 # This file is part of Ansible
@@ -51,7 +51,7 @@
     file: "latin1.sql"
     format_msg_type: "ASCII"
 
-- name: Check MySQL config file
+- name: Check MariaDB config file
   include_tasks: config_overrides_defaults.yml
   when: ansible_python.version_info[0] >= 3
 

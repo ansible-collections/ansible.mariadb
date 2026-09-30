@@ -1,6 +1,6 @@
 ---
-# defaults file for test_mysql_slow_log
-mysql_user: root
-mysql_password: msandbox
-mysql_host: '{{ gateway_addr }}'
-mysql_primary_port: 3307
+# defaults file for test_mariadb_slow_log
+mariadb_user: root
+mariadb_password: msandbox
+mariadb_host: '{{ gateway_addr }}'
+mariadb_primary_port: 3307

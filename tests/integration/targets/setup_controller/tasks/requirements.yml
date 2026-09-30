@@ -2,48 +2,6 @@
 
 # We use the ubuntu2204 image provided by ansible-test.
 
-# The GPG key is imported in the files folder from:
-#   https://dev.mysql.com/doc/refman/8.4/en/checking-gpg-signature.html
-# Downloading the key on each iteration of the tests is too slow.
-- name: Add MySQL GPG key to trusted keyring
-  ansible.builtin.copy:
-    src: files/mysql_pubkey.asc  # Key B7B3B788A8D3785C Expire 2027-10-23
-    dest: /etc/apt/trusted.gpg.d/mysql.asc
-    owner: root
-    group: root
-    mode: '0644'
-  when:
-    - db_engine == 'mysql'
-    - db_version is version('8.4', '>=')
-
-# Necessary for deb822 to run; when earliest Ansible ver tested against is 2.20, this task can be removed
-# https://docs.ansible.com/projects/ansible/latest/collections/ansible/builtin/deb822_repository_module.html#parameter-install_python_debian
-- name: Install python3-debian for deb822_repository module
-  ansible.builtin.apt:
-    name: python3-debian
-    state: present
-  when:
-    - db_engine == 'mysql'
-    - db_version is version('8.4', '>=')
-
-- name: Add MySQL repository
-  ansible.builtin.deb822_repository:
-    name: mysql
-    types: deb
-    uris: http://repo.mysql.com/apt/ubuntu
-    suites: >-
-      {{ ansible_distribution_release
-         if ansible_distribution_version is version('26.04', '<')
-         else 'noble' }}
-    components:
-      - "mysql-{{ db_version.split('.')[:2] | join('.') }}-lts"
-      - mysql-tools
-    signed_by: /etc/apt/trusted.gpg.d/mysql.asc
-    state: present
-  when:
-    - db_engine == 'mysql'
-    - db_version is version('8.4', '>=')
-
 - name: "{{ role_name }} | Requirements | Install Linux packages"
   ansible.builtin.apt:
     name:

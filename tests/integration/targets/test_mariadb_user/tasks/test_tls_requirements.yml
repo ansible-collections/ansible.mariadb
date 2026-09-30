@@ -1,16 +1,16 @@
 ---
 - vars:
-    mysql_parameters: &mysql_params
-      login_user: '{{ mysql_user }}'
-      login_password: '{{ mysql_password }}'
-      login_host: '{{ mysql_host }}'
-      login_port: '{{ mysql_primary_port }}'
+    mariadb_parameters: &mariadb_params
+      login_user: '{{ mariadb_user }}'
+      login_password: '{{ mariadb_password }}'
+      login_host: '{{ mariadb_host }}'
+      login_port: '{{ mariadb_primary_port }}'
 
   block:
 
     - name: Tls reqs | Create user with TLS requirements in check mode (expect changed=true)
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: "{{ user_name_1 }}"
         password: "{{ user_password_1 }}"
         tls_requires:
@@ -29,7 +29,7 @@
 
     - name: Tls reqs | Create user with TLS requirements state=present (expect changed=true)
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: '{{ item[0] }}'
         password: '{{ user_password_1 }}'
         tls_requires: '{{ item[1] }}'
@@ -44,31 +44,27 @@
 
     - block:
       - name: Tls reqs | Retrieve TLS requirements for users in old database version
-        command: "{{ mysql_command }} -L -N -s -e \"SHOW GRANTS for '{{ item }}'@'localhost'\""
+        command: "{{ mariadb_command }} -L -N -s -e \"SHOW GRANTS for '{{ item }}'@'localhost'\""
         register: old_result
         with_items: ['{{ user_name_1 }}', '{{ user_name_2 }}', '{{ user_name_3 }}']
 
       - name: Tls reqs | Set old database separator
         set_fact:
           separator: '\n'
-      # Semantically: when mysql version <= 5.6 or MariaDB version <= 10.1
       when:
-        - (db_engine == 'mysql' and db_version is version('5.6', '<='))
-          or (db_engine == 'mariadb' and db_version is version('10.1', '<='))
+        - db_version is version('10.1', '<=')
 
     - block:
       - name: Tls reqs | Retrieve TLS requirements for users in new database version
-        command: "{{ mysql_command }} -L -N -s -e \"SHOW CREATE USER '{{ item }}'@'localhost'\""
+        command: "{{ mariadb_command }} -L -N -s -e \"SHOW CREATE USER '{{ item }}'@'localhost'\""
         register: new_result
         with_items: ['{{ user_name_1 }}', '{{ user_name_2 }}', '{{ user_name_3 }}']
 
       - name: Tls reqs | Set new database separator
         set_fact:
           separator: 'PASSWORD'
-      # Semantically: when mysql version >= 5.7 or MariaDB version >= 10.2
       when:
-        - (db_engine == 'mysql' and db_version is version('5.7', '>='))
-          or (db_engine == 'mariadb' and db_version is version('10.2', '>='))
+        - db_version is version('10.2', '>=')
 
     - block:
       - name: Tls reqs | Assert user1 TLS requirements
@@ -98,7 +94,7 @@
 
     - name: Tls reqs | Modify user with TLS requirements state=present in check mode (expect changed=true)
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: '{{ user_name_1 }}'
         password: '{{ user_password_1 }}'
         tls_requires:
@@ -112,18 +108,16 @@
           - result is changed
 
     - name: Tls reqs | Retrieve TLS requirements for users in old database version
-      command: "{{ mysql_command }} -L -N -s -e \"SHOW GRANTS for '{{ user_name_1 }}'@'localhost'\""
+      command: "{{ mariadb_command }} -L -N -s -e \"SHOW GRANTS for '{{ user_name_1 }}'@'localhost'\""
       register: old_result
       when:
-        - (db_engine == 'mysql' and db_version is version('5.6', '<='))
-          or (db_engine == 'mariadb' and db_version is version('10.2', '<'))
+        - db_version is version('10.2', '<')
 
     - name: Tls reqs | Retrieve TLS requirements for users in new database version
-      command: "{{ mysql_command }} -L -N -s -e \"SHOW CREATE USER '{{ user_name_1 }}'@'localhost'\""
+      command: "{{ mariadb_command }} -L -N -s -e \"SHOW CREATE USER '{{ user_name_1 }}'@'localhost'\""
       register: new_result
       when:
-        - (db_engine == 'mysql' and db_version is version('5.7', '>='))
-          or (db_engine == 'mariadb' and db_version is version('10.2', '>='))
+        - db_version is version('10.2', '>=')
 
     - name: Tls reqs | Assert user1 TLS requirements was not changed
       assert:
@@ -133,25 +127,23 @@
 
     - name: Tls reqs | Modify user with TLS requirements state=present (expect changed=true)
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: '{{ user_name_1 }}'
         password: '{{ user_password_1 }}'
         tls_requires:
           X509:
 
     - name: Tls reqs | Retrieve TLS requirements for users in old database version
-      command: "{{ mysql_command }} -L -N -s -e \"SHOW GRANTS for '{{ user_name_1 }}'@'localhost'\""
+      command: "{{ mariadb_command }} -L -N -s -e \"SHOW GRANTS for '{{ user_name_1 }}'@'localhost'\""
       register: old_result
       when:
-        - (db_engine == 'mysql' and db_version is version('5.6', '<='))
-          or (db_engine == 'mariadb' and db_version is version('10.2', '<'))
+        - db_version is version('10.2', '<')
 
     - name: Tls reqs | Retrieve TLS requirements for users in new database version
-      command: "{{ mysql_command }} -L -N -s -e \"SHOW CREATE USER '{{ user_name_1 }}'@'localhost'\""
+      command: "{{ mariadb_command }} -L -N -s -e \"SHOW CREATE USER '{{ user_name_1 }}'@'localhost'\""
       register: new_result
       when:
-        - (db_engine == 'mysql' and db_version is version('5.7', '>='))
-          or (db_engine == 'mariadb' and db_version is version('10.2', '>='))
+        - db_version is version('10.2', '>=')
 
     - name: Tls reqs | Assert user1 TLS requirements
       assert:
@@ -161,13 +153,13 @@
 
     - name: Tls reqs | Remove TLS requirements from user (expect changed=true)
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: '{{ user_name_1 }}'
         password: '{{ user_password_1 }}'
         tls_requires:
 
     - name: Tls reqs | Retrieve TLS requirements for users
-      command: "{{ mysql_command }} -L -N -s -e \"SHOW CREATE USER '{{ user_name_1 }}'@'localhost'\""
+      command: "{{ mariadb_command }} -L -N -s -e \"SHOW CREATE USER '{{ user_name_1 }}'@'localhost'\""
       register: result
 
     - name: Tls reqs | Assert user1 TLS requirements

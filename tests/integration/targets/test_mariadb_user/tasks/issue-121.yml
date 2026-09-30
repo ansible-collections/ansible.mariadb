@@ -1,23 +1,23 @@
 ---
 
 - vars:
-    mysql_parameters: &mysql_params
-      login_user: '{{ mysql_user }}'
-      login_password: '{{ mysql_password }}'
-      login_host: '{{ mysql_host }}'
-      login_port: '{{ mysql_primary_port }}'
+    mariadb_parameters: &mariadb_params
+      login_user: '{{ mariadb_user }}'
+      login_password: '{{ mariadb_password }}'
+      login_host: '{{ mariadb_host }}'
+      login_port: '{{ mariadb_primary_port }}'
 
   block:
 
     - name: Issue-121 | Setup | Get server certificate
       copy:
-        content: "{{ lookup('pipe', \"openssl s_client -starttls mysql -connect {{ mysql_host }}:3307 -showcerts 2>/dev/null </dev/null | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p'\") }}"
+        content: "{{ lookup('pipe', \"openssl s_client -starttls mysql -connect {{ mariadb_host }}:3307 -showcerts 2>/dev/null </dev/null | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p'\") }}"
         dest: /tmp/cert.pem
       delegate_to: localhost
 
     - name: Issue-121 | Drop mysql user if exists
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: '{{ item }}'
         host_all: true
         state: absent
@@ -28,7 +28,7 @@
 
     - name: Issue-121 | Create user with REQUIRESSL privilege (expect failure)
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: "{{ user_name_1 }}"
         password: "{{ user_password_1 }}"
         priv: '*.*:SELECT,CREATE USER,REQUIRESSL,GRANT'
@@ -45,7 +45,7 @@
         Issue-121 | Create user with both REQUIRESSL privilege and an incompatible
         tls_requires option
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: "{{ user_name_1 }}"
         host: '{{ gateway_addr }}'
         password: "{{ user_password_1 }}"
@@ -65,7 +65,7 @@
 
     - name: Issue-121 | Teardown | Drop mysql user
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: '{{ item }}'
         host_all: true
         state: absent

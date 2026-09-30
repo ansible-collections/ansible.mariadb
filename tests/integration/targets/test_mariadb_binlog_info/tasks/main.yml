@@ -1,20 +1,20 @@
 ---
 
-# Test code for mysql_binlog_info module #
+# Test code for mariadb_binlog_info module #
 
-- name: MySQL binlog info | Run integration checks
+- name: MariaDB binlog info | Run integration checks
   vars:
-    mysql_parameters: &mysql_params
-      login_user: "{{ mysql_user }}"
-      login_password: "{{ mysql_password }}"
-      login_host: "{{ mysql_host }}"
-      login_port: "{{ mysql_primary_port }}"
+    mariadb_parameters: &mariadb_params
+      login_user: "{{ mariadb_user }}"
+      login_password: "{{ mariadb_password }}"
+      login_host: "{{ mariadb_host }}"
+      login_port: "{{ mariadb_primary_port }}"
 
   block:
     - name: Collect binlog info in check mode
       check_mode: true
       ansible.mariadb.mariadb_binlog_info:
-        <<: *mysql_params
+        <<: *mariadb_params
       register: check_result
 
     - name: Assert check mode result
@@ -30,7 +30,7 @@
 
     - name: Collect binlog info
       ansible.mariadb.mariadb_binlog_info:
-        <<: *mysql_params
+        <<: *mariadb_params
       register: result
 
     - name: Assert normal result
@@ -44,13 +44,13 @@
           - result.totals.size | int > 0
           - result.settings.binlog_format is defined
 
-    - name: Get primary status through mysql_replication for comparison
+    - name: Get primary status through mariadb_replication for comparison
       ansible.mariadb.mariadb_replication:
-        <<: *mysql_params
+        <<: *mariadb_params
         mode: getprimary
       register: primary_status
 
-    - name: Assert current status matches mysql_replication output
+    - name: Assert current status matches mariadb_replication output
       ansible.builtin.assert:
         that:
           - result.current.file == primary_status.File
@@ -58,20 +58,18 @@
 
     - name: Query MariaDB GTID binlog position directly
       ansible.mariadb.mariadb_query:
-        <<: *mysql_params
+        <<: *mariadb_params
         query: "SELECT @@global.gtid_binlog_pos AS gtid_binlog_pos"
       register: mariadb_gtid
-      when: db_engine == 'mariadb'
 
     - name: Assert current GTID matches MariaDB global GTID binlog position
       ansible.builtin.assert:
         that:
           - result.current.executed_gtid_set == mariadb_gtid.query_result[0][0].gtid_binlog_pos
-      when: db_engine == 'mariadb'
 
     - name: Query binary logs directly
       ansible.mariadb.mariadb_query:
-        <<: *mysql_params
+        <<: *mariadb_params
         query: "SHOW BINARY LOGS"
       register: log_query
 
@@ -82,7 +80,7 @@
 
     - name: Collect only logs and totals
       ansible.mariadb.mariadb_binlog_info:
-        <<: *mysql_params
+        <<: *mariadb_params
         filter:
           - logs
           - totals

@@ -1,7 +1,7 @@
 ---
 
 - vars:
-    mysql_parameters: &mysql_params
+    mariadb_parameters: &mariadb_params
       login_user: root
       login_password: msandbox
       login_host: "{{ gateway_addr }}"
@@ -9,14 +9,14 @@
 
   block:
 
-    - name: Query Primary container over TCP for MySQL/MariaDB version
+    - name: Query Primary container over TCP for MariaDB version
       mariadb_info:
-        <<: *mysql_params
+        <<: *mariadb_params
         filter:
           - version
       register: primary_info
 
-    - name: Assert that test container runs the expected MySQL/MariaDB version
+    - name: Assert that test container runs the expected MariaDB version
       assert:
         that:
           - registred_db_version == db_version
@@ -24,14 +24,12 @@
         registred_db_version:
           "{{ primary_info.version.major }}.{{ primary_info.version.minor }}\
           .{{ primary_info.version.release }}"
-
-    - name: Assert that mysql_info module used the expected version of pymysql
+  
+    - name: Assert that mariadb_info module used the expected version of pymysql
       assert:
         that:
           - primary_info.connector_name == connector_name
           - primary_info.connector_version == connector_version
-      when:
-        - connector_name == 'pymysql'
 
     - name: Get the python version in use
       ansible.builtin.shell:

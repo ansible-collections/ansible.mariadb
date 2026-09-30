@@ -1,10 +1,10 @@
 ---
 - vars:
-    mysql_parameters: &mysql_params
-      login_user: '{{ mysql_user }}'
-      login_password: '{{ mysql_password }}'
-      login_host: '{{ mysql_host }}'
-      login_port: '{{ mysql_primary_port }}'
+    mariadb_parameters: &mariadb_params
+      login_user: '{{ mariadb_user }}'
+      login_password: '{{ mariadb_password }}'
+      login_host: '{{ mariadb_host }}'
+      login_port: '{{ mariadb_primary_port }}'
 
   block:
     # ========================================================================
@@ -17,33 +17,21 @@
 
     - name: Idempotency | Create user that already exist (expect changed=false)
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: "{{ user_name_1 }}"
         password: "{{ user_password_1 }}"
         state: present
       register: result
 
-    # MySQL 9.7.0+: caching_sha2_password uses a random salt, so the module
-    # can't detect unchanged passwords and always reports changed=true.
     - name: Idempotency | Assert create user task is not changed
       assert: {that: [result is not changed]}
-      when: db_version is version('9.7', '<') or db_engine == 'mariadb'
-
-    - name: Idempotency | Assert always-changed behavior on MySQL 9.7.0+
-      assert:
-        that:
-          - result is changed
-          - result.password_changed == true
-      when:
-        - db_engine == 'mysql'
-        - db_version is version('9.7', '>=')
 
     # ========================================================================
     # Removal
     # ========================================================================
     - name: Idempotency | Remove user (expect changed=true)
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: "{{ user_name_1 }}"
         state: absent
       register: result
@@ -55,7 +43,7 @@
 
     - name: Idempotency | Remove user that doesn't exists (expect changed=false)
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: "{{ user_name_1 }}"
         state: absent
       register: result
@@ -77,7 +65,7 @@
 
     - name: Idempotency | Remove blank  user with hosts=all (expect changed)
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: ""
         host_all: true
         state: absent
@@ -90,7 +78,7 @@
 
     - name: Idempotency | Remove blank user with hosts=all (expect ok)
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: ""
         host_all: true
         state: absent

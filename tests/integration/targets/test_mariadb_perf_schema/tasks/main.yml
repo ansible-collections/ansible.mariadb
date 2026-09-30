@@ -6,11 +6,11 @@
 
 - name: Perf schema | Run tests
   vars:
-    mysql_parameters: &mysql_params
-      login_user: '{{ mysql_user }}'
-      login_password: '{{ mysql_password }}'
-      login_host: '{{ mysql_host }}'
-      login_port: '{{ mysql_primary_port }}'
+    mariadb_parameters: &mariadb_params
+      login_user: '{{ mariadb_user }}'
+      login_password: '{{ mariadb_password }}'
+      login_host: '{{ mariadb_host }}'
+      login_port: '{{ mariadb_primary_port }}'
     actor_user: ansible_perf_schema
     actor_host: '%'
     actor_role: '%'
@@ -21,7 +21,7 @@
   block:
     - name: Perf schema | Check whether performance schema is enabled
       ansible.mariadb.mariadb_query:
-        <<: *mysql_params
+        <<: *mariadb_params
         query: "SHOW GLOBAL VARIABLES LIKE 'performance_schema'"
       register: perf_schema_variable
 
@@ -31,7 +31,7 @@
 
     - name: Perf schema | Select one instrument row
       ansible.mariadb.mariadb_query:
-        <<: *mysql_params
+        <<: *mariadb_params
         query: >
           SELECT NAME, ENABLED, TIMED
           FROM performance_schema.setup_instruments
@@ -42,7 +42,7 @@
 
     - name: Perf schema | Select one consumer row
       ansible.mariadb.mariadb_query:
-        <<: *mysql_params
+        <<: *mariadb_params
         query: >
           SELECT NAME, ENABLED
           FROM performance_schema.setup_consumers
@@ -63,7 +63,7 @@
 
     - name: Perf schema | Select one wildcard instrument row
       ansible.mariadb.mariadb_query:
-        <<: *mysql_params
+        <<: *mariadb_params
         query: >
           SELECT NAME, ENABLED, TIMED
           FROM performance_schema.setup_instruments
@@ -83,7 +83,7 @@
 
     - name: Perf schema | Update instrument and consumer in check mode
       ansible.mariadb.mariadb_perf_schema:
-        <<: *mysql_params
+        <<: *mariadb_params
         instruments:
           - name: '{{ instrument_name }}'
             enabled: '{{ instrument_enabled_desired }}'
@@ -107,7 +107,7 @@
 
     - name: Perf schema | Verify instrument and consumer stayed unchanged after check mode
       ansible.mariadb.mariadb_query:
-        <<: *mysql_params
+        <<: *mariadb_params
         query:
           - >
             SELECT ENABLED, TIMED
@@ -128,7 +128,7 @@
 
     - name: Perf schema | Update instrument and consumer
       ansible.mariadb.mariadb_perf_schema:
-        <<: *mysql_params
+        <<: *mariadb_params
         instruments:
           - name: '{{ instrument_name }}'
             enabled: '{{ instrument_enabled_desired }}'
@@ -148,7 +148,7 @@
 
     - name: Perf schema | Verify instrument and consumer changed in database
       ansible.mariadb.mariadb_query:
-        <<: *mysql_params
+        <<: *mariadb_params
         query:
           - >
             SELECT ENABLED, TIMED
@@ -169,7 +169,7 @@
 
     - name: Perf schema | Re-apply instrument and consumer
       ansible.mariadb.mariadb_perf_schema:
-        <<: *mysql_params
+        <<: *mariadb_params
         instruments:
           - name: '{{ instrument_name }}'
             enabled: '{{ instrument_enabled_desired }}'
@@ -186,7 +186,7 @@
 
     - name: Perf schema | Update wildcard instrument row
       ansible.mariadb.mariadb_perf_schema:
-        <<: *mysql_params
+        <<: *mariadb_params
         instruments:
           - name: '{{ wildcard_instrument_name }}'
             enabled: '{{ wildcard_instrument_enabled_desired }}'
@@ -203,7 +203,7 @@
 
     - name: Perf schema | Verify wildcard instrument changed in database
       ansible.mariadb.mariadb_query:
-        <<: *mysql_params
+        <<: *mariadb_params
         query: >
           SELECT ENABLED, TIMED
           FROM performance_schema.setup_instruments
@@ -218,7 +218,7 @@
 
     - name: Perf schema | Fail when instrument row does not exist
       ansible.mariadb.mariadb_perf_schema:
-        <<: *mysql_params
+        <<: *mariadb_params
         instruments:
           - name: ansible/nonexistent/instrument
             enabled: true
@@ -235,7 +235,7 @@
 
     - name: Perf schema | Ensure actor and object rows are absent
       ansible.mariadb.mariadb_perf_schema:
-        <<: *mysql_params
+        <<: *mariadb_params
         actors:
           - user: '{{ actor_user }}'
             host: '{{ actor_host }}'
@@ -249,7 +249,7 @@
 
     - name: Perf schema | Create actor and object in check mode
       ansible.mariadb.mariadb_perf_schema:
-        <<: *mysql_params
+        <<: *mariadb_params
         actors:
           - user: '{{ actor_user }}'
             host: '{{ actor_host }}'
@@ -283,7 +283,7 @@
 
     - name: Perf schema | Verify actor and object do not exist after check mode
       ansible.mariadb.mariadb_query:
-        <<: *mysql_params
+        <<: *mariadb_params
         query:
           - >
             SELECT COUNT(*) AS actor_count
@@ -307,7 +307,7 @@
 
     - name: Perf schema | Create actor and object
       ansible.mariadb.mariadb_perf_schema:
-        <<: *mysql_params
+        <<: *mariadb_params
         actors:
           - user: '{{ actor_user }}'
             host: '{{ actor_host }}'
@@ -333,7 +333,7 @@
 
     - name: Perf schema | Verify actor and object exist in database
       ansible.mariadb.mariadb_query:
-        <<: *mysql_params
+        <<: *mariadb_params
         query:
           - >
             SELECT ENABLED, HISTORY
@@ -359,7 +359,7 @@
 
     - name: Perf schema | Update actor and object rows
       ansible.mariadb.mariadb_perf_schema:
-        <<: *mysql_params
+        <<: *mariadb_params
         actors:
           - user: '{{ actor_user }}'
             host: '{{ actor_host }}'
@@ -385,7 +385,7 @@
 
     - name: Perf schema | Verify actor and object updates in database
       ansible.mariadb.mariadb_query:
-        <<: *mysql_params
+        <<: *mariadb_params
         query:
           - >
             SELECT ENABLED, HISTORY
@@ -411,7 +411,7 @@
 
     - name: Perf schema | Re-apply actor and object
       ansible.mariadb.mariadb_perf_schema:
-        <<: *mysql_params
+        <<: *mariadb_params
         actors:
           - user: '{{ actor_user }}'
             host: '{{ actor_host }}'
@@ -433,7 +433,7 @@
 
     - name: Perf schema | Remove actor and object in check mode
       ansible.mariadb.mariadb_perf_schema:
-        <<: *mysql_params
+        <<: *mariadb_params
         actors:
           - user: '{{ actor_user }}'
             host: '{{ actor_host }}'
@@ -457,7 +457,7 @@
 
     - name: Perf schema | Verify actor and object still exist after absent check mode
       ansible.mariadb.mariadb_query:
-        <<: *mysql_params
+        <<: *mariadb_params
         query:
           - >
             SELECT COUNT(*) AS actor_count
@@ -481,7 +481,7 @@
 
     - name: Perf schema | Remove actor and object
       ansible.mariadb.mariadb_perf_schema:
-        <<: *mysql_params
+        <<: *mariadb_params
         actors:
           - user: '{{ actor_user }}'
             host: '{{ actor_host }}'
@@ -501,7 +501,7 @@
 
     - name: Perf schema | Verify actor and object are absent in database
       ansible.mariadb.mariadb_query:
-        <<: *mysql_params
+        <<: *mariadb_params
         query:
           - >
             SELECT COUNT(*) AS actor_count
@@ -525,7 +525,7 @@
 
     - name: Perf schema | Restore original instrument and consumer values
       ansible.mariadb.mariadb_perf_schema:
-        <<: *mysql_params
+        <<: *mariadb_params
         instruments:
           - name: '{{ instrument_name }}'
             enabled: '{{ instrument_enabled_initial }}'

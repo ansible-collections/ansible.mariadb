@@ -6,29 +6,29 @@
 # tries to revoke USAGE twice.
 
 - vars:
-    mysql_parameters: &mysql_params
-      login_user: '{{ mysql_user }}'
-      login_password: '{{ mysql_password }}'
-      login_host: '{{ mysql_host }}'
-      login_port: '{{ mysql_primary_port }}'
+    mariadb_parameters: &mariadb_params
+      login_user: '{{ mariadb_user }}'
+      login_password: '{{ mariadb_password }}'
+      login_host: '{{ mariadb_host }}'
+      login_port: '{{ mariadb_primary_port }}'
 
   block:
     - name: Issue-744 | Create test database
       ansible.mariadb.mariadb_db:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: issue744_testdb
         state: present
 
     - name: Issue-744 | Create user with USAGE privileges only
       ansible.mariadb.mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: "{{ user_name_1 }}"
         password: "{{ user_password_1 }}"
         state: present
 
     - name: Issue-744 | Grant USAGE with GRANT OPTION on specific database
       ansible.mariadb.mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: "{{ user_name_1 }}"
         password: "{{ user_password_1 }}"
         priv: 'issue744_testdb.*:USAGE,GRANT'
@@ -36,7 +36,7 @@
 
     - name: Issue-744 | Show grants to verify USAGE with GRANT OPTION
       ansible.mariadb.mariadb_query:
-        <<: *mysql_params
+        <<: *mariadb_params
         query: "SHOW GRANTS FOR '{{ user_name_1 }}'@'localhost'"
       register: show_grants_result
 
@@ -49,7 +49,7 @@
     # With the fix, this should now succeed
     - name: Issue-744 | Modify user permissions (this should now succeed with the fix)
       ansible.mariadb.mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: "{{ user_name_1 }}"
         password: "{{ user_password_1 }}"
         priv: 'issue744_testdb.*:SELECT'
@@ -71,7 +71,7 @@
     # Verify the final state is correct
     - name: Issue-744 | Show final grants to verify SELECT privilege
       ansible.mariadb.mariadb_query:
-        <<: *mysql_params
+        <<: *mariadb_params
         query: "SHOW GRANTS FOR '{{ user_name_1 }}'@'localhost'"
       register: final_grants_result
 
@@ -85,14 +85,14 @@
   always:
     - name: Issue-744 | Cleanup - Remove test user
       ansible.mariadb.mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: "{{ user_name_1 }}"
         state: absent
       ignore_errors: true
 
     - name: Issue-744 | Cleanup - Remove test database
       ansible.mariadb.mariadb_db:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: issue744_testdb
         state: absent
       ignore_errors: true

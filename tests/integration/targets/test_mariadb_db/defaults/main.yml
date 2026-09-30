@@ -1,9 +1,9 @@
 ---
-# defaults file for test_mysql_db
-mysql_user: root
-mysql_password: msandbox
-mysql_host: '{{ gateway_addr }}'
-mysql_primary_port: 3307
+# defaults file for test_mariadb_db
+mariadb_user: root
+mariadb_password: msandbox
+mariadb_host: '{{ gateway_addr }}'
+mariadb_primary_port: 3307
 
 # Database names
 db_names:

@@ -2,17 +2,17 @@
 # Test code to ensure that appending privileges will not result in unnecessary changes when the current privileges
 # are a superset of the new privileges that have been defined.
 - vars:
-    mysql_parameters: &mysql_params
-      login_user: '{{ mysql_user }}'
-      login_password: '{{ mysql_password }}'
-      login_host: '{{ mysql_host }}'
-      login_port: '{{ mysql_primary_port }}'
+    mariadb_parameters: &mariadb_params
+      login_user: '{{ mariadb_user }}'
+      login_password: '{{ mariadb_password }}'
+      login_host: '{{ mariadb_host }}'
+      login_port: '{{ mariadb_primary_port }}'
 
   block:
 
     - name: Priv append | Create test databases
       mariadb_db:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: '{{ item }}'
         state: present
       loop:
@@ -21,7 +21,7 @@
 
     - name: Priv append | Create a user with an initial set of privileges
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: '{{ user_name_4 }}'
         host: '%'
         password: '{{ user_password_4 }}'
@@ -29,7 +29,7 @@
         state: present
 
     - name: Priv append | Run command to show privileges for user (expect privileges in stdout)
-      command: "{{ mysql_command }} -e \"SHOW GRANTS FOR '{{ user_name_4 }}'@'%'\""
+      command: "{{ mariadb_command }} -e \"SHOW GRANTS FOR '{{ user_name_4 }}'@'%'\""
       register: result
 
     - name: Priv append | Assert that the initial set of privileges matches what is expected
@@ -40,7 +40,7 @@
 
     - name: Priv append | Append privileges that are a subset of the current privileges, which should be a no-op
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: '{{ user_name_4 }}'
         host: '%'
         priv: 'data1.*:SELECT/data2.*:SELECT'
@@ -55,7 +55,7 @@
           - result is not changed
 
     - name: Priv append | Run command to show privileges for user (expect privileges in stdout)
-      command: "{{ mysql_command }} -e \"SHOW GRANTS FOR '{{ user_name_4 }}'@'%'\""
+      command: "{{ mariadb_command }} -e \"SHOW GRANTS FOR '{{ user_name_4 }}'@'%'\""
       register: result
 
     - name: Priv append | Assert that the permissions still match what was originally granted
@@ -66,7 +66,7 @@
 
     - name: Priv append | Append privileges that are not included in the current set of privileges to test that privileges are updated
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: '{{ user_name_4 }}'
         host: '%'
         password: '{{ user_password_4 }}'
@@ -82,7 +82,7 @@
           - result is changed
 
     - name: Priv append | Run command to show privileges for user (expect privileges in stdout)
-      command: "{{ mysql_command }} -e \"SHOW GRANTS FOR '{{ user_name_4 }}'@'%'\""
+      command: "{{ mariadb_command }} -e \"SHOW GRANTS FOR '{{ user_name_4 }}'@'%'\""
       register: result
 
     - name: Priv append | Assert that the permissions were changed as expected if check_mode is set to 'no'
@@ -101,7 +101,7 @@
 
     - name: Priv append | Try to append invalid privileges
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: '{{ user_name_4 }}'
         host: '%'
         password: '{{ user_password_4 }}'
@@ -123,7 +123,7 @@
     # Clean up
     - name: Drop test databases
       mariadb_db:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: '{{ item }}'
         state: present
       loop:

@@ -1148,7 +1148,7 @@ def get_password_expiration_policy(cursor, user, host, maria_role=False):
         statement = "SELECT IFNULL(password_lifetime, -1) FROM mysql.user \
             WHERE User = %s AND Host = %s", (user, host)
     else:
-        statement = "SELECT JSON_EXTRACT(Priv, '$.password_lifetime') AS password_lifetime \
+        statement = "SELECT IFNULL(JSON_EXTRACT(Priv, '$.password_lifetime'), -1) AS password_lifetime \
             FROM mysql.global_priv \
             WHERE User = %s AND Host = %s", (user, host)
     cursor.execute(*statement)

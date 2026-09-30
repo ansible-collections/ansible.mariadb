@@ -1,4 +1,4 @@
-# test code to assert message in mysql_variables module
+# test code to assert message in mariadb_variables module
 # (c) 2014,  Wayne Rosario <wrosario@ansible.com>
 
 # This file is part of Ansible

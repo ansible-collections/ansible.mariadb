@@ -1,0 +1,46 @@
+# Copyright: (c) 2019, Andrew Klychkov (@Andersson007) <andrew.a.klychkov@gmail.com>
+# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+
+- vars:
+    mariadb_params: &mariadb_params
+      login_user: '{{ mariadb_user }}'
+      login_password: '{{ mariadb_password }}'
+      login_host: '{{ mariadb_host }}'
+
+  block:
+
+    # Test primary_delay mode:
+    - name: Run replication
+      mariadb_replication:
+        <<: *mariadb_params
+        login_port: '{{ mariadb_replica1_port }}'
+        mode: changeprimary
+        primary_delay: '{{ test_primary_delay }}'
+      register: result
+
+    - name: Assert that run replication is changed and query match expectation
+      ansible.builtin.assert:
+        that:
+          - result is changed
+          - result.queries == ["CHANGE MASTER TO MASTER_DELAY=60"]
+
+    # Auxiliary step:
+    - name: Start replica
+      mariadb_replication:
+        <<: *mariadb_params
+        login_port: '{{ mariadb_replica1_port }}'
+        mode: startreplica
+      register: result
+
+    # Check primary_delay:
+    - name: Get standby status
+      mariadb_replication:
+        <<: *mariadb_params
+        login_port: '{{ mariadb_replica1_port }}'
+        mode: getreplica
+      register: replica_status
+
+    - assert:
+        that:
+        - replica_status.SQL_Delay == test_primary_delay
+        - replica_status is not changed

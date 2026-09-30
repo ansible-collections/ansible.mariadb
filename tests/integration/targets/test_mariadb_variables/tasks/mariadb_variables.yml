@@ -1,4 +1,4 @@
-# test code for the mysql_variables module
+# test code for the mariadb_variables module
 # (c) 2014,  Wayne Rosario <wrosario@ansible.com>
 
 # This file is part of Ansible
@@ -17,14 +17,14 @@
 # along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
 
 # ============================================================
-# Verify mysql_variable successfully queries a variable
+# Verify mariadb_variable successfully queries a variable
 #
 - vars:
-    mysql_parameters: &mysql_params
-      login_user: '{{ mysql_user }}'
-      login_password: '{{ mysql_password }}'
-      login_host: '{{ mysql_host }}'
-      login_port: '{{ mysql_primary_port }}'
+    mariadb_parameters: &mariadb_params
+      login_user: '{{ mariadb_user }}'
+      login_password: '{{ mariadb_password }}'
+      login_host: '{{ mariadb_host }}'
+      login_port: '{{ mariadb_primary_port }}'
 
   block:
 
@@ -33,7 +33,7 @@
 
     - name: read mysql variables (expect changed=false)
       mariadb_variables:
-        <<: *mysql_params
+        <<: *mariadb_params
         variable: '{{ set_name }}'
       register: result
 
@@ -44,7 +44,7 @@
         var_name: "{{ set_name }}"
 
     # ============================================================
-    # Verify mysql_variable successfully updates a variable (issue:4568)
+    # Verify mariadb_variable successfully updates a variable (issue:4568)
     #
     - set_fact:
         set_name: 'delay_key_write'
@@ -52,13 +52,13 @@
 
     - name: set mysql variable
       mariadb_variables:
-        <<: *mysql_params
+        <<: *mariadb_params
         variable: '{{ set_name }}'
         value: '{{ set_value }}'
 
     - name: update mysql variable to same value (expect changed=false)
       mariadb_variables:
-        <<: *mysql_params
+        <<: *mariadb_params
         variable: '{{ set_name }}'
         value: '{{ set_value }}'
       register: result
@@ -71,7 +71,7 @@
         var_value: "{{ set_value }}"
 
     # ============================================================
-    # Verify mysql_variable successfully updates a variable using single quotes
+    # Verify mariadb_variable successfully updates a variable using single quotes
     #
     - set_fact:
         set_name: 'wait_timeout'
@@ -79,13 +79,13 @@
 
     - name: set mysql variable to a temp value
       mariadb_variables:
-        <<: *mysql_params
+        <<: *mariadb_params
         variable: '{{ set_name }}'
         value: '200'
 
     - name: update mysql variable value (expect changed=true)
       mariadb_variables:
-        <<: *mysql_params
+        <<: *mariadb_params
         variable: '{{ set_name }}'
         value: '{{ set_value }}'
       register: result
@@ -104,7 +104,7 @@
         var_value: '{{ set_value }}'
 
     # ============================================================
-    # Verify mysql_variable successfully updates a variable using double quotes
+    # Verify mariadb_variable successfully updates a variable using double quotes
     #
     - set_fact:
         set_name: "wait_timeout"
@@ -112,13 +112,13 @@
 
     - name: set mysql variable to a temp value
       mariadb_variables:
-        <<: *mysql_params
+        <<: *mariadb_params
         variable: '{{ set_name }}'
         value: "200"
 
     - name: update mysql variable value (expect changed=true)
       mariadb_variables:
-        <<: *mysql_params
+        <<: *mariadb_params
         variable: '{{ set_name }}'
         value: '{{ set_value }}'
       register: result
@@ -131,7 +131,7 @@
         var_value: '{{ set_value }}'
 
     # ============================================================
-    # Verify mysql_variable successfully updates a variable using no quotes
+    # Verify mariadb_variable successfully updates a variable using no quotes
     #
     - set_fact:
         set_name: wait_timeout
@@ -139,13 +139,13 @@
 
     - name: set mysql variable to a temp value
       mariadb_variables:
-        <<: *mysql_params
+        <<: *mariadb_params
         variable: '{{ set_name }}'
         value: 200
 
     - name: update mysql variable value (expect changed=true)
       mariadb_variables:
-        <<: *mysql_params
+        <<: *mariadb_params
         variable: '{{ set_name }}'
         value: '{{ set_value }}'
       register: result
@@ -158,11 +158,11 @@
         var_value: '{{ set_value }}'
 
     # ============================================================
-    # Verify mysql_variable successfully updates a variable using an expression (e.g. 1024*4)
+    # Verify mariadb_variable successfully updates a variable using an expression (e.g. 1024*4)
     #
     - name: set mysql variable value to an expression
       mariadb_variables:
-        <<: *mysql_params
+        <<: *mariadb_params
         variable: max_connect_errors
         value: "1024*4"
       register: result
@@ -174,11 +174,11 @@
         msg: 'Incorrect argument type to variable'
 
     # ============================================================
-    # Verify mysql_variable fails when setting an incorrect value (out of range)
+    # Verify mariadb_variable fails when setting an incorrect value (out of range)
     #
     - name: Set mysql variable value to a number out of range
       mariadb_variables:
-        <<: *mysql_params
+        <<: *mariadb_params
         variable: max_connect_errors
         value: '-1'
       register: oor_result
@@ -192,11 +192,11 @@
         - connector_name == 'pymsql'
 
     # ============================================================
-    # Verify mysql_variable fails when setting an incorrect value (incorrect type)
+    # Verify mariadb_variable fails when setting an incorrect value (incorrect type)
     #
     - name: set mysql variable value to a non-valid value number
       mariadb_variables:
-        <<: *mysql_params
+        <<: *mariadb_params
         variable: max_connect_errors
         value: TEST
       register: nvv_result
@@ -208,11 +208,11 @@
         msg: 'Incorrect argument type to variable'
 
     # ============================================================
-    # Verify mysql_variable fails when setting an unknown variable
+    # Verify mariadb_variable fails when setting an unknown variable
     #
     - name: set a non mysql variable
       mariadb_variables:
-        <<: *mysql_params
+        <<: *mariadb_params
         variable: my_sql_variable
         value: ON
       register: result
@@ -224,11 +224,11 @@
         msg: 'Variable not available'
 
     # ============================================================
-    # Verify mysql_variable fails when setting a read-only variable
+    # Verify mariadb_variable fails when setting a read-only variable
     #
     - name: set value of a read only mysql variable
       mariadb_variables:
-        <<: *mysql_params
+        <<: *mariadb_params
         variable: character_set_system
         value: utf16
       register: result
@@ -240,15 +240,15 @@
         msg: 'read only variable'
 
     #=============================================================
-    # Verify mysql_variable works with the login_user and login_password parameters
+    # Verify mariadb_variable works with the login_user and login_password parameters
     #
     - set_fact:
         set_name: wait_timeout
         set_value: 77
 
-    - name: query mysql_variable using login_user and password_password
+    - name: query mariadb_variable using login_user and password_password
       mariadb_variables:
-        <<: *mysql_params
+        <<: *mariadb_params
         variable: '{{ set_name }}'
       register: result
 
@@ -260,14 +260,14 @@
 
     - name: set mysql variable to temp value using user login and password (expect changed=true)
       mariadb_variables:
-        <<: *mysql_params
+        <<: *mariadb_params
         variable: '{{ set_name }}'
         value: 20
       register: result
 
     - name: update mysql variable value using user login and password (expect changed=true)
       mariadb_variables:
-        <<: *mysql_params
+        <<: *mariadb_params
         variable: '{{set_name}}'
         value: '{{set_value}}'
       register: result
@@ -284,22 +284,17 @@
 
     - name: Get server version
       mariadb_info:
-        <<: *mysql_params
+        <<: *mariadb_params
       register: result
 
-    - name: Set variable name when running on MySQL
-      set_fact:
-        log_slow_statements: log_slow_replica_statements
-      when: result.server_engine == 'MySQL'
-
-    - name: Set variable name when running on MariaDB
+    - name: Set variable name
       set_fact:
         log_slow_statements: log_slow_slave_statements
       when: result.server_engine == 'MariaDB'
 
     - name: Set a boolean value using ON
       mariadb_variables:
-        <<: *mysql_params
+        <<: *mariadb_params
         variable: "{{ log_slow_statements }}"
         value: "ON"
       register: result
@@ -314,7 +309,7 @@
 
     - name: Set a boolean value again using ON
       mariadb_variables:
-        <<: *mysql_params
+        <<: *mariadb_params
         variable: "{{ log_slow_statements }}"
         value: "ON"
       register: result
@@ -326,7 +321,7 @@
 
     - name: Set a boolean value again using 1
       mariadb_variables:
-        <<: *mysql_params
+        <<: *mariadb_params
         variable: "{{ log_slow_statements }}"
         value: 1
       register: result
@@ -338,7 +333,7 @@
 
     - name: Set a boolean value using OFF
       mariadb_variables:
-        <<: *mysql_params
+        <<: *mariadb_params
         variable: "{{ log_slow_statements }}"
         value: "OFF"
       register: result
@@ -351,7 +346,7 @@
 
     - name: Set a boolean value again using 0
       mariadb_variables:
-        <<: *mysql_params
+        <<: *mariadb_params
         variable: "{{ log_slow_statements }}"
         value: 0
       register: result
@@ -363,7 +358,7 @@
 
     - name: Set a boolean value using on
       mariadb_variables:
-        <<: *mysql_params
+        <<: *mariadb_params
         variable: "{{ log_slow_statements }}"
         value: "on"
       register: result
@@ -377,18 +372,18 @@
         expected_queries: ["SET GLOBAL `{{ log_slow_statements }}` = ON"]
 
     #============================================================
-    # Verify mysql_variable fails with an incorrect login_password parameter
+    # Verify mariadb_variable fails with an incorrect login_password parameter
     #
     - set_fact:
         set_name: connect_timeout
         set_value: 10
 
-    - name: query mysql_variable using incorrect login_password
+    - name: query mariadb_variable using incorrect login_password
       mariadb_variables:
-        login_user: '{{ mysql_user }}'
+        login_user: '{{ mariadb_user }}'
         login_password: 'wrongpassword'
-        login_host: '{{ mysql_host }}'
-        login_port: '{{ mysql_primary_port }}'
+        login_host: '{{ mariadb_host }}'
+        login_port: '{{ mariadb_primary_port }}'
         variable: '{{ set_name }}'
       register: result
       ignore_errors: true
@@ -398,12 +393,12 @@
         output: "{{ result }}"
         msg: 'unable to connect to database'
 
-    - name: update mysql variable value using incorrect login_password (expect failed=true)
+    - name: update variable value using incorrect login_password (expect failed=true)
       mariadb_variables:
-        login_user: '{{ mysql_user }}'
+        login_user: '{{ mariadb_user }}'
         login_password: 'wrongpassword'
-        login_host: '{{ mysql_host }}'
-        login_port: '{{ mysql_primary_port }}'
+        login_host: '{{ mariadb_host }}'
+        login_port: '{{ mariadb_primary_port }}'
         variable: '{{ set_name }}'
         value: '{{ set_value }}'
       register: result
@@ -415,14 +410,14 @@
         msg: 'unable to connect to database'
 
     #============================================================
-    # Verify mysql_variable fails with an incorrect login_host parameter
+    # Verify mariadb_variable fails with an incorrect login_host parameter
     #
-    - name: query mysql_variable using incorrect login_host
+    - name: query mariadb_variable using incorrect login_host
       mariadb_variables:
-        login_user: '{{ mysql_user }}'
-        login_password: '{{ mysql_password }}'
+        login_user: '{{ mariadb_user }}'
+        login_password: '{{ mariadb_password }}'
         login_host: '12.0.0.9'
-        login_port: '{{ mysql_primary_port }}'
+        login_port: '{{ mariadb_primary_port }}'
         variable: wait_timeout
         connect_timeout: 5
       register: result
@@ -433,109 +428,10 @@
         output: "{{ result }}"
         msg: 'unable to connect to database'
 
-    - block:
-
-        #=========================================
-        # Check mode 'persist' and 'persist_only':
-        #
-        - name: update mysql variable value (expect changed=true) in persist mode
-          mariadb_variables:
-            <<: *mysql_params
-            variable: '{{ set_name }}'
-            value: '{{ set_value }}'
-            mode: persist
-          register: result
-
-        - assert:
-            that:
-            - result.queries == expected_queries
-          vars:
-            expected_queries: ["SET PERSIST `{{ set_name }}` = {{ set_value }}"]
-
-        - include_tasks: assert_var.yml
-          vars:
-            changed: true
-            output: "{{ result }}"
-            var_name: "{{ set_name }}"
-            var_value: '{{ set_value }}'
-
-        - name: try to update mysql variable value (expect changed=false) in persist mode again
-          mariadb_variables:
-            <<: *mysql_params
-            variable: '{{ set_name }}'
-            value: '{{ set_value }}'
-            mode: persist
-          register: result
-
-        - include_tasks: assert_var.yml
-          vars:
-            changed: false
-            output: "{{ result }}"
-            var_name: "{{ set_name }}"
-            var_value: '{{ set_value }}'
-
-        - name: set mysql variable to a temp value
-          mariadb_variables:
-            <<: *mysql_params
-            variable: '{{ set_name }}'
-            value: '200'
-            mode: persist
-
-        - name: update mysql variable value (expect changed=true) in persist_only mode
-          mariadb_variables:
-            <<: *mysql_params
-            variable: '{{ set_name }}'
-            value: '{{ set_value }}'
-            mode: persist_only
-          register: result
-
-        - assert:
-            that:
-            - result is changed
-            - result.queries == expected_queries
-          vars:
-            expected_queries: ["SET PERSIST_ONLY `{{ set_name }}` = {{ set_value }}"]
-
-        - name: try to update mysql variable value (expect changed=false) in persist_only mode again
-          mariadb_variables:
-            <<: *mysql_params
-            variable: '{{ set_name }}'
-            value: '{{ set_value }}'
-            mode: persist_only
-          register: result
-
-        - assert:
-            that:
-            - result is not changed
-
-        - set_fact:
-            set_name: max_connections
-            set_value: 105
-            def_val: 151
-
-        - name: update mysql variable value (expect changed=true) in persist_only mode
-          mariadb_variables:
-            <<: *mysql_params
-            variable: '{{ set_name }}'
-            value: '{{ set_value }}'
-            mode: persist_only
-          register: result
-
-        - include_tasks: assert_var.yml
-          vars:
-            changed: true
-            output: "{{ result }}"
-            var_name: "{{ set_name }}"
-            var_value: '{{ def_val }}'
-
-      when:
-        - db_engine == 'mysql'
-        - db_version is version('8.0', '>=')
-
     # Bugfix of https://github.com/ansible/ansible/issues/54239
     # - name: set variable containing dot
-    #   mysql_variables:
-    #     <<: *mysql_params
+    #   mariadb_variables:
+    #     <<: *mariadb_params
     #     variable: validate_password.policy
     #     value: LOW
     #     mode: persist_only

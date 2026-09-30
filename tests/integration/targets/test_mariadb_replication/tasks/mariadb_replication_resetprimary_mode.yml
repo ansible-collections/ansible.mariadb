@@ -1,0 +1,58 @@
+---
+# Copyright: (c) 2019, Andrew Klychkov (@Andersson007) <andrew.a.klychkov@gmail.com>
+# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+
+- vars:
+    mariadb_params: &mariadb_params
+      login_user: '{{ mariadb_user }}'
+      login_password: '{{ mariadb_password }}'
+      login_host: '{{ mariadb_host }}'
+
+  block:
+
+    # Needs for further tests:
+    - name: Stop replica
+      mariadb_replication:
+        <<: *mariadb_params
+        login_port: '{{ mariadb_replica1_port }}'
+        mode: stopreplica
+
+    - name: Reset replica all
+      mariadb_replication:
+        <<: *mariadb_params
+        login_port: '{{ mariadb_replica1_port }}'
+        mode: resetreplicaall
+
+    # Get primary initial status:
+    - name: Get primary status
+      mariadb_replication:
+        <<: *mariadb_params
+        login_port: '{{ mariadb_primary_port }}'
+        mode: getprimary
+      register: mariadb_primary_initial_status
+
+    # Test resetprimary mode:
+    - name: Reset primary
+      mariadb_replication:
+        <<: *mariadb_params
+        login_port: '{{ mariadb_primary_port }}'
+        mode: resetprimary
+      register: result
+
+    - name: Assert that reset primary is changed and query matches
+      ansible.builtin.assert:
+        that:
+          - result is changed
+          - result.queries == ["RESET MASTER"]
+
+    # Get primary final status:
+    - name: Get primary status
+      mariadb_replication:
+        <<: *mariadb_params
+        login_port: '{{ mariadb_primary_port }}'
+        mode: getprimary
+      register: mariadb_primary_final_status
+
+    - assert:
+        that:
+        - mariadb_primary_initial_status.File != mariadb_primary_final_status.File

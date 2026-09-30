@@ -1,5 +1,5 @@
 ---
-# test code for mysql_db module with database name containing special chars
+# test code for mariadb_db module with database name containing special chars
 
 # This file is part of Ansible
 #
@@ -19,20 +19,20 @@
 # ============================================================
 - name: State Present Absent | Remove database if it exists
   command: >
-    "{{ mysql_command }} -sse 'DROP DATABASE IF EXISTS {{ db_name }}'"
+    "{{ mariadb_command }} -sse 'DROP DATABASE IF EXISTS {{ db_name }}'"
   ignore_errors: true
 
 - name: State Present Absent | Make sure the test database is not there
-  command: "{{ mysql_command }} {{ db_name }}"
-  register: mysql_db_check
-  failed_when: "'1049' not in mysql_db_check.stderr"
+  command: "{{ mariadb_command }} {{ db_name }}"
+  register: mariadb_db_check
+  failed_when: "'1049' not in mariadb_db_check.stderr"
 
 - name: State Present Absent | Test state=present for a database name (expect changed=true)
   mariadb_db:
-    login_user: '{{ mysql_user }}'
-    login_password: '{{ mysql_password }}'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
+    login_user: '{{ mariadb_user }}'
+    login_password: '{{ mariadb_password }}'
+    login_host: '{{ mariadb_host }}'
+    login_port: '{{ mariadb_primary_port }}'
     name: '{{ db_name }}'
     state: present
   register: result
@@ -47,7 +47,7 @@
     expected_commands: ["CREATE DATABASE `{{ db_name }}`"]
 
 - name: State Present Absent | Run command to test state=present for a database name (expect db_name in stdout)
-  command: "{{ mysql_command }} -e \"show databases like '{{ db_name | regex_replace(\"([%_\\\\])\", \"\\\\\\1\") }}'\""
+  command: "{{ mariadb_command }} -e \"show databases like '{{ db_name | regex_replace(\"([%_\\\\])\", \"\\\\\\1\") }}'\""
   register: result
 
 - name: State Present Absent | Assert database exist
@@ -58,10 +58,10 @@
 # ============================================================
 - name: State Present Absent | Test state=absent for a database name (expect changed=true)
   mariadb_db:
-    login_user: '{{ mysql_user }}'
-    login_password: '{{ mysql_password }}'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
+    login_user: '{{ mariadb_user }}'
+    login_password: '{{ mariadb_password }}'
+    login_host: '{{ mariadb_host }}'
+    login_port: '{{ mariadb_primary_port }}'
     name: '{{ db_name }}'
     state: absent
   register: result
@@ -76,7 +76,7 @@
     expected_commands: ["DROP DATABASE `{{ db_name }}`"]
 
 - name: State Present Absent | Run command to test state=absent for a database name (expect db_name not in stdout)
-  command: "{{ mysql_command }} -e \"show databases like '{{ db_name | regex_replace(\"([%_\\\\])\", \"\\\\\\1\") }}'\""
+  command: "{{ mariadb_command }} -e \"show databases like '{{ db_name | regex_replace(\"([%_\\\\])\", \"\\\\\\1\") }}'\""
   register: result
 
 - name: State Present Absent | Assert database does not exist
@@ -85,19 +85,19 @@
       - db_name not in result.stdout
 
 # ============================================================
-- name: State Present Absent | Test mysql_db encoding param not valid - issue 8075
+- name: State Present Absent | Test mariadb_db encoding param not valid - issue 8075
   mariadb_db:
-    login_user: '{{ mysql_user }}'
-    login_password: '{{ mysql_password }}'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
+    login_user: '{{ mariadb_user }}'
+    login_password: '{{ mariadb_password }}'
+    login_host: '{{ mariadb_host }}'
+    login_port: '{{ mariadb_primary_port }}'
     name: datanotvalid
     state: present
     encoding: notvalid
   register: result
   ignore_errors: true
 
-- name: State Present Absent | Assert test mysql_db encoding param not valid - issue 8075 (failed=true)
+- name: State Present Absent | Assert test mariadb_db encoding param not valid - issue 8075 (failed=true)
   assert:
     that:
       - result is failed
@@ -105,12 +105,12 @@
       - "'Unknown character set' in result.msg"
 
 # ============================================================
-- name: State Present Absent | Test mysql_db using a valid encoding utf8 (expect changed=true)
+- name: State Present Absent | Test mariadb_db using a valid encoding utf8 (expect changed=true)
   mariadb_db:
-    login_user: '{{ mysql_user }}'
-    login_password: '{{ mysql_password }}'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
+    login_user: '{{ mariadb_user }}'
+    login_password: '{{ mariadb_password }}'
+    login_host: '{{ mariadb_host }}'
+    login_port: '{{ mariadb_primary_port }}'
     name: 'en{{ db_name }}'
     state: present
     encoding: utf8
@@ -125,7 +125,7 @@
     expected_commands: ["CREATE DATABASE `en{{ db_name }}` CHARACTER SET 'utf8'"]
 
 - name: State Present Absent | Test database was created
-  command: "{{ mysql_command }} -e \"SHOW CREATE DATABASE `en{{ db_name }}`\""
+  command: "{{ mariadb_command }} -e \"SHOW CREATE DATABASE `en{{ db_name }}`\""
   register: result
 
 - name: State Present Absent | Assert created database is of encoding utf8
@@ -135,20 +135,20 @@
 
 - name: State Present Absent | Remove database
   mariadb_db:
-    login_user: '{{ mysql_user }}'
-    login_password: '{{ mysql_password }}'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
+    login_user: '{{ mariadb_user }}'
+    login_password: '{{ mariadb_password }}'
+    login_host: '{{ mariadb_host }}'
+    login_port: '{{ mariadb_primary_port }}'
     name: 'en{{ db_name }}'
     state: absent
 
 # ============================================================
-- name: State Present Absent | Test mysql_db using valid encoding binary (expect changed=true)
+- name: State Present Absent | Test mariadb_db using valid encoding binary (expect changed=true)
   mariadb_db:
-    login_user: '{{ mysql_user }}'
-    login_password: '{{ mysql_password }}'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
+    login_user: '{{ mariadb_user }}'
+    login_password: '{{ mariadb_password }}'
+    login_host: '{{ mariadb_host }}'
+    login_port: '{{ mariadb_primary_port }}'
     name: 'en{{ db_name }}'
     state: present
     encoding: binary
@@ -163,7 +163,7 @@
     expected_commands: ["CREATE DATABASE `en{{ db_name }}` CHARACTER SET 'binary'"]
 
 - name: State Present Absent | Run command to test database was created
-  command: "{{ mysql_command }} -e \"SHOW CREATE DATABASE `en{{ db_name }}`\""
+  command: "{{ mariadb_command }} -e \"SHOW CREATE DATABASE `en{{ db_name }}`\""
   register: result
 
 - name: State Present Absent | Assert created database is of encoding binary
@@ -173,20 +173,20 @@
 
 - name: State Present Absent | Remove database
   mariadb_db:
-    login_user: '{{ mysql_user }}'
-    login_password: '{{ mysql_password }}'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
+    login_user: '{{ mariadb_user }}'
+    login_password: '{{ mariadb_password }}'
+    login_host: '{{ mariadb_host }}'
+    login_port: '{{ mariadb_primary_port }}'
     name: 'en{{ db_name }}'
     state: absent
 
 # ============================================================
 - name: State Present Absent | Create user1 to access database dbuser1
   mariadb_user:
-    login_user: '{{ mysql_user }}'
-    login_password: '{{ mysql_password }}'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
+    login_user: '{{ mariadb_user }}'
+    login_password: '{{ mariadb_password }}'
+    login_host: '{{ mariadb_host }}'
+    login_port: '{{ mariadb_primary_port }}'
     name: user1
     host: '%'
     password: 'Hfd6fds^dfA8Ga'
@@ -197,8 +197,8 @@
   mariadb_db:
     login_user: user1
     login_password: 'Hfd6fds^dfA8Ga'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
+    login_host: '{{ mariadb_host }}'
+    login_port: '{{ mariadb_primary_port }}'
     name: '{{ db_user1 }}'
     state: present
   register: result
@@ -209,7 +209,7 @@
       - result is changed
 
 - name: State Present Absent | Run command to test database was created using user1
-  command: "{{ mysql_command }} -e \"show databases like '{{ db_user1 | regex_replace(\"([%_\\\\])\", \"\\\\\\1\") }}'\""
+  command: "{{ mariadb_command }} -e \"show databases like '{{ db_user1 | regex_replace(\"([%_\\\\])\", \"\\\\\\1\") }}'\""
   register: result
 
 - name: State Present Absent | Assert database exist
@@ -220,10 +220,10 @@
 # ============================================================
 - name: State Present Absent | Create user2 to access database with privilege select only
   mariadb_user:
-    login_user: '{{ mysql_user }}'
-    login_password: '{{ mysql_password }}'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
+    login_user: '{{ mariadb_user }}'
+    login_password: '{{ mariadb_password }}'
+    login_host: '{{ mariadb_host }}'
+    login_port: '{{ mariadb_primary_port }}'
     name: user2
     password: 'kjsfd&F7safjad'
     priv: '*.*:SELECT'
@@ -233,8 +233,8 @@
   mariadb_db:
     login_user: user2
     login_password: 'kjsfd&F7safjad'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
+    login_host: '{{ mariadb_host }}'
+    login_port: '{{ mariadb_primary_port }}'
     name: '{{ db_user2 }}'
     state: present
   register: result
@@ -247,7 +247,7 @@
       - "'Access denied' in result.msg"
 
 - name: State Present Absent | Run command to test that database was not created
-  command: "{{ mysql_command }} -e \"show databases like '{{ db_user2 | regex_replace(\"([%_\\\\])\", \"\\\\\\1\") }}'\""
+  command: "{{ mariadb_command }} -e \"show databases like '{{ db_user2 | regex_replace(\"([%_\\\\])\", \"\\\\\\1\") }}'\""
   register: result
 
 - name: State Present Absent | Assert database does not exist
@@ -260,8 +260,8 @@
   mariadb_db:
     login_user: user2
     login_password: 'kjsfd&F7safjad'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
+    login_host: '{{ mariadb_host }}'
+    login_port: '{{ mariadb_primary_port }}'
     name: '{{ db_user1 }}'
     state: absent
   register: result
@@ -274,7 +274,7 @@
       - "'Access denied' in result.msg"
 
 - name: State Present Absent | Run command to test database was not deleted
-  command: "{{ mysql_command }} -e \"show databases like '{{ db_user1 | regex_replace(\"([%_\\\\])\", \"\\\\\\1\") }}'\""
+  command: "{{ mariadb_command }} -e \"show databases like '{{ db_user1 | regex_replace(\"([%_\\\\])\", \"\\\\\\1\") }}'\""
   register: result
 
 - name: State Present Absent | Assert database still exist
@@ -287,8 +287,8 @@
   mariadb_db:
     login_user: user1
     login_password: 'Hfd6fds^dfA8Ga'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
+    login_host: '{{ mariadb_host }}'
+    login_port: '{{ mariadb_primary_port }}'
     name: '{{ db_user1 }}'
     state: absent
   register: result
@@ -303,7 +303,7 @@
     expected_commands: ["DROP DATABASE `{{ db_user1 }}`"]
 
 - name: State Present Absent | Run command to test database was deleted using user1
-  command: "{{ mysql_command }} -e \"show databases like '{{ db_name | regex_replace(\"([%_\\\\])\", \"\\\\\\1\") }}'\""
+  command: "{{ mariadb_command }} -e \"show databases like '{{ db_name | regex_replace(\"([%_\\\\])\", \"\\\\\\1\") }}'\""
   register: result
 
 - name: State Present Absent | Assert database does not exist
@@ -313,31 +313,24 @@
 
 # ============================================================
 - set_fact:
-    show_master_status: >-
-      {% if db_engine == 'mariadb' and db_version is version('10.5.2', '>=') %}
-        SHOW BINLOG STATUS
-      {% elif db_engine == 'mysql' and db_version is version('8.4', '>=') %}
-        SHOW BINARY LOG STATUS
-      {% else %}
-        SHOW MASTER STATUS
-      {% endif %}
+    show_master_status: SHOW BINLOG STATUS
 
 - name: State Present Absent | Capture binlog position
-  command: "{{ mysql_command }} --vertical -e \"{{ show_master_status }}\""
+  command: "{{ mariadb_command }} --vertical -e \"{{ show_master_status }}\""
   register: bin_log_position_1
 
 - name: State Present Absent | Create database with sql_log_bin enabled
   mariadb_db:
-    login_user: '{{ mysql_user }}'
-    login_password: '{{ mysql_password }}'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
+    login_user: '{{ mariadb_user }}'
+    login_password: '{{ mariadb_password }}'
+    login_host: '{{ mariadb_host }}'
+    login_port: '{{ mariadb_primary_port }}'
     name: 'sql_bin_on_{{ db_name }}'
     sql_log_bin: true
     state: present
 
 - name: State Present Absent | Capture binlog position
-  command: "{{ mysql_command }} --vertical -e \"{{ show_master_status }}\""
+  command: "{{ mariadb_command }} --vertical -e \"{{ show_master_status }}\""
   register: bin_log_position_2
 
 - name: State Present Absent | Assert binlog events were written
@@ -347,16 +340,16 @@
 
 - name: State Present Absent | Remove database with sql_log_bin enabled
   mariadb_db:
-    login_user: '{{ mysql_user }}'
-    login_password: '{{ mysql_password }}'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
+    login_user: '{{ mariadb_user }}'
+    login_password: '{{ mariadb_password }}'
+    login_host: '{{ mariadb_host }}'
+    login_port: '{{ mariadb_primary_port }}'
     name: 'sql_bin_on_{{ db_name }}'
     sql_log_bin: true
     state: absent
 
 - name: State Present Absent | Capture binlog position
-  command: "{{ mysql_command }} --vertical -e \"{{ show_master_status }}\""
+  command: "{{ mariadb_command }} --vertical -e \"{{ show_master_status }}\""
   register: bin_log_position_3
 
 - name: State Present Absent | Assert Binlog events were written
@@ -366,21 +359,21 @@
 
 # ============================================================
 - name: State Present Absent | Capture binlog position
-  command: "{{ mysql_command }} --vertical -e \"{{ show_master_status }}\""
+  command: "{{ mariadb_command }} --vertical -e \"{{ show_master_status }}\""
   register: bin_log_position_4
 
 - name: State Present Absent | Create database with sql_log_bin disabled
   mariadb_db:
-    login_user: '{{ mysql_user }}'
-    login_password: '{{ mysql_password }}'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
+    login_user: '{{ mariadb_user }}'
+    login_password: '{{ mariadb_password }}'
+    login_host: '{{ mariadb_host }}'
+    login_port: '{{ mariadb_primary_port }}'
     name: 'sql_bin_off_{{ db_name }}'
     sql_log_bin: false
     state: present
 
 - name: State Present Absent | Capture binlog position
-  command: "{{ mysql_command }} --vertical -e \"{{ show_master_status }}\""
+  command: "{{ mariadb_command }} --vertical -e \"{{ show_master_status }}\""
   register: bin_log_position_5
 
 - name: State Present Absent | Assert binlog events were not written
@@ -390,16 +383,16 @@
 
 - name: State Present Absent | Remove database with sql_log_bin disabled
   mariadb_db:
-    login_user: '{{ mysql_user }}'
-    login_password: '{{ mysql_password }}'
-    login_host: '{{ mysql_host }}'
-    login_port: '{{ mysql_primary_port }}'
+    login_user: '{{ mariadb_user }}'
+    login_password: '{{ mariadb_password }}'
+    login_host: '{{ mariadb_host }}'
+    login_port: '{{ mariadb_primary_port }}'
     name: 'sql_bin_off_{{ db_name }}'
     sql_log_bin: false
     state: absent
 
 - name: State Present Absent | Capture binlog position
-  command: "{{ mysql_command }} --vertical -e \"{{ show_master_status }}\""
+  command: "{{ mariadb_command }} --vertical -e \"{{ show_master_status }}\""
   register: bin_log_position_6
 
 - name: State Present Absent | Assert Binlog events were not written

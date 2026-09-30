@@ -1,17 +1,17 @@
 ---
 - vars:
-    mysql_parameters: &mysql_params
-      login_user: '{{ mysql_user }}'
-      login_password: '{{ mysql_password }}'
-      login_host: '{{ mysql_host }}'
-      login_port: '{{ mysql_primary_port }}'
+    mariadb_parameters: &mariadb_params
+      login_user: '{{ mariadb_user }}'
+      login_password: '{{ mariadb_password }}'
+      login_host: '{{ mariadb_host }}'
+      login_port: '{{ mariadb_primary_port }}'
 
   block:
 
     # Tests for priv parameter value passed as a dict
     - name: Priv dict | Create test databases
       mariadb_db:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: '{{ item }}'
         state: present
       loop:
@@ -21,7 +21,7 @@
 
     - name: Priv dict | Create user with privileges
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: '{{ user_name_3 }}'
         password: '{{ user_password_3 }}'
         priv:
@@ -30,7 +30,7 @@
         state: present
 
     - name: Priv dict | Run command to show privileges for user (expect privileges in stdout)
-      command: "{{ mysql_command }} -e \"SHOW GRANTS FOR '{{ user_name_3 }}'@'localhost'\""
+      command: "{{ mariadb_command }} -e \"SHOW GRANTS FOR '{{ user_name_3 }}'@'localhost'\""
       register: result
 
     - name: Assert user has giving privileges
@@ -42,12 +42,12 @@
     # Issue https://github.com/ansible-collections/ansible.mysql/issues/99
     - name: Priv dict | Create test table test_table_issue99
       mariadb_query:
-        <<: *mysql_params
+        <<: *mariadb_params
         query: "CREATE TABLE IF NOT EXISTS data3.test_table_issue99 (a INT, b INT, c INT)"
 
     - name: Priv dict | Grant select on a column
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: '{{ user_name_3 }}'
         priv:
           'data3.test_table_issue99': 'SELECT (a)'
@@ -60,7 +60,7 @@
 
     - name: Priv dict | Grant select on the column again
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: '{{ user_name_3 }}'
         priv:
           'data3.test_table_issue99': 'SELECT (a)'
@@ -73,7 +73,7 @@
 
     - name: Priv dict | Grant select on columns
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: '{{ user_name_3 }}'
         priv:
           'data3.test_table_issue99': 'SELECT (a, b),INSERT'
@@ -86,7 +86,7 @@
 
     - name: Priv dict | Grant select on columns again
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: '{{ user_name_3 }}'
         priv:
           'data3.test_table_issue99': 'SELECT (a, b),INSERT'
@@ -99,7 +99,7 @@
 
     - name: Priv dict | Grant privs on columns
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: '{{ user_name_3 }}'
         priv:
           'data3.test_table_issue99': 'SELECT (a, b), INSERT (a, b), UPDATE'
@@ -113,7 +113,7 @@
 
     - name: Priv dict | Grant same privs on columns again, note that the column order is different
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: '{{ user_name_3 }}'
         priv:
           'data3.test_table_issue99': 'SELECT (a, b), UPDATE, INSERT (b, a)'
@@ -126,7 +126,7 @@
           - result is not changed
 
     - name: Priv dict | Run command to show privileges for user (expect privileges in stdout)
-      command: "{{ mysql_command }} -e \"SHOW GRANTS FOR '{{ user_name_3 }}'@'localhost'\""
+      command: "{{ mariadb_command }} -e \"SHOW GRANTS FOR '{{ user_name_3 }}'@'localhost'\""
       register: result
 
     - name: Priv dict | Assert user has giving privileges
@@ -145,7 +145,7 @@
     # Clean up
     - name: Priv dict | Drop test databases
       mariadb_db:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: '{{ item }}'
         state: present
       loop:

@@ -1,23 +1,23 @@
 ---
-# Test code for mysql_role module
+# Test code for mariadb_role module
 
 - vars:
-    mysql_parameters: &mysql_params
-      login_user: '{{ mysql_user }}'
-      login_password: '{{ mysql_password }}'
-      login_host: '{{ mysql_host }}'
-      login_port: '{{ mysql_primary_port }}'
+    mariadb_parameters: &mariadb_params
+      login_user: '{{ mariadb_user }}'
+      login_password: '{{ mariadb_password }}'
+      login_host: '{{ mariadb_host }}'
+      login_port: '{{ mariadb_primary_port }}'
 
   block:
 
   - name: Get server version
     mariadb_info:
-      <<: *mysql_params
+      <<: *mariadb_params
     register: srv
 
   - name: When run with unsupported server versions, must fail
     mariadb_role:
-      <<: *mysql_params
+      <<: *mariadb_params
       name: test
     register: result
     ignore_errors: yes
@@ -38,30 +38,30 @@
   # Prepare
   - name: Create db test_db
     mariadb_db:
-      <<: *mysql_params
+      <<: *mariadb_params
       name: 'test_db'
     register: result
 
   - name: Create table test_table
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       login_db: 'test_db'
       query: 'DROP TABLE IF EXISTS test_table'
     register: result
 
   - name: Create table test_table
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       login_db: 'test_db'
       query: 'CREATE TABLE IF NOT EXISTS test_table (id int)'
     register: result
 
   - name: Create users
     mariadb_user:
-      <<: *mysql_params
+      <<: *mariadb_params
       name: '{{ item }}'
       host: '%'
-      password: '{{ mysql_password }}'
+      password: '{{ mariadb_password }}'
     loop:
       - 'user0'
       - 'user1'
@@ -72,7 +72,7 @@
 
   - name: Create role0 in check_mode
     mariadb_role:
-      <<: *mysql_params
+      <<: *mariadb_params
       name: 'role0'
       state: present
       members:
@@ -87,7 +87,7 @@
 
   - name: Check in DB
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       query: "SELECT 1 FROM mysql.user WHERE User = 'role0'"
     register: result
 
@@ -96,42 +96,25 @@
       that:
         - result.rowcount.0 == 0
 
-  # It must fail because of check_mode
-  - name: Check in DB, if not granted, the query will fail (expect failure)
-    mariadb_query:
-      <<: *mysql_params
-      query: "SHOW GRANTS FOR user0@'%' USING 'role0'"
-    register: result
-    ignore_errors: yes
-    when: db_engine == 'mysql'
-
-  - name: Assert that show grants is failed
-    assert:
-      that:
-        - result is failed
-    when: db_engine == 'mysql'
-
   - name: Check in DB (mariadb)
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       query: "SELECT count(User) as user_roles FROM mysql.roles_mapping WHERE User = 'user0' AND Host = '%' AND Role = 'role0'"
     register: result
-    when: db_engine == 'mariadb'
 
   - name: Assert that user is not in mysql.roles_mapping (mariadb)
     assert:
       that:
         - result.query_result.0.0['user_roles'] == 0
-    when: db_engine == 'mariadb'
 
   # =====================
 
   - name: Check that the user have no active roles
     mariadb_query:
       login_user: 'user0'
-      login_password: '{{ mysql_password }}'
-      login_host: '{{ mysql_host }}'
-      login_port: '{{ mysql_primary_port }}'
+      login_password: '{{ mariadb_password }}'
+      login_host: '{{ mariadb_host }}'
+      login_port: '{{ mariadb_primary_port }}'
       query: 'SELECT COALESCE(current_role(), "NONE") as "current_role()"'
     register: result
 
@@ -142,7 +125,7 @@
 
   - name: Create role role0
     mariadb_role:
-      <<: *mysql_params
+      <<: *mariadb_params
       name: 'role0'
       state: present
       members:
@@ -156,7 +139,7 @@
 
   - name: Check in DB
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       query: "SELECT 1 FROM mysql.user WHERE User = 'role0'"
     register: result
 
@@ -165,71 +148,38 @@
       that:
         - result.rowcount.0 == 1
 
-  - name: Query role0, if not granted, the query will fail
-    mariadb_query:
-      <<: *mysql_params
-      query: "SHOW GRANTS FOR user0@'%' USING 'role0'"
-    register: result
-    when: db_engine == 'mysql'
-
-  - name: Assert that show grants is succeeded (mysql)
-    assert:
-      that:
-        - result is succeeded
-    when: db_engine == 'mysql'
-
   - name: Check in DB (mariadb)
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       query: "SELECT count(User) as user_roles FROM mysql.roles_mapping WHERE User = 'user0' AND Host = '%' AND Role = 'role0'"
     register: result
-    when: db_engine == 'mariadb'
 
   - name: Assert that role is in mysql.roles_mapping (mariadb)
     assert:
       that:
         - result.query_result.0.0['user_roles'] == 1
-    when: db_engine == 'mariadb'
-
-  - name: Check that the role is active
-    mariadb_query:
-      login_user: 'user0'
-      login_password: '{{ mysql_password }}'
-      login_host: '{{ mysql_host }}'
-      login_port: '{{ mysql_primary_port }}'
-      query: 'SELECT current_role()'
-    register: result
-    when: db_engine == 'mysql'
-
-  - name: Assert that current_role() returns role0
-    assert:
-      that:
-        - "'role0' in result.query_result.0.0['current_role()']"
-    when: db_engine == 'mysql'
 
   - name: Check that the role is active (mariadb)
     mariadb_query:
       login_user: 'user0'
-      login_password: '{{ mysql_password }}'
-      login_host: '{{ mysql_host }}'
-      login_port: '{{ mysql_primary_port }}'
+      login_password: '{{ mariadb_password }}'
+      login_host: '{{ mariadb_host }}'
+      login_port: '{{ mariadb_primary_port }}'
       query:
         - 'SET ROLE role0'
         - 'SELECT current_role()'
     register: result
-    when: db_engine == 'mariadb'
 
   - name: Assert that role is active (mariadb)
     assert:
       that:
         - "'role0' in result.query_result.1.0['current_role()']"
-    when: db_engine == 'mariadb'
 
   # ========================
 
   - name: Create role role0 again in check_mode
     mariadb_role:
-      <<: *mysql_params
+      <<: *mariadb_params
       name: 'role0'
       state: present
     register: result
@@ -242,7 +192,7 @@
 
   - name: Check in DB
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       query: "SELECT 1 FROM mysql.user WHERE User = 'role0'"
     register: result
 
@@ -251,37 +201,22 @@
       that:
         - result.rowcount.0 == 1
 
-  - name: Query role0, if not granted, the query will fail (2)
-    mariadb_query:
-      <<: *mysql_params
-      query: "SHOW GRANTS FOR user0@'%' USING 'role0'"
-    register: result
-    when: db_engine == 'mysql'
-
-  - name: Assert that query for the role0 is succeeded for mysql (2)
-    assert:
-      that:
-        - result is succeeded
-    when: db_engine == 'mysql'
-
   - name: Check in DB (mariadb)
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       query: "SELECT count(User) as user_roles FROM mysql.roles_mapping WHERE User = 'user0' AND Host = '%' AND Role = 'role0'"
     register: result
-    when: db_engine == 'mariadb'
 
   - name: Assert that query for the role0 is succeeded for mariadb
     assert:
       that:
         - result.query_result.0.0['user_roles'] == 1
-    when: db_engine == 'mariadb'
 
   # ========================
 
   - name: Create role0 again
     mariadb_role:
-      <<: *mysql_params
+      <<: *mariadb_params
       name: 'role0'
       state: present
     register: result
@@ -293,7 +228,7 @@
 
   - name: Query role0
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       query: "SELECT 1 FROM mysql.user WHERE User = 'role0'"
     register: result
 
@@ -306,7 +241,7 @@
 
   - name: Drop role0 in check_mode
     mariadb_role:
-      <<: *mysql_params
+      <<: *mariadb_params
       name: 'role0'
       state: absent
     register: result
@@ -319,7 +254,7 @@
 
   - name: Query role0
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       query: "SELECT 1 FROM mysql.user WHERE User = 'role0'"
     register: result
 
@@ -329,38 +264,22 @@
         - result.rowcount.0 == 1
 
   # Must pass because of check_mode
-  - name: Query role0, if not granted, the query will fail (3)
-    mariadb_query:
-      <<: *mysql_params
-      query: "SHOW GRANTS FOR user0@'%' USING 'role0'"
-    register: result
-    when: db_engine == 'mysql'
-
-  - name: Assert that role0 is still in mysql after drop in check_mode (3)
-    assert:
-      that:
-        - result is succeeded
-    when: db_engine == 'mysql'
-
-  # Must pass because of check_mode
   - name: Query count for user0 and role0 (mariadb)
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       query: "SELECT count(User) as user_roles FROM mysql.roles_mapping WHERE User = 'user0' AND Host = '%' AND Role = 'role0'"
     register: result
-    when: db_engine == 'mariadb'
 
   - name: Assert that role0 is still in mariadb after drop in check_mode
     assert:
       that:
         - result.query_result.0.0['user_roles'] == 1
-    when: db_engine == 'mariadb'
 
   # ========================
 
   - name: Drop role0
     mariadb_role:
-      <<: *mysql_params
+      <<: *mariadb_params
       name: 'role0'
       state: absent
     register: result
@@ -372,7 +291,7 @@
 
   - name: Query role0
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       query: "SELECT 1 FROM mysql.user WHERE User = 'role0'"
     register: result
 
@@ -381,39 +300,23 @@
       that:
         - result.rowcount.0 == 0
 
-  - name: Query grants for role0, if not granted, the query will fail
-    mariadb_query:
-      <<: *mysql_params
-      query: "SHOW GRANTS FOR user0@'%' USING 'role0'"
-    register: result
-    ignore_errors: yes
-    when: db_engine == 'mysql'
-
-  - name: Assert that query for role0 in mysql is failed
-    assert:
-      that:
-        - result is failed
-    when: db_engine == 'mysql'
-
   - name: Query count for user0 and role0 in mariadb
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       query: "SELECT count(User) as user_roles FROM mysql.roles_mapping WHERE User = 'user0' AND Host = '%' AND Role = 'role0'"
     register: result
     ignore_errors: yes
-    when: db_engine == 'mariadb'
 
   - name: Assert that query count for user0 and role0 in mariadb returns 0 rows
     assert:
       that:
         - result.query_result.0.0['user_roles'] == 0
-    when: db_engine == 'mariadb'
 
   # ========================
 
   - name: Drop role0 again in check_mode
     mariadb_role:
-      <<: *mysql_params
+      <<: *mariadb_params
       name: 'role0'
       state: absent
     register: result
@@ -426,7 +329,7 @@
 
   - name: Drop role0 again
     mariadb_role:
-      <<: *mysql_params
+      <<: *mariadb_params
       name: 'role0'
       state: absent
     register: result
@@ -440,7 +343,7 @@
 
   - name: Create role0 in check_mode
     mariadb_role:
-      <<: *mysql_params
+      <<: *mariadb_params
       name: 'role0'
       state: present
       members:
@@ -458,7 +361,7 @@
 
   - name: Query role0
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       query: "SELECT 1 FROM mysql.user WHERE User = 'role0'"
     register: result
 
@@ -471,7 +374,7 @@
 
   - name: Create role0
     mariadb_role:
-      <<: *mysql_params
+      <<: *mariadb_params
       name: 'role0'
       state: present
       members:
@@ -488,7 +391,7 @@
 
   - name: Query role0
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       query: "SELECT 1 FROM mysql.user WHERE User = 'role0'"
     register: result
 
@@ -501,7 +404,7 @@
 
   - name: Create role0 in check_mode again
     mariadb_role:
-      <<: *mysql_params
+      <<: *mariadb_params
       name: 'role0'
       state: present
       members:
@@ -526,7 +429,7 @@
 
   - name: Create role0 again (2)
     mariadb_role:
-      <<: *mysql_params
+      <<: *mariadb_params
       name: 'role0'
       state: present
       members:
@@ -553,7 +456,7 @@
 
   - name: Create role1
     mariadb_role:
-      <<: *mysql_params
+      <<: *mariadb_params
       name: 'role1'
       state: present
     register: result
@@ -561,7 +464,7 @@
   # Rewriting members
   - name: Rewrite members in check_mode
     mariadb_role:
-      <<: *mysql_params
+      <<: *mariadb_params
       name: 'role0'
       state: present
       members:
@@ -577,120 +480,57 @@
         - result is changed
 
   # user0 is still a member because of check_mode
-  - name: Query user0, if not granted, the query will fail
-    mariadb_query:
-      <<: *mysql_params
-      query: "SHOW GRANTS FOR user0@'%' USING 'role0'"
-    register: result
-    when: db_engine == 'mysql'
-
-  - name: Assert that show grants for user0 in mysql is succeeded
-    assert:
-      that:
-        - result is succeeded
-    when: db_engine == 'mysql'
-
-  # user0 is still a member because of check_mode
   - name: Query user0 (mariadb)
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       query: "SELECT count(User) as user_roles FROM mysql.roles_mapping WHERE User = 'user0' AND Host = '%' AND Role = 'role0'"
     register: result
-    when: db_engine == 'mariadb'
 
   - name: Assert that show grants for user0 in mariadb returns 1 row
     assert:
       that:
         - result.query_result.0.0['user_roles'] == 1
-    when: db_engine == 'mariadb'
 
   # user1, user2, and role1 are not members because of check_mode
-  - name: Query user1, if not granted, the query will fail (expect failue)
-    mariadb_query:
-      <<: *mysql_params
-      query: "SHOW GRANTS FOR user1@'%' USING 'role0'"
-    ignore_errors: yes
-    register: result
-    when: db_engine == 'mysql'
-
-  - name: Assert that query for user1 in mysql is failed due to check_mode
-    assert:
-      that:
-        - result is failed
-    when: db_engine == 'mysql'
 
   - name: Query user1 (mariadb)
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       query: "SELECT count(User) as user_roles FROM mysql.roles_mapping WHERE User = 'user1' AND Host = '%' AND Role = 'role0'"
     register: result
-    when: db_engine == 'mariadb'
 
   - name: Assert that query for user1 in mariadb is failed due to check_mode
     assert:
       that:
         - result.query_result.0.0['user_roles'] == 0
-    when: db_engine == 'mariadb'
-
-  - name: Query user2, if not granted, the query will fail
-    mariadb_query:
-      <<: *mysql_params
-      query: "SHOW GRANTS FOR user2@'%' USING 'role0'"
-    register: result
-    ignore_errors: yes
-    when: db_engine == 'mysql'
-
-  - name: Assert that query for user2 in mysql is failed
-    assert:
-      that:
-        - result is failed
-    when: db_engine == 'mysql'
 
   - name: Query user2 (mariadb)
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       query: "SELECT count(User) as user_roles FROM mysql.roles_mapping WHERE User = 'user2' AND Host = '%' AND Role = 'role0'"
     register: result
-    when: db_engine == 'mariadb'
 
   - name: Assert that query user2 in mariadb returns 0 row
     assert:
       that:
         - result.query_result.0.0['user_roles'] == 0
-    when: db_engine == 'mariadb'
-
-  - name: Query role1, if not granted, the query will fail
-    mariadb_query:
-      <<: *mysql_params
-      query: "SHOW GRANTS FOR role1 USING 'role0'"
-    register: result
-    ignore_errors: yes
-    when: db_engine == 'mysql'
-
-  - name: Assert that query role1 in mysql is failed
-    assert:
-      that:
-        - result is failed
-    when: db_engine == 'mysql'
 
   - name: Query role1 (mariadb)
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       query: "SELECT count(User) as user_roles FROM mysql.roles_mapping WHERE User = 'role1' AND Role = 'role0'"
     register: result
-    when: db_engine == 'mariadb'
 
   - name: Assert that query role0 in mariadb returns 0 row
     assert:
       that:
         - result.query_result.0.0['user_roles'] == 0
-    when: db_engine == 'mariadb'
 
   # ========================
 
   - name: Rewrite members
     mariadb_role:
-      <<: *mysql_params
+      <<: *mariadb_params
       name: 'role0'
       state: present
       members:
@@ -705,119 +545,56 @@
         - result is changed
 
   # user0 is not a member any more
-  - name: Query user0, if not granted, the query will fail
-    mariadb_query:
-      <<: *mysql_params
-      query: "SHOW GRANTS FOR user0@'%' USING 'role0'"
-    register: result
-    ignore_errors: yes
-    when: db_engine == 'mysql'
-
-  - name: Assert that query user0 in mysql is failed
-    assert:
-      that:
-        - result is failed
-    when: db_engine == 'mysql'
-
-  # user0 is not a member any more
   - name: Query user0 (mariadb)
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       query: "SHOW GRANTS FOR user0@'%'"
     register: result
-    when: db_engine == 'mariadb'
 
   - name: Assert that query user0 in mariadb doesn't returns role0
     assert:
       that:
         - "'role0' not in result.query_result.0.0['Grants for user0@%']"
-    when: db_engine == 'mariadb'
-
-  - name: Query user1, if not granted, the query will fail (expect success)
-    mariadb_query:
-      <<: *mysql_params
-      query: "SHOW GRANTS FOR user1@'%' USING 'role0'"
-    register: result
-    when: db_engine == 'mysql'
-
-  - name: Assert that query user1 in mysql is succeeded
-    assert:
-      that:
-        - result is succeeded
-    when: db_engine == 'mysql'
 
   - name: Query user1 (mariadb)
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       query: "SELECT count(User) as user_roles FROM mysql.roles_mapping WHERE User = 'user1' AND Host = '%' AND Role = 'role0'"
     register: result
-    when: db_engine == 'mariadb'
 
   - name: Assert that query user1 in mariadb returns 1 row
     assert:
       that:
         - result.query_result.0.0['user_roles'] == 1
-    when: db_engine == 'mariadb'
-
-  - name: Query user2, if not granted, the query will fail
-    mariadb_query:
-      <<: *mysql_params
-      query: "SHOW GRANTS FOR user2@'%' USING 'role0'"
-    register: result
-    when: db_engine == 'mysql'
-
-  - name: Assert that query user2 in mysql is succeeded
-    assert:
-      that:
-        - result is succeeded
-    when: db_engine == 'mysql'
 
   - name: Query user2 (mariadb)
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       query: "SELECT count(User) as user_roles FROM mysql.roles_mapping WHERE User = 'user2' AND Host = '%' AND Role = 'role0'"
     register: result
-    when: db_engine == 'mariadb'
 
   - name: Assert that query user2 in mariadb returns 1 row
     assert:
       that:
         - result.query_result.0.0['user_roles'] == 1
-    when: db_engine == 'mariadb'
-
-  - name: Query role0, if not granted, the query will fail
-    mariadb_query:
-      <<: *mysql_params
-      query: "SHOW GRANTS FOR role1 USING 'role0'"
-    register: result
-    ignore_errors: yes
-    when: db_engine == 'mysql'
-
-  - name: Assert that query role0 in mysql is succeeded
-    assert:
-      that:
-        - result is succeeded
-    when: db_engine == 'mysql'
 
   - name: Query count user is role1 and role is role0 (mariadb)
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       query: "SELECT count(User) as user_roles FROM mysql.roles_mapping WHERE User = 'role1' AND Role = 'role0'"
     register: result
-    when: db_engine == 'mariadb'
 
   - name: Assert that query count user is role1 and role is role0 returns 1 row
     assert:
       that:
         - result.query_result.0.0['user_roles'] == 1
-    when: db_engine == 'mariadb'
 
 
   # ==========================
 
   - name: Rewrite members again in check_mode
     mariadb_role:
-      <<: *mysql_params
+      <<: *mariadb_params
       name: 'role0'
       state: present
       members:
@@ -836,7 +613,7 @@
 
   - name: Rewrite members again
     mariadb_role:
-      <<: *mysql_params
+      <<: *mariadb_params
       name: 'role0'
       state: present
       members:
@@ -855,7 +632,7 @@
   # Append members
   - name: Append a member in check_mode
     mariadb_role:
-      <<: *mysql_params
+      <<: *mariadb_params
       name: 'role0'
       state: present
       append_members: yes
@@ -869,37 +646,21 @@
       that:
         - result is changed
 
-  - name: Query user0, if not granted, the query will fail (expect failure)
-    mariadb_query:
-      <<: *mysql_params
-      query: "SHOW GRANTS FOR user0@'%' USING 'role0'"
-    ignore_errors: yes
-    register: result
-    when: db_engine == 'mysql'
-
-  - name: Assert that query user0 is failed
-    assert:
-      that:
-        - result is failed
-    when: db_engine == 'mysql'
-
   - name: Query count for user0 and role0 (mariadb)
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       query: "SELECT count(User) as user_roles FROM mysql.roles_mapping WHERE User = 'user0' AND Host = '%' AND Role = 'role0'"
     register: result
-    when: db_engine == 'mariadb'
 
   - name: Assert that query count for user0 and role0 in mariadb resturns 0 row
     assert:
       that:
         - result.query_result.0.0['user_roles'] == 0
-    when: db_engine == 'mariadb'
   # =====================
 
   - name: Append a member
     mariadb_role:
-      <<: *mysql_params
+      <<: *mariadb_params
       name: 'role0'
       state: present
       append_members: yes
@@ -912,90 +673,46 @@
       that:
         - result is changed
 
-  - name: Query user0, if not granted, the query will fail
-    mariadb_query:
-      <<: *mysql_params
-      query: "SHOW GRANTS FOR user0@'%' USING 'role0'"
-    register: result
-    when: db_engine == 'mysql'
-
-  - name: Assert that query user0 in mysql is succeeded
-    assert:
-      that:
-        - result is succeeded
-    when: db_engine == 'mysql'
-
   - name: Query count for user0 and role0 (mariadb)
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       query: "SELECT count(User) as user_roles FROM mysql.roles_mapping WHERE User = 'user0' AND Host = '%' AND Role = 'role0'"
     register: result
-    when: db_engine == 'mariadb'
 
   - name: Assert that query count for user0 and role0 in mariadb resturns 1 row
     assert:
       that:
         - result.query_result.0.0['user_roles'] == 1
-    when: db_engine == 'mariadb'
 
   # user1 and user2 must still be in DB because we are appending
-  - name: Query user1 using role0 (expect success)
-    mariadb_query:
-      <<: *mysql_params
-      query: "SHOW GRANTS FOR user1@'%' USING 'role0'"
-    register: result
-    when: db_engine == 'mysql'
-
-  - name: Assert that query for user1 in mysql is succeeded
-    assert:
-      that:
-        - result is succeeded
-    when: db_engine == 'mysql'
 
   - name: Query count for user1 and role0 (mariadb)
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       query: "SELECT count(User) as user_roles FROM mysql.roles_mapping WHERE User = 'user1' AND Host = '%' AND Role = 'role0'"
     register: result
-    when: db_engine == 'mariadb'
 
   - name: Assert that query count for user1 and role0 in mariadb returns 1 row
     assert:
       that:
         - result.query_result.0.0['user_roles'] == 1
-    when: db_engine == 'mariadb'
-
-  - name: Query user2, if not granted, the query will fail
-    mariadb_query:
-      <<: *mysql_params
-      query: "SHOW GRANTS FOR user2@'%' USING 'role0'"
-    register: result
-    when: db_engine == 'mysql'
-
-  - name: Assert that query user2 in mysql is succeeded
-    assert:
-      that:
-        - result is succeeded
-    when: db_engine == 'mysql'
 
   - name: Query count for user2 and role0 (mariadb)
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       query: "SELECT count(User) as user_roles FROM mysql.roles_mapping WHERE User = 'user2' AND Host = '%' AND Role = 'role0'"
     register: result
-    when: db_engine == 'mariadb'
 
   - name: Assert that query count for user2 and role0 in mariadb returns 1 row
     assert:
       that:
         - result.query_result.0.0['user_roles'] == 1
-    when: db_engine == 'mariadb'
 
   # ========================
 
   - name: Append a member again in check_mode
     mariadb_role:
-      <<: *mysql_params
+      <<: *mariadb_params
       name: 'role0'
       state: present
       append_members: yes
@@ -1013,7 +730,7 @@
 
   - name: Append a member again
     mariadb_role:
-      <<: *mysql_params
+      <<: *mariadb_params
       name: 'role0'
       state: present
       append_members: yes
@@ -1030,7 +747,7 @@
   # Detach users
   - name: Detach users in check_mode
     mariadb_role:
-      <<: *mysql_params
+      <<: *mariadb_params
       name: 'role0'
       state: present
       detach_members: yes
@@ -1046,89 +763,46 @@
         - result is changed
 
   # They must be there because of check_mode
-  - name: Query user0, if not granted, the query will fail
-    mariadb_query:
-      <<: *mysql_params
-      query: "SHOW GRANTS FOR user0@'%' USING 'role0'"
-    register: result
-    when: db_engine == 'mysql'
-
-  - name: Assert that query user0 is succeeded
-    assert:
-      that:
-        - result is succeeded
-    when: db_engine == 'mysql'
 
   - name: Query count for user0 and role0 (mariadb)
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       query: "SELECT count(User) as user_roles FROM mysql.roles_mapping WHERE User = 'user0' AND Host = '%' AND Role = 'role0'"
     register: result
-    when: db_engine == 'mariadb'
 
   - name: Assert that query count for user0 and role0 in mariadb resturns 1 row
     assert:
       that:
         - result.query_result.0.0['user_roles'] == 1
-    when: db_engine == 'mariadb'
-
-  - name: Query user1 using role0 (expect success)
-    mariadb_query:
-      <<: *mysql_params
-      query: "SHOW GRANTS FOR user1@'%' USING 'role0'"
-    register: result
-    when: db_engine == 'mysql'
-
-  - name: Assert that query user1 in mysql is succeeded
-    assert:
-      that:
-        - result is succeeded
-    when: db_engine == 'mysql'
 
   - name: Query count for user1 and role0 (mariadb)
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       query: "SELECT count(User) as user_roles FROM mysql.roles_mapping WHERE User = 'user1' AND Host = '%' AND Role = 'role0'"
     register: result
-    when: db_engine == 'mariadb'
 
   - name: Assert that query count for user1 and role0 in mariadb returns 1 row
     assert:
       that:
         - result.query_result.0.0['user_roles'] == 1
-    when: db_engine == 'mariadb'
-
-  - name: Query user2, if not granted, the query will fail
-    mariadb_query:
-      <<: *mysql_params
-      query: "SHOW GRANTS FOR user2@'%' USING 'role0'"
-    register: result
-    when: db_engine == 'mysql'
-
-  - name: Assert that query user2 in mysql is succeeded
-    assert:
-      that:
-        - result is succeeded
-    when: db_engine == 'mysql'
 
   - name: Query count user2 and role0 (mariadb)
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       query: "SELECT count(User) as user_roles FROM mysql.roles_mapping WHERE User = 'user2' AND Host = '%' AND Role = 'role0'"
     register: result
-    when: db_engine == 'mariadb'
+
 
   - name: Assert that query count user2 and role0 in mariadb returns 1 row
     assert:
       that:
         - result.query_result.0.0['user_roles'] == 1
-    when: db_engine == 'mariadb'
 
   # ========================
 
   - name: Detach users
     mariadb_role:
-      <<: *mysql_params
+      <<: *mariadb_params
       name: 'role0'
       state: present
       detach_members: yes
@@ -1142,91 +816,44 @@
       that:
         - result is changed
 
-  - name: Query user0, if not granted, the query will fail
-    mariadb_query:
-      <<: *mysql_params
-      query: "SHOW GRANTS FOR user0@'%' USING 'role0'"
-    register: result
-    when: db_engine == 'mysql'
-
-  - name: Assert that query user0 in mysql is succeeded
-    assert:
-      that:
-        - result is succeeded
-    when: db_engine == 'mysql'
-
   - name: Query count for user0 and role0 (mariadb)
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       query: "SELECT count(User) as user_roles FROM mysql.roles_mapping WHERE User = 'user0' AND Host = '%' AND Role = 'role0'"
     register: result
-    when: db_engine == 'mariadb'
 
   - name: Assert that query count for user0 and role0 returns 1 row
     assert:
       that:
         - result.query_result.0.0['user_roles'] == 1
-    when: db_engine == 'mariadb'
-
-  - name: Query user1, if not granted, the query will fail (expect failure)
-    mariadb_query:
-      <<: *mysql_params
-      query: "SHOW GRANTS FOR user1@'%' USING 'role0'"
-    ignore_errors: yes
-    register: result
-    when: db_engine == 'mysql'
-
-  - name: Assert that query user1 in mysql is failed
-    assert:
-      that:
-        - result is failed
-    when: db_engine == 'mysql'
 
   - name: Query count for user1 and role0 (mariadb)
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       query: "SELECT count(User) as user_roles FROM mysql.roles_mapping WHERE User = 'user1' AND Host = '%' AND Role = 'role0'"
     register: result
-    when: db_engine == 'mariadb'
 
   - name: Assert that query count for user1 and role0 in mariadb returns 0 row
     assert:
       that:
         - result.query_result.0.0['user_roles'] == 0
-    when: db_engine == 'mariadb'
-
-  - name: Query user2, if not granted, the query will fail
-    mariadb_query:
-      <<: *mysql_params
-      query: "SHOW GRANTS FOR user2@'%' USING 'role0'"
-    register: result
-    ignore_errors: yes
-    when: db_engine == 'mysql'
-
-  - name: Assert that query user2 in mysql is failed
-    assert:
-      that:
-        - result is failed
-    when: db_engine == 'mysql'
 
   - name: Query count for user2 and role0 (mariadb)
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       query: "SELECT count(User) as user_roles FROM mysql.roles_mapping WHERE User = 'user2' AND Host = '%' AND Role = 'role0'"
     register: result
-    when: db_engine == 'mariadb'
 
   - name: Assert that query count for user2 and role0 returns 0 row
     assert:
       that:
         - result.query_result.0.0['user_roles'] == 0
-    when: db_engine == 'mariadb'
 
   # =====================
 
   - name: Detach users in check_mode again
     mariadb_role:
-      <<: *mysql_params
+      <<: *mariadb_params
       name: 'role0'
       state: present
       detach_members: yes
@@ -1243,7 +870,7 @@
 
   - name: Detach users again
     mariadb_role:
-      <<: *mysql_params
+      <<: *mariadb_params
       name: 'role0'
       state: present
       detach_members: yes
@@ -1259,7 +886,7 @@
 
   - name: '"detach" users when creating a new role'
     mariadb_role:
-      <<: *mysql_params
+      <<: *mariadb_params
       name: 'role3'
       state: present
       detach_members: yes
@@ -1274,7 +901,7 @@
 
   - name: Query grants for user1
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       query: "SHOW GRANTS FOR user1@'%'"
     register: result
 
@@ -1286,7 +913,7 @@
   # test members_must_exist
   - name: Try failing on not-existing user in check-mode
     mariadb_role:
-      <<: *mysql_params
+      <<: *mariadb_params
       name: 'role0'
       state: present
       members_must_exist: yes
@@ -1304,7 +931,7 @@
 
   - name: Try failing on not-existing user in check-mode
     mariadb_role:
-      <<: *mysql_params
+      <<: *mariadb_params
       name: 'role0'
       state: present
       members_must_exist: no
@@ -1321,7 +948,7 @@
 
   - name: Try failing on not-existing user
     mariadb_role:
-      <<: *mysql_params
+      <<: *mariadb_params
       name: 'role0'
       state: present
       members_must_exist: yes
@@ -1338,7 +965,7 @@
 
   - name: Try failing on not-existing user
     mariadb_role:
-      <<: *mysql_params
+      <<: *mariadb_params
       name: 'role0'
       state: present
       members_must_exist: no
@@ -1358,7 +985,7 @@
 
   - name: Create test DBs
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       query: 'CREATE DATABASE {{ item }}'
     loop:
       - 'test_db1'
@@ -1367,7 +994,7 @@
 
   - name: Create table test_table
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       login_db: '{{ item }}'
       query: 'CREATE TABLE test_table (id int)'
     loop:
@@ -1377,17 +1004,9 @@
 
   - name: Query grants for role0
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       query: "SHOW GRANTS FOR role0"
     register: result
-
-  - name: Assert grants for role0 in mysql
-    assert:
-      that:
-        - result.query_result.0.0["Grants for role0@%"] == "GRANT SELECT, INSERT ON *.* TO `role0`@`%`"
-        - result.query_result.0.1["Grants for role0@%"] == "GRANT UPDATE ON `mysql`.* TO `role0`@`%`"
-        - result.rowcount.0 == 2
-    when: db_engine == 'mysql'
 
   - name: Assert grants for role0 in mariadb
     assert:
@@ -1395,11 +1014,10 @@
         - result.query_result.0.0["Grants for role0"] == "GRANT SELECT, INSERT ON *.* TO `role0`"
         - result.query_result.0.1["Grants for role0"] == "GRANT UPDATE ON `mysql`.* TO `role0`"
         - result.rowcount.0 == 2
-    when: db_engine == 'mariadb'
 
   - name: Append privs in check_mode
     mariadb_role:
-      <<: *mysql_params
+      <<: *mariadb_params
       name: 'role0'
       state: present
       priv: 'test_db1.test_table:SELECT,INSERT/test_db2.test_table:DELETE'
@@ -1414,17 +1032,9 @@
 
   - name: Query grants for role0
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       query: "SHOW GRANTS FOR role0"
     register: result
-
-  - name: Assert grants for role0 in mysql
-    assert:
-      that:
-        - result.query_result.0.0["Grants for role0@%"] == "GRANT SELECT, INSERT ON *.* TO `role0`@`%`"
-        - result.query_result.0.1["Grants for role0@%"] == "GRANT UPDATE ON `mysql`.* TO `role0`@`%`"
-        - result.rowcount.0 == 2
-    when: db_engine == 'mysql'
 
   - name: Assert grants for role0 in mariadb
     assert:
@@ -1432,11 +1042,10 @@
         - result.query_result.0.0["Grants for role0"] == "GRANT SELECT, INSERT ON *.* TO `role0`"
         - result.query_result.0.1["Grants for role0"] == "GRANT UPDATE ON `mysql`.* TO `role0`"
         - result.rowcount.0 == 2
-    when: db_engine == 'mariadb'
 
   - name: Append privs
     mariadb_role:
-      <<: *mysql_params
+      <<: *mariadb_params
       name: 'role0'
       state: present
       priv: 'test_db1.test_table:SELECT,INSERT/test_db2.test_table:DELETE'
@@ -1450,21 +1059,11 @@
 
   - name: Query grants for role0
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       query: "SHOW GRANTS FOR role0"
     register: result
 
-  - name: Assert grants for role0 in mysql
-    assert:
-      that:
-        - result.query_result.0.0["Grants for role0@%"] == "GRANT SELECT, INSERT ON *.* TO `role0`@`%`"
-        - result.query_result.0.1["Grants for role0@%"] == "GRANT UPDATE ON `mysql`.* TO `role0`@`%`"
-        - result.query_result.0.2["Grants for role0@%"] == "GRANT SELECT, INSERT ON `test_db1`.`test_table` TO `role0`@`%`"
-        - result.query_result.0.3["Grants for role0@%"] == "GRANT DELETE ON `test_db2`.`test_table` TO `role0`@`%`"
-        - result.rowcount.0 == 4
-    when: db_engine == 'mysql'
-
-  - name: Assert grants for role0 in mariadb
+  - name: Assert grants for role0
     assert:
       that:
         - result.query_result.0.0["Grants for role0"] == "GRANT SELECT, INSERT ON *.* TO `role0`"
@@ -1472,11 +1071,10 @@
         - result.query_result.0.2["Grants for role0"] == "GRANT SELECT, INSERT ON `test_db1`.`test_table` TO `role0`"
         - result.query_result.0.3["Grants for role0"] == "GRANT DELETE ON `test_db2`.`test_table` TO `role0`"
         - result.rowcount.0 == 4
-    when: db_engine == 'mariadb'
 
   - name: Append privs again in check_mode
     mariadb_role:
-      <<: *mysql_params
+      <<: *mariadb_params
       name: 'role0'
       state: present
       priv: 'test_db1.test_table:SELECT,INSERT/test_db2.test_table:DELETE'
@@ -1485,8 +1083,8 @@
     check_mode: yes
 
   # TODO it must be changed. The module uses user_mod function
-  # taken from mysql_user module. It's a bug / expected behavior
-  # because I added a similar tasks to mysql_user tests
+  # taken from mariadb_user module. It's a bug / expected behavior
+  # because I added a similar tasks to mariadb_user tests
   # https://github.com/ansible-collections/ansible.mysql/issues/50#issuecomment-871216825
   # and it's also failed. Create an issue after the module is merged to avoid conflicts.
   # TODO Fix this after user_mod is fixed.
@@ -1497,7 +1095,7 @@
 
   - name: Append privs again
     mariadb_role:
-      <<: *mysql_params
+      <<: *mariadb_params
       name: 'role0'
       state: present
       priv: 'test_db1.test_table:SELECT,INSERT/test_db2.test_table:DELETE'
@@ -1511,7 +1109,7 @@
 
   - name: Rewrite privs
     mariadb_role:
-      <<: *mysql_params
+      <<: *mariadb_params
       name: 'role0'
       state: present
       priv:
@@ -1525,23 +1123,15 @@
 
   - name: Query grants for role0
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       query: "SHOW GRANTS FOR role0"
     register: result
 
-  - name: Assert grants for role0 in mysql
-    assert:
-      that:
-        - result.query_result.0.0["Grants for role0@%"] == "GRANT SELECT ON *.* TO `role0`@`%`"
-        - result.rowcount.0 == 1
-    when: db_engine == 'mysql'
-
-  - name: Assert grants for role0 in mariadb
+  - name: Assert grants for role0
     assert:
       that:
         - result.query_result.0.0["Grants for role0"] == "GRANT SELECT ON *.* TO `role0`"
         - result.rowcount.0 == 1
-    when: db_engine == 'mariadb'
 
   # #################
   # Test admin option
@@ -1549,72 +1139,54 @@
 
   - name: Drop role0
     mariadb_role:
-      <<: *mysql_params
+      <<: *mariadb_params
       name: 'role0'
       state: absent
     register: result
 
   - name: Create role0 with admin
     mariadb_role:
-      <<: *mysql_params
+      <<: *mariadb_params
       name: 'role0'
       state: present
       admin: 'user0@%'
     register: result
     ignore_errors: yes
 
-  - name: Assert expected error message for mysql
-    assert:
-      that:
-        - result is failed
-        - result.msg is search('option can be used only with MariaDB')
-    when: db_engine == 'mysql'
-
-  - name: Assert create role0 in mariadb is changed
+  - name: Assert create role0 is changed
     assert:
       that:
         - result is changed
-    when: db_engine == 'mariadb'
 
   - name: Query role0 in mariadb
     mariadb_query:
-      <<: *mysql_params
+      <<: *mariadb_params
       query: "SELECT 1 FROM mysql.user WHERE User = 'role0' AND Host = ''"
     register: result
-    when: db_engine == 'mariadb'
 
   - name: Assert that query role0 in mariadb returns 1 row
     assert:
       that:
         - result.rowcount.0 == 1
-    when: db_engine == 'mariadb'
 
   - name: Create role0 with admin again
     mariadb_role:
-      <<: *mysql_params
+      <<: *mariadb_params
       name: 'role0'
       state: present
       admin: 'user0@%'
     register: result
     ignore_errors: yes
 
-  - name: Assert expected error message in mysql again
-    assert:
-      that:
-        - result is failed
-        - result.msg is search('option can be used only with MariaDB')
-    when: db_engine == 'mysql'
-
   - name: Assert create role0 in mariadb is not changed
     assert:
       that:
         - result is not changed
-    when: db_engine == 'mariadb'
 
   # Try to grant a role to a user who does not exist
   - name: Create role0 with admin again
     mariadb_role:
-      <<: *mysql_params
+      <<: *mariadb_params
       name: 'role0'
       state: present
       members:
@@ -1632,7 +1204,7 @@
 
     - name: Clean up DBs
       mariadb_query:
-        <<: *mysql_params
+        <<: *mariadb_params
         query: 'DROP DATABASE IF EXISTS {{ item }}'
       loop:
         - 'test_db'
@@ -1641,7 +1213,7 @@
 
     - name: Clean up users
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: '{{ item }}'
         state: absent
       loop:
@@ -1651,7 +1223,7 @@
 
     - name: Clean up roles
       mariadb_role:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: '{{ item }}'
         state: absent
       loop:

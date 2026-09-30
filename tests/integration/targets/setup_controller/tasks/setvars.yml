@@ -50,18 +50,18 @@
       {%- else -%}
       {{ ansible_version_lookup.split('-')[1].strip() }}
       {%- endif -%}
-    mysql_command: >-
-      mysql
+    mariadb_command: >-
+      mariadb
       -h{{ gateway_addr }}
-      -P{{ mysql_primary_port }}
-      -u{{ mysql_user }}
-      -p{{ mysql_password }}
+      -P{{ mariadb_primary_port }}
+      -u{{ mariadb_user }}
+      -p{{ mariadb_password }}
       --protocol=tcp
-    mysql_command_wo_port: >-
-      mysql
+    mariadb_command_wo_port: >-
+      mariadb
       -h{{ gateway_addr }}
-      -u{{ mysql_user }}
-      -p{{ mysql_password }}
+      -u{{ mariadb_user }}
+      -p{{ mariadb_password }}
       --protocol=tcp
 
 - name: "{{ role_name }} | Setvars | Output test informations"

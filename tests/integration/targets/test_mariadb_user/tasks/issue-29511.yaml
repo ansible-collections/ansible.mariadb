@@ -1,16 +1,16 @@
 ---
 - vars:
-    mysql_parameters: &mysql_params
-      login_user: '{{ mysql_user }}'
-      login_password: '{{ mysql_password }}'
-      login_host: '{{ mysql_host }}'
-      login_port: '{{ mysql_primary_port }}'
+    mariadb_parameters: &mariadb_params
+      login_user: '{{ mariadb_user }}'
+      login_password: '{{ mariadb_password }}'
+      login_host: '{{ mariadb_host }}'
+      login_port: '{{ mariadb_primary_port }}'
 
   block:
 
     - name: Issue-29511 | test setup | drop database
       mariadb_db:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: "{{ item }}"
         state: absent
       loop:
@@ -19,7 +19,7 @@
 
     - name: Issue-29511 | test setup | create database
       mariadb_db:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: "{{ item }}"
         state: present
       loop:
@@ -35,14 +35,14 @@
         - create-procedure.sql
 
     - name: Issue-29511 | Create function for test
-      shell: "{{ mysql_command }} < {{ remote_tmp_dir }}/create-function.sql"
+      shell: "{{ mariadb_command }} < {{ remote_tmp_dir }}/create-function.sql"
 
     - name: Issue-29511 | Create procedure for test
-      shell: "{{ mysql_command }} < {{ remote_tmp_dir }}/create-procedure.sql"
+      shell: "{{ mariadb_command }} < {{ remote_tmp_dir }}/create-procedure.sql"
 
     - name: Issue-29511 | Create user with FUNCTION and PROCEDURE privileges
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: '{{ user_name_2 }}'
         password: '{{ user_password_2 }}'
         state: present
@@ -57,7 +57,7 @@
 
     - name: Issue-29511 | Create user with FUNCTION and PROCEDURE privileges - Idempotent check
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: '{{ user_name_2 }}'
         password: '{{ user_password_2 }}'
         state: present
@@ -69,17 +69,10 @@
         that:
           - result is success
           - result is not changed
-      when: db_version is version('9.7', '<') or db_engine == 'mariadb'
-
-    - name: Issue-29511 | Assert Create user with FUNCTION and PROCEDURE privileges (MySQL 9.7.0+)
-      assert:
-        that:
-          - result is success
-      when: db_version is version('9.7', '>=') and db_engine == 'mysql'
 
     - name: Issue-29511 | Test teardown | cleanup databases
       mariadb_db:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: "{{ item }}"
         state: absent
       loop:

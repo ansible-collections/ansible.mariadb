@@ -4,7 +4,7 @@
   hosts: all
   gather_facts: false
   vars:
-    mysql_parameters: &mysql_params
+    mariadb_parameters: &mariadb_params
       login_user: '{{ mysql_user }}'
       login_password: '{{ mysql_password }}'
       login_host: '{{ mysql_host }}'
@@ -72,7 +72,7 @@
     # Access with password
     - name: mysql_info - check access with password
       mariadb_info:
-        <<: *mysql_params
+        <<: *mariadb_params
       register: result
 
     - assert:

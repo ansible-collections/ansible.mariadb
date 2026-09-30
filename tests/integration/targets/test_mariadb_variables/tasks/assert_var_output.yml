@@ -1,4 +1,4 @@
-# test code to assert variables in mysql_variables module
+# test code to assert variables in mariadb_variables module
 # (c) 2014,  Wayne Rosario <wrosario@ansible.com>
 
 # This file is part of Ansible
@@ -28,8 +28,8 @@
     key_name: "{{ var_name }}"
     key_value: "{{ output.msg[0][0] }}"
 
-- name: run mysql command to show variable
-  command: "{{ mysql_command }} \"-e show variables like '{{var_name}}'\""
+- name: run command to show variable
+  command: "{{ mariadb_command }} \"-e show variables like '{{var_name}}'\""
   register: result
 
 - name: assert output variable info match mysql variable info

@@ -4,7 +4,7 @@
 # and should not be used as examples of how to write Ansible roles #
 ####################################################################
 
-# test code for the mysql_user module
+# test code for the mariadb_user module
 # (c) 2014,  Wayne Rosario <wrosario@ansible.com>
 
 # This file is part of Ansible
@@ -27,11 +27,11 @@
 #
 
 - vars:
-    mysql_parameters: &mysql_params
-      login_user: '{{ mysql_user }}'
-      login_password: '{{ mysql_password }}'
-      login_host: '{{ mysql_host }}'
-      login_port: '{{ mysql_primary_port }}'
+    mariadb_parameters: &mariadb_params
+      login_user: '{{ mariadb_user }}'
+      login_password: '{{ mariadb_password }}'
+      login_host: '{{ mariadb_host }}'
+      login_port: '{{ mariadb_primary_port }}'
 
   block:
 
@@ -50,7 +50,7 @@
     #
     - name: create user with DEFAULT privilege state=present (expect changed=true)
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: "{{ user_name_1 }}"
         password: "{{ user_password_1 }}"
         state: present
@@ -76,7 +76,7 @@
     #
     - name: Create user with SELECT privilege state=present (expect changed=true)
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: "{{ user_name_2 }}"
         password: "{{ user_password_2 }}"
         state: present
@@ -103,7 +103,7 @@
     #
     - name: Give users access to multiple databases
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: '{{ item[0] }}'
         priv: '{{ item[1] }}.*:ALL'
         append_privs: yes
@@ -113,7 +113,7 @@
         - "{{db_names}}"
 
     - name: Show grants access for user1 on multiple database
-      command: "{{ mysql_command }} -e \"SHOW GRANTS FOR '{{ user_name_1 }}'@'localhost'\""
+      command: "{{ mariadb_command }} -e \"SHOW GRANTS FOR '{{ user_name_1 }}'@'localhost'\""
       register: result
 
     - name: Assert grant access for user1 on multiple database
@@ -123,7 +123,7 @@
       loop: "{{ db_names }}"
 
     - name: Show grants access for user2 on multiple database
-      command: "{{ mysql_command }} -e \"SHOW GRANTS FOR '{{ user_name_2 }}'@'localhost'\""
+      command: "{{ mariadb_command }} -e \"SHOW GRANTS FOR '{{ user_name_2 }}'@'localhost'\""
       register: result
 
     - name: Assert grant access for user2 on multiple database
@@ -142,14 +142,14 @@
 
     - name: Give user SELECT access to database via wildcard
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: '{{ user_name_1 }}'
         priv: '%db.*:SELECT'
         append_privs: yes
         password: '{{ user_password_1 }}'
 
     - name: Show grants access for user1 on database via wildcard
-      command: "{{ mysql_command }} -e \"SHOW GRANTS FOR '{{ user_name_1 }}'@'localhost'\""
+      command: "{{ mariadb_command }} -e \"SHOW GRANTS FOR '{{ user_name_1 }}'@'localhost'\""
       register: result
 
     - name: assert grant access for user1 on multiple database
@@ -160,7 +160,7 @@
 
     - name: test priv type check, must fail
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: '{{ user_name_1 }}'
         priv:
           - unsuitable
@@ -179,7 +179,7 @@
 
     - name: Change SELECT to INSERT for user access to database via wildcard
       mariadb_user:
-        <<: *mysql_params
+        <<: *mariadb_params
         name: '{{ user_name_1 }}'
         priv: '%db.*:INSERT'
         append_privs: yes
@@ -187,7 +187,7 @@
         password: '{{ user_password_1 }}'
 
     - name: Show grants access for user1 on database via wildcard
-      command: "{{ mysql_command }} -e \"SHOW GRANTS FOR '{{ user_name_1 }}'@'localhost'\""
+      command: "{{ mariadb_command }} -e \"SHOW GRANTS FOR '{{ user_name_1 }}'@'localhost'\""
       register: result
 
     - name: assert grant access for user1 on multiple database
@@ -204,16 +204,6 @@
     # Test plaintext and encrypted password scenarios.
     #
     - include_tasks: test_user_password.yml
-
-    # ============================================================
-    # Test plugin authentication scenarios.
-    #
-    # FIXME: mariadb sql syntax for create/update user is not compatible
-    # MySQL 9.0 removed the mysql_native_password plugin used by these tests
-    - include_tasks: test_user_plugin_auth.yml
-      when:
-        - db_engine == 'mysql'
-        - db_version is version('9.0', '<')
 
     # ============================================================
     # Assert create user with SELECT privileges, attempt to create database and update privileges to create database
@@ -292,7 +282,7 @@
       tags:
         - issue-671  
 
-    # Test that mysql_user still works with force_context enabled (database set to "mysql")
+    # Test that mariadb_user still works with force_context enabled (database set to "mysql")
     # (https://github.com/ansible-collections/ansible.mysql/issues/265)
     - include_tasks: issue-265.yml
 
@@ -313,7 +303,7 @@
       ansible.builtin.import_tasks:
         file: test_user_locking.yml
 
-      # Test that mysql_user still works with default role set
+      # Test that mariadb_user still works with default role set
       # (https://github.com/ansible-collections/ansible.mysql/issues/710)
     - include_tasks: issue-710.yml
 
