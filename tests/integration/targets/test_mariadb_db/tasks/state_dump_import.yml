@@ -235,8 +235,8 @@
 - name: Dump and Import | Assert password is masked in import executed commands
   assert:
     that:
-      - result.executed_commands[0] is search("--password=\*\*\*\*\*\*\*\*")
-      - db_user_unsafe_password not in result.executed_commands[0]
+      - result.executed_commands[-1] is search("--password=\*\*\*\*\*\*\*\*")
+      - db_user_unsafe_password not in result.executed_commands[-1]
 
 - name: Dump and Import | Show the tables
   command: "{{ mariadb_command }} {{ db_name }} \"-e show tables\""
@@ -263,8 +263,8 @@
   assert:
     that:
       - import_result is changed
-      - import_result.executed_commands[0] is search("--password=\*\*\*\*\*\*\*\*")
-      - mariadb_password not in import_result.executed_commands[0]
+      - import_result.executed_commands[-1] is search("--password=\*\*\*\*\*\*\*\*")
+      - mariadb_password not in import_result.executed_commands[-1]
 
 - name: Dump and Import | Remove database
   mariadb_db:
