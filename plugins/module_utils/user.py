@@ -690,14 +690,16 @@ def privileges_get(cursor, user, host, maria_role=False):
             # or
             # SET DEFAULT ROLE `admin`@`%` FOR `user1`@`localhost`
             # which will result None as res value.
-            # As we use the mysql_role module to manipulate roles
+            # The same applies to roles granted to a role, for example
+            # GRANT `role1` TO `role2`
+            # As we use the mariadb_role module to manipulate roles
             # we just ignore such privs below:
             res = re.match(
                 """GRANT (.+) TO (['`"]).*|SET DEFAULT ROLE (.+) FOR (['`"]).*""",
                 grant[0]
             )
 
-            if not maria_role and res:
+            if res:
                 continue
 
             raise InvalidPrivsError('unable to parse the MySQL grant string: %s' % grant[0])
