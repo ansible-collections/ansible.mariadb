@@ -21,7 +21,6 @@ from ansible_collections.ansible.mariadb.plugins.module_utils.mysql import (
 )
 from ansible_collections.ansible.mariadb.plugins.module_utils.implementations.mysql.hash import (
     mysql_sha256_password_hash,
-    mysql_sha256_password_hash_hex,
 )
 
 
@@ -243,10 +242,12 @@ def user_add(cursor, user, host, host_all, password, encrypted,
             query_with_args = "CREATE USER %s@%s IDENTIFIED WITH %s USING PASSWORD(%s)", (user, host, plugin, plugin_auth_string)
         elif salt:
             if plugin in ['caching_sha2_password', 'sha256_password']:
-                generated_hash_string = mysql_sha256_password_hash_hex(password=plugin_auth_string, salt=salt)
+                generated_hash_string = mysql_sha256_password_hash(password=plugin_auth_string, salt=salt)
             else:
                 module.fail_json(msg="salt not handled for %s authentication plugin" % plugin)
-            query_with_args = ("CREATE USER %s@%s IDENTIFIED WITH %s AS 0x" + generated_hash_string), (user, host, plugin)
+            # MariaDB does not accept the MySQL hex literal (AS 0x...),
+            # so pass the hash as a quoted string.
+            query_with_args = "CREATE USER %s@%s IDENTIFIED WITH %s AS %s", (user, host, plugin, generated_hash_string)
         else:
             query_with_args = "CREATE USER %s@%s IDENTIFIED WITH %s BY %s", (user, host, plugin, plugin_auth_string)
     elif plugin:
@@ -447,10 +448,12 @@ def user_mod(cursor, user, host, host_all, password, encrypted,
                         query_with_args = "ALTER USER %s@%s IDENTIFIED WITH %s USING PASSWORD(%s)", (user, host, plugin, plugin_auth_string)
                     elif salt:
                         if plugin in ['caching_sha2_password', 'sha256_password']:
-                            generated_hash_string = mysql_sha256_password_hash_hex(password=plugin_auth_string, salt=salt)
+                            generated_hash_string = mysql_sha256_password_hash(password=plugin_auth_string, salt=salt)
                         else:
                             module.fail_json(msg="salt not handled for %s authentication plugin" % plugin)
-                        query_with_args = ("ALTER USER %s@%s IDENTIFIED WITH %s AS 0x" + generated_hash_string), (user, host, plugin)
+                        # MariaDB does not accept the MySQL hex literal (AS 0x...),
+                        # so pass the hash as a quoted string.
+                        query_with_args = "ALTER USER %s@%s IDENTIFIED WITH %s AS %s", (user, host, plugin, generated_hash_string)
                     else:
                         query_with_args = "ALTER USER %s@%s IDENTIFIED WITH %s BY %s", (user, host, plugin, plugin_auth_string)
                 else:
