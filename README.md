@@ -97,22 +97,7 @@ Here is the table for the support timeline:
 
 ## Tested with
 
-### ansible-core
-
-- stable-2.16 (RHEL8 context only)
-- stable-2.17
-- stable-2.18
-- stable-2.19
-- stable-2.20
-- stable-2.21
-- current development version
-
-### Python
-
-- 3.8 (Unit tests only)
-- 3.9 (Unit tests only)
-- 3.10 (Sanity, Units and integrations tests)
-- 3.11 (Unit tests only, collection version >= 3.10.0)
+See our [CI test matrix](https://github.com/ansible-collections/ansible.mariadb/blob/main/.github/workflows/ansible-test-plugins.yml) and the [Actions](https://github.com/ansible-collections/ansible.mariadb/actions) tab for details
 
 ### Databases
 
