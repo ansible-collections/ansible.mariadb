@@ -9,6 +9,7 @@ mariadb_primary_port: 3307
 db_names:
   - "data"
   - "db%"
+  - "mariadb.example.com"
 
 # Database formats
 db_formats:
