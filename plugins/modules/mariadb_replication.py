@@ -15,7 +15,7 @@ DOCUMENTATION = r'''
 module: mariadb_replication
 short_description: Manage MariaDB replication
 description:
-- This module only supports MariaDB; all MySQL-related options will be removed in the next releases. Use the C(ansible.mysql) collection for MySQL automation.
+- This module supports MariaDB only. Use the C(ansible.mysql) collection for MySQL automation.
 - Manages MariaDB server replication, replica, primary status, get and change primary host.
 author:
 - Balazs Pocze (@banyek)
@@ -26,19 +26,18 @@ options:
   mode:
     description:
     - Module operating mode. Could be
-      C(changeprimary) (CHANGE MASTER TO) - also works for MySQL 8.0.23 and later since ansible.mysql 3.10.0,
-      C(changereplication) (CHANGE REPLICATION SOURCE TO) - only supported in MySQL 8.0.23 and later (scheduled for removal),
+      - C(changeprimary) (CHANGE MASTER TO),
       C(getprimary) (SHOW MASTER STATUS),
       C(getreplica) (SHOW REPLICA STATUS),
       C(startreplica) (START REPLICA),
       C(stopreplica) (STOP REPLICA),
-      C(resetprimary) (RESET MASTER) - supported since ansible.mysql 0.1.0,
+      - C(resetprimary) (RESET MASTER),
       C(resetreplica) (RESET REPLICA),
       C(resetreplicaall) (RESET REPLICA ALL).
     type: str
     choices:
     - changeprimary
-    - changereplication
+
     - getprimary
     - getreplica
     - startreplica
@@ -92,64 +91,44 @@ options:
     type: int
   primary_ssl:
     description:
-    - Same as the C(MASTER_SSL) mysql variable.
+    - Same as the C(MASTER_SSL) MariaDB replication option.
     - When setting it to C(yes), the connection attempt only succeeds
       if an encrypted connection can be established.
-    - For details, refer to
-      L(MySQL encrypted replication documentation,https://dev.mysql.com/doc/refman/8.0/en/replication-solutions-encrypted-connections.html).
     - The default is C(false).
     type: bool
     aliases: [master_ssl]
   primary_ssl_ca:
     description:
-    - Same as the C(MASTER_SSL_CA) mysql variable.
-    - For details, refer to
-      L(MySQL encrypted replication documentation,https://dev.mysql.com/doc/refman/8.0/en/replication-solutions-encrypted-connections.html).
+    - Same as the C(MASTER_SSL_CA) MariaDB replication option.
     type: str
     aliases: [master_ssl_ca]
   primary_ssl_capath:
     description:
-    - Same as the C(MASTER_SSL_CAPATH) mysql variable.
-    - For details, refer to
-      L(MySQL encrypted replication documentation,https://dev.mysql.com/doc/refman/8.0/en/replication-solutions-encrypted-connections.html).
+    - Same as the C(MASTER_SSL_CAPATH) MariaDB replication option.
     type: str
     aliases: [master_ssl_capath]
   primary_ssl_cert:
     description:
-    - Same as the C(MASTER_SSL_CERT) mysql variable.
-    - For details, refer to
-      L(MySQL encrypted replication documentation,https://dev.mysql.com/doc/refman/8.0/en/replication-solutions-encrypted-connections.html).
+    - Same as the C(MASTER_SSL_CERT) MariaDB replication option.
     type: str
     aliases: [master_ssl_cert]
   primary_ssl_key:
     description:
-    - Same as the C(MASTER_SSL_KEY) mysql variable.
-    - For details, refer to
-      L(MySQL encrypted replication documentation,https://dev.mysql.com/doc/refman/8.0/en/replication-solutions-encrypted-connections.html).
+    - Same as the C(MASTER_SSL_KEY) MariaDB replication option.
     type: str
     aliases: [master_ssl_key]
   primary_ssl_cipher:
     description:
-    - Same as the C(MASTER_SSL_CIPHER) mysql variable.
+    - Same as the C(MASTER_SSL_CIPHER) MariaDB replication option.
     - Specifies a colon-separated list of one or more ciphers permitted by the replica for the replication connection.
-    - For details, refer to
-      L(MySQL encrypted replication documentation,https://dev.mysql.com/doc/refman/8.0/en/replication-solutions-encrypted-connections.html).
     type: str
     aliases: [master_ssl_cipher]
   primary_ssl_verify_server_cert:
     description:
-    - Same as C(MASTER_SSL_VERIFY_SERVER_CERT) MySQL/MariaDB variable.
-    - The module switch automatically to C(SOURCE_SSL_VERIFY_SERVER_CERT) for MySQL 8.0.23 and later.
-    - Prior to ansible.mysql 3.14.0 C(false) had no effect.
+    - Same as C(MASTER_SSL_VERIFY_SERVER_CERT) MariaDB replication option.
     type: bool
     version_added: '3.5.0'
-  primary_auto_position:
-    description:
-    - Whether the host uses GTID based replication or not.
-    - Same as the C(MASTER_AUTO_POSITION) mysql variable.
-    type: bool
-    default: false
-    aliases: [master_auto_position]
+
   primary_use_gtid:
     description:
     - Configures the replica to use the MariaDB Global Transaction ID.
@@ -164,9 +143,7 @@ options:
   primary_delay:
     description:
     - Time lag behind the primary's state (in seconds).
-    - Same as the C(MASTER_DELAY) mysql variable.
-    - Available from MySQL 5.6.
-    - For more information see U(https://dev.mysql.com/doc/refman/8.0/en/replication-delayed.html).
+    - Same as the C(MASTER_DELAY) MariaDB replication option.
     type: int
     version_added: '0.1.0'
     aliases: [master_delay]
@@ -174,18 +151,10 @@ options:
     description:
     - Name of the primary connection.
     - Supported from MariaDB 10.0.1.
-    - Mutually exclusive with I(channel).
     - For more information see U(https://mariadb.com/kb/en/library/multi-source-replication/).
     type: str
     version_added: '0.1.0'
-  channel:
-    description:
-    - Name of replication channel.
-    - Multi-source replication is supported from MySQL 5.7.
-    - Mutually exclusive with I(connection_name).
-    - For more information see U(https://dev.mysql.com/doc/refman/8.0/en/replication-multi-source.html).
-    type: str
-    version_added: '0.1.0'
+
   fail_on_error:
     description:
     - Fails on error when calling mysql.
@@ -194,7 +163,7 @@ options:
     version_added: '0.1.0'
 
 notes:
-   - Compatible with MariaDB or MySQL.
+   - Compatible with MariaDB.
    - If an empty value for the parameter of string type is needed, use an empty string.
 
 attributes:
@@ -210,12 +179,7 @@ extends_documentation_fragment:
 
 seealso:
 - module: ansible.mariadb.mariadb_info
-- name: MySQL replication reference
-  description: Complete reference of the MySQL replication documentation.
-  link: https://dev.mysql.com/doc/refman/8.0/en/replication.html
-- name: MySQL encrypted replication reference.
-  description: Setting up MySQL replication to use encrypted connection.
-  link: https://dev.mysql.com/doc/refman/8.0/en/replication-solutions-encrypted-connections.html
+
 - name: MariaDB replication reference
   description: Complete reference of the MariaDB replication documentation.
   link: https://mariadb.com/kb/en/library/setting-up-replication/
@@ -262,10 +226,6 @@ EXAMPLES = r'''
     mode: startreplica
     connection_name: primary-1
 
-- name: Stop replication in channel primary-1
-  ansible.mariadb.mariadb_replication:
-    mode: stopreplica
-    channel: primary-1
 
 - name: >
     Run RESET MASTER command which will delete all existing binary log files
@@ -301,9 +261,11 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ansible.mariadb.plugins.module_utils.command_resolver import (
     CommandResolver
 )
+from ansible_collections.ansible.mariadb.plugins.module_utils.implementations.mariadb.replication import (
+    uses_replica_terminology,
+)
 from ansible_collections.ansible.mariadb.plugins.module_utils.mysql import (
     get_server_version,
-    get_server_implementation,
     mysql_connect,
     mysql_driver,
     mysql_driver_fail_msg,
@@ -569,17 +531,10 @@ def main():
             module.fail_json(msg="unable to find %s. Exception message: %s" % (config_file, to_native(e)))
 
     server_version = get_server_version(cursor)
-    server_implementation = get_server_implementation(cursor)
-    command_resolver = CommandResolver(server_implementation, server_version)
-    cursor.execute("SELECT VERSION()")
-    if server_implementation == 'mariadb':
-        from ansible_collections.ansible.mariadb.plugins.module_utils.implementations.mariadb import replication as impl
-    else:
-        from ansible_collections.ansible.mariadb.plugins.module_utils.implementations.mysql import replication as impl
+    command_resolver = CommandResolver(server_version)
 
-    # Since MySQL 8.0.22 and MariaDB 10.5.1,
-    # "REPLICA" must be used instead of "SLAVE"
-    if impl.uses_replica_terminology(cursor):
+    # Since MariaDB 10.5.1, "REPLICA" must be used instead of "SLAVE"
+    if uses_replica_terminology(cursor):
         replica_term = 'REPLICA'
     else:
         replica_term = 'SLAVE'
@@ -593,21 +548,17 @@ def main():
         else:
             status = dict(
                 Is_Primary=False,
-                msg="Server is not configured as mysql primary. "
+                msg="Server is not configured as MariaDB primary. "
                     "Meaning: Binary logs are disabled")
 
         module.exit_json(queries=executed_queries, **status)
 
     elif mode == "getreplica":
         status = get_replica_status(cursor, connection_name, channel, replica_term)
-        # MySQL 8.0 uses Replica_...
-        # MariaDB 10.6 uses Slave_...
-        if status and (
-                "Slave_IO_Running" in status or
-                "Replica_IO_Running" in status):
+        if status and "Slave_IO_Running" in status:
             status['Is_Replica'] = True
         else:
-            status = dict(Is_Replica=False, msg="Server is not configured as mysql replica")
+            status = dict(Is_Replica=False, msg="Server is not configured as MariaDB replica")
 
         module.exit_json(queries=executed_queries, **status)
 

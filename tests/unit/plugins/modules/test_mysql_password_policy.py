@@ -24,11 +24,9 @@ except ImportError:
 
 from ansible_collections.ansible.mariadb.plugins.modules import mariadb_password_policy
 from ansible_collections.ansible.mariadb.plugins.modules.mariadb_password_policy import (
-    MySQLPasswordPolicy,
+    MariaDBPasswordPolicy,
     get_variable,
-    normalize_bool_setting_value,
     normalize_int_value,
-    normalize_policy_value,
     set_variable,
 )
 
@@ -99,7 +97,7 @@ class FakeCursor(object):
                 self._rows = []
             return
 
-        if query.startswith("SET GLOBAL ") or query.startswith("SET PERSIST "):
+        if query.startswith("SET GLOBAL "):
             variable_name = query.split('`')[1]
             self.variables[variable_name] = params[0]
             self._rows = []
@@ -127,113 +125,25 @@ def test_normalize_int_value_returns_expected_int(value, expected):
     assert normalize_int_value(value) == expected
 
 
-@pytest.mark.parametrize(
-    'value,expected',
-    [
-        ('ON', 'ON'),
-        ('off', 'OFF'),
-        (1, 'ON'),
-        (False, 'OFF'),
-    ],
-)
-def test_normalize_bool_setting_value_normalizes_supported_inputs(value, expected):
-    assert normalize_bool_setting_value(value) == expected
-
-
-@pytest.mark.parametrize(
-    'value,expected',
-    [
-        ('medium', 'medium'),
-        ('MEDIUM', 'medium'),
-        ('1', 'medium'),
-        ('2', 'strong'),
-    ],
-)
-def test_normalize_policy_value_normalizes_numeric_and_string_inputs(value, expected):
-    assert normalize_policy_value(value) == expected
-
-
 def test_get_variable_returns_matching_value():
     cursor = FakeCursor({
-        'password_history': '3',
+        'simple_password_check_minimal_length': '12',
     })
 
-    assert get_variable(cursor, 'password_history') == '3'
+    assert get_variable(cursor, 'simple_password_check_minimal_length') == '12'
 
 
 def test_get_variable_returns_none_when_variable_is_missing():
-    assert get_variable(FakeCursor({}), 'password_history') is None
+    assert get_variable(FakeCursor({}), 'simple_password_check_minimal_length') is None
 
 
 def test_set_variable_executes_global_query():
     cursor = FakeCursor({})
 
-    set_variable(cursor, 'password_history', 4, 'global')
+    set_variable(cursor, 'simple_password_check_minimal_length', 12)
 
-    assert cursor.executed[-1] == ("SET GLOBAL `password_history` = %s", (4,))
-    assert cursor.variables['password_history'] == 4
-
-
-def test_set_variable_executes_persist_query():
-    cursor = FakeCursor({})
-
-    set_variable(cursor, 'password_history', 4, 'persist')
-
-    assert cursor.executed[-1] == ("SET PERSIST `password_history` = %s", (4,))
-    assert cursor.variables['password_history'] == 4
-
-
-def test_configure_returns_unchanged_when_mysql_settings_already_match():
-    cursor = FakeCursor({
-        'validate_password.length': '12',
-        'validate_password.mixed_case_count': '2',
-        'validate_password.number_count': '2',
-        'validate_password.special_char_count': '1',
-        'default_password_lifetime': '90',
-    })
-
-    policy = MySQLPasswordPolicy(ModuleStub(), cursor, 'mysql')
-
-    result = policy.configure({
-        'length': 12,
-        'mixed_case_count': 2,
-        'number_count': 2,
-        'special_char_count': 1,
-        'password_lifetime': 90,
-    })
-
-    assert result['changed'] is False
-    assert result['queries'] == []
-    assert result['settings'] == {
-        'length': 12,
-        'mixed_case_count': 2,
-        'number_count': 2,
-        'special_char_count': 1,
-        'password_lifetime': 90,
-    }
-
-
-def test_configure_in_check_mode_predicts_mysql_persist_queries_without_writes():
-    cursor = FakeCursor({
-        'validate_password.length': '8',
-        'password_history': '3',
-    })
-
-    policy = MySQLPasswordPolicy(ModuleStub(), cursor, 'mysql')
-
-    result = policy.configure({
-        'length': 12,
-        'password_history': 5,
-    }, mode='persist', check_mode=True)
-
-    assert result['changed'] is True
-    assert result['queries'] == [
-        "SET PERSIST `validate_password`.`length` = 12",
-        "SET PERSIST `password_history` = 5",
-    ]
-    assert cursor.variables['validate_password.length'] == '8'
-    assert cursor.variables['password_history'] == '3'
-    assert not any(query.startswith('SET PERSIST ') for query, _params in cursor.executed)
+    assert cursor.executed[-1] == ("SET GLOBAL simple_password_check_minimal_length = %s", (12,))
+    assert cursor.variables['simple_password_check_minimal_length'] == 12
 
 
 def test_configure_uses_mariadb_simple_password_check_mapping():
@@ -244,7 +154,7 @@ def test_configure_uses_mariadb_simple_password_check_mapping():
         'simple_password_check_other_characters': '1',
     })
 
-    policy = MySQLPasswordPolicy(ModuleStub(), cursor, 'mariadb')
+    policy = MariaDBPasswordPolicy(ModuleStub(), cursor)
 
     result = policy.configure({
         'length': 12,
@@ -262,23 +172,8 @@ def test_configure_uses_mariadb_simple_password_check_mapping():
     }
 
 
-def test_configure_fails_when_mariadb_receives_mysql_only_option():
-    policy = MySQLPasswordPolicy(ModuleStub(), FakeCursor({}), 'mariadb')
-
-    with pytest.raises(RuntimeError) as exc_info:
-        policy.configure({'policy': 'medium'})
-
-    assert str(exc_info.value) == 'Parameter "policy" is supported only on MySQL.'
-
-
-def test_validate_supported_settings_allows_mysql_specific_options():
-    policy = MySQLPasswordPolicy(ModuleStub(), FakeCursor({}), 'mysql')
-
-    policy.validate_supported_settings({'policy': 'medium'}, mode='persist')
-
-
 def test_configure_fails_when_requested_validation_facility_is_missing():
-    policy = MySQLPasswordPolicy(ModuleStub(), FakeCursor({}), 'mysql')
+    policy = MariaDBPasswordPolicy(ModuleStub(), FakeCursor({}))
 
     with pytest.raises(RuntimeError) as exc_info:
         policy.configure({'length': 12})
@@ -286,111 +181,28 @@ def test_configure_fails_when_requested_validation_facility_is_missing():
     assert str(exc_info.value) == 'Password policy setting "length" is not available on this server.'
 
 
-def test_configure_allows_mysql_global_settings_without_validate_password_component():
-    cursor = FakeCursor({
-        'password_history': '3',
-    })
-
-    policy = MySQLPasswordPolicy(ModuleStub(), cursor, 'mysql')
-
-    result = policy.configure({
-        'password_history': 5,
-    })
-
-    assert result['changed'] is True
-    assert result['queries'] == [
-        "SET GLOBAL `password_history` = 5",
-    ]
-    assert cursor.variables['password_history'] == 5
-
-
-def test_configure_fails_when_mariadb_requests_persist_mode():
-    cursor = FakeCursor({
-        'simple_password_check_minimal_length': '8',
-    })
-
-    policy = MySQLPasswordPolicy(ModuleStub(), cursor, 'mariadb')
-
-    with pytest.raises(RuntimeError) as exc_info:
-        policy.configure({'length': 12}, mode='persist')
-
-    assert str(exc_info.value) == 'mode=persist is supported only on MySQL.'
-
-
-def test_read_setting_returns_mapped_mysql_variable_name_and_value():
-    policy = MySQLPasswordPolicy(
+def test_read_setting_returns_mapped_mariadb_variable_name_and_value():
+    policy = MariaDBPasswordPolicy(
         ModuleStub(),
-        FakeCursor({'validate_password.policy': 'MEDIUM'}),
-        'mysql',
+        FakeCursor({'simple_password_check_minimal_length': '12'}),
     )
 
-    variable_name, value = policy.read_setting('policy')
+    variable_name, value = policy.read_setting('length')
 
-    assert variable_name == 'validate_password.policy'
-    assert value == 'MEDIUM'
+    assert variable_name == 'simple_password_check_minimal_length'
+    assert value == '12'
 
 
 def test_normalize_value_handles_supported_setting_types():
-    policy = MySQLPasswordPolicy(ModuleStub(), FakeCursor({}), 'mysql')
+    policy = MariaDBPasswordPolicy(ModuleStub(), FakeCursor({}))
 
-    assert policy.normalize_value('policy', '1') == 'medium'
-    assert policy.normalize_value('check_user_name', 'off') == 'OFF'
     assert policy.normalize_value('length', '12') == 12
 
 
-def test_query_value_formats_policy_and_bool_for_sql():
-    policy = MySQLPasswordPolicy(ModuleStub(), FakeCursor({}), 'mysql')
-
-    assert policy.query_value('policy', 'medium') == 'MEDIUM'
-    assert policy.query_value('check_user_name', False) == 'OFF'
-
-
 def test_format_set_query_formats_expected_statement():
-    assert MySQLPasswordPolicy.format_set_query('password_history', 5, 'persist') == (
-        "SET PERSIST `password_history` = 5"
+    assert MariaDBPasswordPolicy.format_set_query('simple_password_check_minimal_length', 12) == (
+        "SET GLOBAL simple_password_check_minimal_length = 12"
     )
-
-
-def test_format_set_query_quotes_dotted_variable_fragments():
-    assert MySQLPasswordPolicy.format_set_query('validate_password.length', 12, 'global') == (
-        "SET GLOBAL `validate_password`.`length` = 12"
-    )
-
-
-def test_configure_treats_policy_values_case_insensitively():
-    cursor = FakeCursor({
-        'validate_password.policy': 'MEDIUM',
-    })
-
-    policy = MySQLPasswordPolicy(ModuleStub(), cursor, 'mysql')
-
-    result = policy.configure({
-        'policy': 'medium',
-    })
-
-    assert result['changed'] is False
-    assert result['queries'] == []
-
-
-def test_main_rejects_persist_mode_for_old_mysql(monkeypatch):
-    with set_module_args(
-        {
-            'login_unix_socket': '/run/mysqld/mysqld.sock',
-            'length': 12,
-            'mode': 'persist',
-        }
-    ):
-        monkeypatch.setattr(AnsibleModule, 'exit_json', exit_json)
-        monkeypatch.setattr(AnsibleModule, 'fail_json', fail_json)
-        monkeypatch.setattr(mariadb_password_policy, 'mysql_driver', object())
-        monkeypatch.setattr(mariadb_password_policy, 'mysql_connect', lambda *args, **kwargs: (MagicMock(), MagicMock()))
-        monkeypatch.setattr(mariadb_password_policy, 'get_server_implementation', lambda cursor: 'mysql')
-        monkeypatch.setattr(mariadb_password_policy, 'get_server_version', lambda cursor: '5.7.44')
-
-        with pytest.raises(AnsibleFailJson) as exc:
-            mariadb_password_policy.main()
-
-    assert exc.value.args[0]['msg'] == 'mode=persist requires MySQL 8.0 or later.'
 
 
 def test_main_returns_configure_result(monkeypatch):
@@ -404,11 +216,9 @@ def test_main_returns_configure_result(monkeypatch):
         monkeypatch.setattr(AnsibleModule, 'fail_json', fail_json)
         monkeypatch.setattr(mariadb_password_policy, 'mysql_driver', object())
         monkeypatch.setattr(mariadb_password_policy, 'mysql_connect', lambda *args, **kwargs: (MagicMock(), MagicMock()))
-        monkeypatch.setattr(mariadb_password_policy, 'get_server_implementation', lambda cursor: 'mariadb')
 
-        def fake_configure(self, desired_settings, mode='global', check_mode=False):
+        def fake_configure(self, desired_settings, check_mode=False):
             assert desired_settings['length'] == 12
-            assert mode == 'global'
             assert check_mode is False
             return {
                 'changed': False,
@@ -416,7 +226,7 @@ def test_main_returns_configure_result(monkeypatch):
                 'settings': {'length': 12},
             }
 
-        monkeypatch.setattr(mariadb_password_policy.MySQLPasswordPolicy, 'configure', fake_configure)
+        monkeypatch.setattr(mariadb_password_policy.MariaDBPasswordPolicy, 'configure', fake_configure)
 
         with pytest.raises(AnsibleExitJson) as exc:
             mariadb_password_policy.main()

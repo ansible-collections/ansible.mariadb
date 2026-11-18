@@ -27,7 +27,7 @@
       ansible.mariadb.mariadb_query:
         <<: *mariadb_params
         query: >-
-          SET DEFAULT ROLE developers {{ (db_engine == 'mysql') | ternary('TO', 'FOR') }} {{ user_name_1 }}@localhost
+          SET DEFAULT ROLE developers FOR {{ user_name_1 }}@localhost
 
     - name: Issue-710 | Ensure db_user1 can still be altered
       ansible.mariadb.mariadb_user:

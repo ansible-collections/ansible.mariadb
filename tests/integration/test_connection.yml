@@ -1,6 +1,6 @@
 ---
 
-- name: Playbook to test bug to connect to MySQL/MariaDB server
+- name: Playbook to test bug to connect to MariaDB server
   hosts: all
   gather_facts: false
   vars:

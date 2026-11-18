@@ -14,11 +14,9 @@ module: mariadb_password_policy
 short_description: Manage MariaDB password policy settings
 
 description:
-  - This module only supports MariaDB; all MySQL-related options will be removed in the next releases. Use the C(ansible.mysql) collection for MySQL automation.
   - Manage password policy settings on MariaDB.
   - This module is configuration-only and does not install or uninstall password validation components or plugins.
-  - On MySQL, the module manages C(validate_password) settings and related global password policy variables.
-  - On MariaDB, the module manages the C(simple_password_check) plugin settings only.
+  - This module manages the C(simple_password_check) plugin settings only.
 
 author:
   - Steve Fulmer (@stevefulme1)
@@ -27,72 +25,26 @@ author:
 version_added: '5.2.0'
 
 options:
-  policy:
-    description:
-      - This option is scheduled for removal.
-      - Password validation policy level on MySQL.
-      - Supported only on MySQL.
-    type: str
-    choices: [low, medium, strong]
   length:
     description:
       - Minimum number of characters in a password.
-      - Maps to the active password validation facility for the current engine.
     type: int
   mixed_case_count:
     description:
-      - Minimum number of lowercase and uppercase letters required each by the active password validation facility.
-      - Supported on MySQL and on MariaDB C(simple_password_check).
+      - Minimum number of lowercase and uppercase letters required each by C(simple_password_check).
     type: int
   number_count:
     description:
       - Minimum number of numeric characters required.
-      - Supported on MySQL and on MariaDB C(simple_password_check).
     type: int
   special_char_count:
     description:
       - Minimum number of non-alphanumeric characters required.
-      - Supported on MySQL and on MariaDB C(simple_password_check).
     type: int
-  check_user_name:
-    description:
-      - This option is scheduled for removal.
-      - Whether passwords are checked against the user name.
-      - Supported only on MySQL.
-    type: bool
-  password_lifetime:
-    description:
-      - This option is scheduled for removal.
-      - Default password expiration lifetime in days.
-      - Supported only on MySQL.
-    type: int
-  password_history:
-    description:
-      - This option is scheduled for removal.
-      - Number of previous passwords that cannot be reused.
-      - Supported only on MySQL.
-    type: int
-  reuse_interval:
-    description:
-      - This option is scheduled for removal.
-      - Number of days before a password can be reused.
-      - Supported only on MySQL.
-    type: int
-  mode:
-    description:
-      - This option is scheduled for removal.
-      - How supported MySQL variables are set.
-      - V(global) uses C(SET GLOBAL) and does not survive restarts by itself.
-      - V(persist) uses C(SET PERSIST) on MySQL.
-      - Supported only on MySQL.
-    type: str
-    choices: [global, persist]
-    default: global
 
 notes:
-  - The required password validation component or plugin must already be enabled on the target server.
-  - The module does not install C(validate_password) or MariaDB password validation plugins.
-  - MariaDB support in the first iteration is limited to C(simple_password_check).
+  - The C(simple_password_check) plugin must already be enabled on the target server.
+  - The module does not install MariaDB password validation plugins.
 
 attributes:
   check_mode:
@@ -103,9 +55,6 @@ attributes:
 seealso:
   - module: ansible.mariadb.mariadb_query
   - module: ansible.mariadb.mariadb_variables
-  - name: MySQL password validation component
-    description: Oracle MySQL reference for validate_password.
-    link: https://dev.mysql.com/doc/refman/8.4/en/validate-password.html
   - name: MariaDB simple password check plugin
     description: MariaDB reference for simple_password_check.
     link: https://mariadb.com/docs/server/reference/plugins/password-validation-plugins/simple-password-check-plugin
@@ -115,14 +64,6 @@ extends_documentation_fragment:
 '''
 
 EXAMPLES = r'''
-- name: Configure shared password complexity settings on MySQL
-  ansible.mariadb.mariadb_password_policy:
-    login_unix_socket: /run/mysqld/mysqld.sock
-    length: 12
-    mixed_case_count: 2
-    number_count: 2
-    special_char_count: 1
-
 - name: Configure MariaDB simple_password_check settings
   ansible.mariadb.mariadb_password_policy:
     login_unix_socket: /run/mysqld/mysqld.sock
@@ -139,7 +80,7 @@ queries:
   type: list
   elements: str
   sample:
-    - SET GLOBAL `validate_password`.`length` = 12
+    - SET GLOBAL simple_password_check_minimal_length = 12
 settings:
   description: Normalized requested settings after execution or prediction (in check mode).
   returned: always
@@ -152,11 +93,8 @@ settings:
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.common.text.converters import to_native
 
-from ansible_collections.ansible.mariadb.plugins.module_utils._version import LooseVersion
 from ansible_collections.ansible.mariadb.plugins.module_utils.database import mysql_quote_identifier
 from ansible_collections.ansible.mariadb.plugins.module_utils.mysql import (
-    get_server_implementation,
-    get_server_version,
     mysql_common_argument_spec,
     mysql_connect,
     mysql_driver,
@@ -165,41 +103,17 @@ from ansible_collections.ansible.mariadb.plugins.module_utils.mysql import (
 
 
 SETTING_VARIABLES = {
-    'mysql': {
-        'policy': 'validate_password.policy',
-        'length': 'validate_password.length',
-        'mixed_case_count': 'validate_password.mixed_case_count',
-        'number_count': 'validate_password.number_count',
-        'special_char_count': 'validate_password.special_char_count',
-        'check_user_name': 'validate_password.check_user_name',
-        'password_lifetime': 'default_password_lifetime',
-        'password_history': 'password_history',
-        'reuse_interval': 'password_reuse_interval',
-    },
-    'mariadb': {
-        'length': 'simple_password_check_minimal_length',
-        'mixed_case_count': 'simple_password_check_letters_same_case',
-        'number_count': 'simple_password_check_digits',
-        'special_char_count': 'simple_password_check_other_characters',
-    },
+    'length': 'simple_password_check_minimal_length',
+    'mixed_case_count': 'simple_password_check_letters_same_case',
+    'number_count': 'simple_password_check_digits',
+    'special_char_count': 'simple_password_check_other_characters',
 }
-
-MYSQL_ONLY_OPTIONS = (
-    'policy',
-    'check_user_name',
-    'password_lifetime',
-    'password_history',
-    'reuse_interval',
-)
 
 INTEGER_OPTIONS = (
     'length',
     'mixed_case_count',
     'number_count',
     'special_char_count',
-    'password_lifetime',
-    'password_history',
-    'reuse_interval',
 )
 
 
@@ -216,41 +130,17 @@ def get_variable(cursor, mysqlvar):
     return rows[0][1] if rows else None
 
 
-def set_variable(cursor, mysqlvar, value, mode):
-    query = "SET %s %s = " % (mode.upper(), mysql_quote_identifier(mysqlvar, 'vars'))
+def set_variable(cursor, mysqlvar, value):
+    query = "SET GLOBAL %s = " % mysql_quote_identifier(mysqlvar, 'vars')
     cursor.execute(query + "%s", (value,))
 
 
-def normalize_bool_setting_value(value):
-    if isinstance(value, str):
-        value = value.upper()
-
-    if value in ('ON', '1', 1, True):
-        return 'ON'
-    if value in ('OFF', '0', 0, False):
-        return 'OFF'
-    return value
-
-
-def normalize_policy_value(value):
-    value = str(value).strip().lower()
-    numeric_policy = {
-        '0': 'low',
-        '1': 'medium',
-        '2': 'strong',
-    }
-    return numeric_policy.get(value, value)
-
-
-class MySQLPasswordPolicy(object):
-    def __init__(self, module, cursor, server_implementation):
+class MariaDBPasswordPolicy(object):
+    def __init__(self, module, cursor):
         self.module = module
         self.cursor = cursor
-        self.server_implementation = server_implementation
 
-    def configure(self, desired_settings, mode='global', check_mode=False):
-        self.validate_supported_settings(desired_settings, mode)
-
+    def configure(self, desired_settings, check_mode=False):
         effective_settings = {}
         planned_changes = []
 
@@ -274,35 +164,23 @@ class MySQLPasswordPolicy(object):
 
         if check_mode:
             for _setting_name, variable_name, query_value in planned_changes:
-                queries.append(self.format_set_query(variable_name, query_value, mode))
+                queries.append(self.format_set_query(variable_name, query_value))
             return dict(changed=changed, queries=queries, settings=effective_settings)
 
         for _setting_name, variable_name, query_value in planned_changes:
             try:
-                set_variable(self.cursor, variable_name, query_value, mode)
+                set_variable(self.cursor, variable_name, query_value)
             except Exception as exc:
                 self.module.fail_json(
                     msg='Failed to set %s: %s' % (variable_name, to_native(exc)),
                     changed=False,
                 )
-            queries.append(self.format_set_query(variable_name, query_value, mode))
+            queries.append(self.format_set_query(variable_name, query_value))
 
         return dict(changed=changed, queries=queries, settings=effective_settings)
 
-    def validate_supported_settings(self, desired_settings, mode):
-        if self.server_implementation == 'mariadb':
-            if mode == 'persist':
-                self.module.fail_json(msg='mode=persist is supported only on MySQL.', changed=False)
-
-            for option_name in MYSQL_ONLY_OPTIONS:
-                if desired_settings.get(option_name) is not None:
-                    self.module.fail_json(
-                        msg='Parameter "%s" is supported only on MySQL.' % option_name,
-                        changed=False,
-                    )
-
     def read_setting(self, setting_name):
-        variable_name = SETTING_VARIABLES[self.server_implementation][setting_name]
+        variable_name = SETTING_VARIABLES[setting_name]
         value = get_variable(self.cursor, variable_name)
         if value is not None:
             return variable_name, value
@@ -313,53 +191,34 @@ class MySQLPasswordPolicy(object):
         )
 
     def normalize_value(self, setting_name, value):
-        if setting_name == 'policy':
-            return normalize_policy_value(value)
-        if setting_name == 'check_user_name':
-            return normalize_bool_setting_value(value)
         if setting_name in INTEGER_OPTIONS:
             return normalize_int_value(value)
         return value
 
     def query_value(self, setting_name, normalized_value):
-        if setting_name == 'policy':
-            return str(normalized_value).upper()
-        if setting_name == 'check_user_name':
-            return normalize_bool_setting_value(normalized_value)
         return normalized_value
 
     @staticmethod
-    def format_set_query(variable_name, value, mode):
-        return "SET %s %s = %s" % (mode.upper(), mysql_quote_identifier(variable_name, 'vars'), value)
+    def format_set_query(variable_name, value):
+        return "SET GLOBAL %s = %s" % (mysql_quote_identifier(variable_name, 'vars'), value)
 
 
 def main():
     argument_spec = mysql_common_argument_spec()
     argument_spec.update(
-        policy=dict(type='str', choices=['low', 'medium', 'strong']),
         length=dict(type='int'),
         mixed_case_count=dict(type='int'),
         number_count=dict(type='int'),
         special_char_count=dict(type='int'),
-        check_user_name=dict(type='bool'),
-        password_lifetime=dict(type='int', no_log=False),
-        password_history=dict(type='int', no_log=False),
-        reuse_interval=dict(type='int', no_log=False),
-        mode=dict(type='str', choices=['global', 'persist'], default='global'),
     )
 
     module = AnsibleModule(
         argument_spec=argument_spec,
         required_one_of=[(
-            'policy',
             'length',
             'mixed_case_count',
             'number_count',
             'special_char_count',
-            'check_user_name',
-            'password_lifetime',
-            'password_history',
-            'reuse_interval',
         )],
         supports_check_mode=True,
     )
@@ -387,29 +246,17 @@ def main():
                 "Exception message: %s" % (module.params['config_file'], to_native(exc))
         )
 
-    server_implementation = get_server_implementation(cursor)
-    if server_implementation == 'mysql':
-        server_version = get_server_version(cursor).split('-', 1)[0]
-        if module.params['mode'] == 'persist' and LooseVersion(server_version) < LooseVersion('8.0'):
-            module.fail_json(msg='mode=persist requires MySQL 8.0 or later.', changed=False)
-
     desired_settings = {
-        'policy': module.params['policy'],
         'length': module.params['length'],
         'mixed_case_count': module.params['mixed_case_count'],
         'number_count': module.params['number_count'],
         'special_char_count': module.params['special_char_count'],
-        'check_user_name': module.params['check_user_name'],
-        'password_lifetime': module.params['password_lifetime'],
-        'password_history': module.params['password_history'],
-        'reuse_interval': module.params['reuse_interval'],
     }
 
-    password_policy = MySQLPasswordPolicy(module, cursor, server_implementation)
+    password_policy = MariaDBPasswordPolicy(module, cursor)
     module.exit_json(
         **password_policy.configure(
             desired_settings,
-            mode=module.params['mode'],
             check_mode=module.check_mode,
         )
     )

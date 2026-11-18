@@ -5,11 +5,8 @@
 
 # mysql_role module initial CI tests
 
-# mariadb_role_initial.yml is disabled as there are issues running on
-# MariaDB hosts. TODO: fix issues with tests and remove 'when' clause.
+# TODO: fix issues with tests, was imported from MySQL collection!
 - include_tasks: mariadb_role_initial.yml
-  when:
-    - db_engine != 'mariadb'
 
 - include_tasks: test_sql_log_bin.yml
 

@@ -22,11 +22,7 @@
         'file',
         '/root/ansible_collections/ansible/mariadb/tests/integration/connector_version'
       ) }}
-    db_engine_name_lookup: >-
-      {{ lookup(
-        'file',
-        '/root/ansible_collections/ansible/mariadb/tests/integration/db_engine_name'
-      ) }}
+
     db_engine_version_lookup: >-
       {{ lookup(
         'file',
@@ -42,7 +38,7 @@
   ansible.builtin.set_fact:
     connector_name: "{{ connector_name_lookup.strip() }}"
     connector_version: "{{ connector_version_lookup.strip() }}"
-    db_engine: "{{ db_engine_name_lookup.strip() }}"
+
     db_version: "{{ db_engine_version_lookup.strip() }}"
     test_ansible_version: >-
       {%- if ansible_version_lookup == 'devel' -%}
@@ -69,7 +65,7 @@
     msg: |-
       connector_name: {{ connector_name }}
       connector_version: {{ connector_version }}
-      db_engine: {{ db_engine }}
+
       db_version: {{ db_version }}
       test_ansible_version: {{ test_ansible_version }}
   ansible.builtin.debug:

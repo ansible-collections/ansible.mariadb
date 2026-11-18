@@ -61,15 +61,15 @@ jobs:
             - sshpass
             galaxy:
               collections:
-              - name: ansible.mysql
+              - name: ansible.mariadb
           EOF
 
       - name: Build EE image
-        run: ansible-builder build -v 3 -t mysql_ee
+        run: ansible-builder build -v 3 -t mariadb_ee
         working-directory: _build_ee
 
       - name: Validate EE image
         run: |
           ansible-navigator -v --mode stdout --pull-policy never \
-            --execution-environment-image mysql_ee \
+            --execution-environment-image mariadb_ee \
             run .github/ee-tests.yml

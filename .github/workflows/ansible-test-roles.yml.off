@@ -14,15 +14,14 @@ on:  # yamllint disable-line rule:truthy
 
 jobs:
   molecule:
-    name: "Molecule (Python: ${{ matrix.python }}, Ansible: ${{ matrix.ansible }}, MySQL: ${{ matrix.mysql }})"
+    name: "Molecule (Python: ${{ matrix.python }}, Ansible: ${{ matrix.ansible }})"
     runs-on: ubuntu-22.04
     env:
       PY_COLORS: 1
       ANSIBLE_FORCE_COLOR: 1
     strategy:
       matrix:
-        mysql:
-          - 2.0.12
+
         ansible:
           - stable-2.15
           - stable-2.16
@@ -50,7 +49,7 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v3
         with:
-          path: ansible_collections/ansible/mysql
+          path: ansible_collections/ansible/mariadb
 
       - name: Set up Python ${{ matrix.python }}
         uses: actions/setup-python@v4
@@ -66,4 +65,4 @@ jobs:
 
       # - name: Run molecule default test scenario
       #   run: for d in roles/*/; do (cd "$d" && molecule --version && molecule test) done
-      #   working-directory: ./ansible_collections/ansible/mysql
+      #   working-directory: ./ansible_collections/ansible/mariadb
