@@ -85,34 +85,20 @@ Every voice is important and every idea is valuable. If you have something on yo
 
 ## Releases Support Timeline
 
-We maintain each major release (1.x.y, 2.x.y, ...) for two years after the next major version is released.
+We maintain one previous major release version (X.y.z) for one year after the current major version release date (bugfixes only, no new features).
 
 Here is the table for the support timeline:
 
-- 1.x.y: released 2020-08-17, EOL
-- 2.x.y: released 2021-04-15, EOL
-- 3.x.y: released 2021-12-01, EOL
-- 4.x.y: released 2025-09-15, EOL 2028-05-05
-- 5.x.y: released 2026-05-05, current
+- 1.y.z: released 2020-08-17, EOL
+- 2.y.z: released 2021-04-15, EOL
+- 3.y.z: released 2021-12-01, EOL
+- 4.y.z: released 2025-09-15, EOL
+- 5.y.z: released 2026-05-05, EOL (was retired earlier due to post-migration work)
+- 6.y.z: released 2026-07-09, current
 
 ## Tested with
 
-### ansible-core
-
-- stable-2.16 (RHEL8 context only)
-- stable-2.17
-- stable-2.18
-- stable-2.19
-- stable-2.20
-- stable-2.21
-- current development version
-
-### Python
-
-- 3.8 (Unit tests only)
-- 3.9 (Unit tests only)
-- 3.10 (Sanity, Units and integrations tests)
-- 3.11 (Unit tests only, collection version >= 3.10.0)
+See our [CI test matrix](https://github.com/ansible-collections/ansible.mariadb/blob/main/.github/workflows/ansible-test-plugins.yml) and the [Actions](https://github.com/ansible-collections/ansible.mariadb/actions) tab for details
 
 ### Databases
 

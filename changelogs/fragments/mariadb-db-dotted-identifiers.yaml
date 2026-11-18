@@ -1,0 +1,2 @@
+bugfixes:
+  - mariadb_db - dotted database identifiers failed with a syntax error. Fix now uses backtick quoting for database identifiers instead of mysql_quote_identifier (https://github.com/ansible-collections/ansible.mariadb/pull/30)
