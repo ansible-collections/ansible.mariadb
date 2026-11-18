@@ -351,7 +351,6 @@ import traceback
 import shlex
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.ansible.mariadb.plugins.module_utils.database import mysql_quote_identifier
 from ansible_collections.ansible.mariadb.plugins.module_utils.mysql import (
     mysql_connect,
     mysql_driver,
@@ -384,7 +383,7 @@ def db_delete(cursor, db):
     if not db:
         return False
     for each_db in db:
-        query = "DROP DATABASE %s" % mysql_quote_identifier(each_db, 'database')
+        query = "DROP DATABASE `%s`" % each_db
         executed_commands.append(query)
         cursor.execute(query)
     return True
@@ -608,7 +607,7 @@ def db_create(cursor, db, encoding, collation):
     res = 0
     for each_db in db:
         # Escape '%' since mysql cursor.execute() uses a format string
-        query = ['CREATE DATABASE %s' % mysql_quote_identifier(each_db, 'database').replace('%', '%%')]
+        query = ['CREATE DATABASE `%s`' % each_db.replace('%', '%%')]
         if encoding:
             query.append("CHARACTER SET %(enc)s")
         if collation:
