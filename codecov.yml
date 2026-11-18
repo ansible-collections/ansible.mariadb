@@ -1,2 +1,2 @@
 fixes:
-   - "/ansible_collections/ansible/mysql/::"
+   - "/ansible_collections/ansible/mariadb/::"

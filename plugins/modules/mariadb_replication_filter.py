@@ -197,13 +197,12 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.common.text.converters import to_native
 
 from ansible_collections.ansible.mariadb.plugins.module_utils.database import check_input, mysql_quote_identifier
-from ansible_collections.ansible.mariadb.plugins.module_utils.mysql import (
-    get_server_implementation,
+from ansible_collections.ansible.mariadb.plugins.module_utils.mariadb import (
     get_server_version,
-    mysql_common_argument_spec,
-    mysql_connect,
-    mysql_driver,
-    mysql_driver_fail_msg,
+    mariadb_common_argument_spec,
+    mariadb_connect,
+    mariadb_driver,
+    mariadb_driver_fail_msg,
 )
 from ansible_collections.ansible.mariadb.plugins.module_utils.version import LooseVersion
 
@@ -438,40 +437,25 @@ def _extract_variable_value(rows):
 
 
 class MySQLReplicationFilter(object):
-    def __init__(self, module, cursor, server_implementation, server_version):
+    def __init__(self, module, cursor, server_version):
         self.module = module
         self.cursor = cursor
-        self.server_implementation = server_implementation
         self.server_version = server_version
 
     def apply(self, desired_filters, channel='', connection_name=''):
         self.validate_filters(desired_filters)
         self.validate_target(channel, connection_name)
 
-        if self.server_implementation == 'mysql':
-            def build_query(param, values):
-                return build_mysql_query_from_param(param, values, channel=channel)
-
-            planned = plan_filter_changes(
-                desired_filters,
-                normalize_mysql_filter_rows(get_mysql_filter_rows(self.cursor, channel=channel)),
-                build_query,
-            )
-        elif self.server_implementation == 'mariadb':
-            planned = plan_filter_changes(
-                desired_filters,
-                normalize_mariadb_filter_values(get_mariadb_filter_values(
-                    self.module,
-                    self.cursor,
-                    self.server_version,
-                    connection_name=connection_name,
-                )),
-                build_mariadb_query_from_param,
-            )
-        else:
-            self.module.fail_json(
-                msg='mysql_replication_filter supports only MySQL or MariaDB, got "%s"' % self.server_implementation
-            )
+        planned = plan_filter_changes(
+            desired_filters,
+            normalize_mariadb_filter_values(get_mariadb_filter_values(
+                self.module,
+                self.cursor,
+                self.server_version,
+                connection_name=connection_name,
+            )),
+            build_mariadb_query_from_param,
+        )
 
         if not self.module.check_mode:
             self.execute_queries(planned['queries'], connection_name=connection_name)
@@ -483,7 +467,7 @@ class MySQLReplicationFilter(object):
         }
 
     def execute_queries(self, queries, connection_name=''):
-        if self.server_implementation == 'mariadb' and connection_name:
+        if connection_name:
             self.cursor.execute('SET @@default_master_connection = %s', (connection_name,))
             self.cursor.fetchall()
 
@@ -495,7 +479,7 @@ class MySQLReplicationFilter(object):
                     self.cursor.execute(query['sql'])
                 self.cursor.fetchall()
         finally:
-            if self.server_implementation == 'mariadb' and connection_name:
+            if connection_name:
                 self.cursor.execute('SET @@default_master_connection = %s', ('',))
                 self.cursor.fetchall()
 
@@ -519,15 +503,12 @@ class MySQLReplicationFilter(object):
     def validate_target(self, channel, connection_name):
         check_input(self.module, channel, connection_name)
 
-        if self.server_implementation == 'mysql' and connection_name:
-            self.module.fail_json(msg='connection_name is supported only for MariaDB')
-
-        if self.server_implementation == 'mariadb' and channel:
+        if channel:
             self.module.fail_json(msg='channel is supported only for MySQL')
 
 
 def main():
-    argument_spec = mysql_common_argument_spec()
+    argument_spec = mariadb_common_argument_spec()
     for name in FILTER_DEFINITIONS:
         argument_spec[name] = dict(type='list', elements='str')
 
@@ -542,8 +523,8 @@ def main():
         supports_check_mode=True,
     )
 
-    if mysql_driver is None:
-        module.fail_json(msg=mysql_driver_fail_msg)
+    if mariadb_driver is None:
+        module.fail_json(msg=mariadb_driver_fail_msg)
 
     desired_filters = dict((name, module.params[name]) for name in FILTER_DEFINITIONS)
     if not any(values is not None for values in desired_filters.values()):
@@ -559,7 +540,7 @@ def main():
     config_file = module.params['config_file']
 
     try:
-        cursor, _db_conn = mysql_connect(
+        cursor, _db_conn = mariadb_connect(
             module,
             login_user,
             login_password,
@@ -584,7 +565,6 @@ def main():
     executor = MySQLReplicationFilter(
         module,
         cursor,
-        get_server_implementation(cursor),
         get_server_version(cursor),
     )
 

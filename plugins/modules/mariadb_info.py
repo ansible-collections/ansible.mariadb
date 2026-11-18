@@ -310,14 +310,13 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ansible.mariadb.plugins.module_utils.command_resolver import (
     CommandResolver
 )
-from ansible_collections.ansible.mariadb.plugins.module_utils.mysql import (
-    mysql_connect,
-    mysql_common_argument_spec,
-    mysql_driver,
-    mysql_driver_fail_msg,
+from ansible_collections.ansible.mariadb.plugins.module_utils.mariadb import (
+    mariadb_connect,
+    mariadb_common_argument_spec,
+    mariadb_driver,
+    mariadb_driver_fail_msg,
     get_connector_name,
     get_connector_version,
-    get_server_implementation,
     get_server_version,
 )
 
@@ -353,13 +352,12 @@ class MySQL_Info(object):
         5. add info about the new subset with an example to RETURN block
     """
 
-    def __init__(self, module, cursor, server_implementation, server_version, user_implementation):
+    def __init__(self, module, cursor, server_version, user_implementation):
         self.module = module
         self.cursor = cursor
-        self.server_implementation = server_implementation
         self.server_version = server_version
         self.user_implementation = user_implementation
-        self.command_resolver = CommandResolver(self.server_implementation, self.server_version)
+        self.command_resolver = CommandResolver(self.server_version)
         self.info = {
             'version': {},
             'databases': {},
@@ -610,7 +608,7 @@ class MySQL_Info(object):
             host = line['Host']
 
             # MariaDB roles have no host
-            is_role = self.server_implementation == 'mariadb' and not host
+            is_role = not host
             user_priv = privileges_get(self.cursor, user, host, maria_role=is_role)
 
             if not user_priv:
@@ -737,7 +735,7 @@ class MySQL_Info(object):
 
 
 def main():
-    argument_spec = mysql_common_argument_spec()
+    argument_spec = mariadb_common_argument_spec()
     argument_spec.update(
         login_db=dict(type='str'),
         filter=dict(type='list', elements='str'),
@@ -769,14 +767,14 @@ def main():
     if exclude_fields:
         exclude_fields = set([f.strip() for f in exclude_fields])
 
-    if mysql_driver is None:
-        module.fail_json(msg=mysql_driver_fail_msg)
+    if mariadb_driver is None:
+        module.fail_json(msg=mariadb_driver_fail_msg)
 
-    connector_name = get_connector_name(mysql_driver)
-    connector_version = get_connector_version(mysql_driver)
+    connector_name = get_connector_name(mariadb_driver)
+    connector_version = get_connector_version(mariadb_driver)
 
     try:
-        cursor, db_conn = mysql_connect(module, login_user, login_password,
+        cursor, db_conn = mariadb_connect(module, login_user, login_password,
                                         config_file, ssl_cert, ssl_key, ssl_ca, db,
                                         check_hostname=check_hostname,
                                         connect_timeout=connect_timeout, cursor_class='DictCursor')
@@ -786,17 +784,16 @@ def main():
                'Exception message: %s' % (connector_name, connector_version, config_file, to_native(e)))
         module.fail_json(msg)
 
-    server_implementation = get_server_implementation(cursor)
     server_version = get_server_version(cursor)
     user_implementation = get_user_implementation(cursor)
 
     ###############################
     # Create object and do main job
 
-    mysql = MySQL_Info(module, cursor, server_implementation, server_version, user_implementation)
+    mysql = MySQL_Info(module, cursor, server_version, user_implementation)
 
     module.exit_json(changed=False,
-                     server_engine='MariaDB' if server_implementation == 'mariadb' else 'MySQL',
+                     server_engine='MariaDB',
                      connector_name=connector_name,
                      connector_version=connector_version,
                      **mysql.get_info(filter_, exclude_fields, return_empty_dbs))

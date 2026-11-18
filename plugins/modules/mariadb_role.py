@@ -322,11 +322,11 @@ EXAMPLES = r'''
 RETURN = '''#'''
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.ansible.mariadb.plugins.module_utils.mysql import (
-    mysql_connect,
-    mysql_driver,
-    mysql_driver_fail_msg,
-    mysql_common_argument_spec
+from ansible_collections.ansible.mariadb.plugins.module_utils.mariadb import (
+    mariadb_connect,
+    mariadb_driver,
+    mariadb_driver_fail_msg,
+    mariadb_common_argument_spec
 )
 from ansible_collections.ansible.mariadb.plugins.module_utils.user import (
     convert_priv_dict_to_str,
@@ -339,7 +339,7 @@ from ansible_collections.ansible.mariadb.plugins.module_utils.user import (
 from ansible.module_utils.common.text.converters import to_native
 
 
-def normalize_users(module, users, is_mariadb=False):
+def normalize_users(module, users):
     """Normalize passed user names.
 
     Example of transformation:
@@ -349,7 +349,6 @@ def normalize_users(module, users, is_mariadb=False):
     Args:
         module (AnsibleModule): Object of the AnsibleModule class.
         users (list): List of user names.
-        is_mariadb (bool): Flag indicating we are working with MariaDB
 
     Returns:
         list: List of tuples like [('user0', ''), ('user0', 'host0')].
@@ -364,10 +363,7 @@ def normalize_users(module, users, is_mariadb=False):
                 module.fail_json(msg="Member's name cannot be empty.")
 
             if len(tmp) == 1:
-                if not is_mariadb:
-                    normalized_users.append((tmp[0], '%'))
-                else:
-                    normalized_users.append((tmp[0], ''))
+                normalized_users.append((tmp[0], ''))
 
             elif len(tmp) == 2:
                 normalized_users.append((tmp[0], tmp[1]))
@@ -400,41 +396,7 @@ class DbServer():
     def __init__(self, module, cursor):
         self.module = module
         self.cursor = cursor
-        self.role_impl = self.get_implementation()
-        self.mariadb = self.role_impl.is_mariadb()
-        self.roles_supported = self.role_impl.supports_roles(self.cursor)
         self.users = set(self.__get_users())
-
-    def is_mariadb(self):
-        """Get info whether a DB server is a MariaDB instance.
-
-        Returns:
-            self.mariadb: Attribute value.
-        """
-        return self.mariadb
-
-    def supports_roles(self):
-        """Get info whether a DB server supports roles.
-
-        Returns:
-            self.roles_supported: Attribute value.
-        """
-        return self.roles_supported
-
-    def get_implementation(self):
-        """Get a current server implementation depending on its type.
-
-        Returns:
-            library: Depending on a server type (MySQL or MariaDB).
-        """
-        self.cursor.execute("SELECT VERSION()")
-
-        if 'mariadb' in self.cursor.fetchone()[0].lower():
-            import ansible_collections.ansible.mariadb.plugins.module_utils.implementations.mariadb.role as role_impl
-        else:
-            import ansible_collections.ansible.mariadb.plugins.module_utils.implementations.mysql.role as role_impl
-
-        return role_impl
 
     def check_users_in_db(self, users):
         """Check if users exist in a database.
@@ -487,71 +449,7 @@ class DbServer():
         return self.cursor.fetchall()
 
 
-class MySQLQueryBuilder():
-    """Class to build and return queries specific to MySQL.
-
-    Args:
-        name (str): Role name.
-        host (str): Role host.
-
-    Attributes:
-        name (str): Role name.
-        host (str): Role host.
-    """
-    def __init__(self, name, host):
-        self.name = name
-        self.host = host
-
-    def role_exists(self):
-        """Return a query to check if a role with self.name and self.host exists in a database.
-
-        Returns:
-            tuple: (query_string, tuple_containing_parameters).
-        """
-        return 'SELECT count(*) FROM mysql.user WHERE user = %s AND host = %s', (self.name, self.host)
-
-    def role_grant(self, user):
-        """Return a query to grant a role to a user or a role.
-
-        Args:
-            user (tuple): User / role to grant the role to in the form (username, hostname).
-
-        Returns:
-            tuple: (query_string, tuple_containing_parameters).
-        """
-        if user[1]:
-            return 'GRANT %s@%s TO %s@%s', (self.name, self.host, user[0], user[1])
-        else:
-            return 'GRANT %s@%s TO %s', (self.name, self.host, user[0])
-
-    def role_revoke(self, user):
-        """Return a query to revoke a role from a user or role.
-
-        Args:
-            user (tuple): User / role to revoke the role from in the form (username, hostname).
-
-        Returns:
-            tuple: (query_string, tuple_containing_parameters).
-        """
-        if user[1]:
-            return 'REVOKE %s@%s FROM %s@%s', (self.name, self.host, user[0], user[1])
-        else:
-            return 'REVOKE %s@%s FROM %s', (self.name, self.host, user[0])
-
-    def role_create(self, admin=None):
-        """Return a query to create a role.
-
-        Args:
-            admin (tuple): Admin user in the form (username, hostname).
-                Because it is not supported by MySQL, we ignore it.
-
-        Returns:
-            tuple: (query_string, tuple_containing_parameters).
-        """
-        return 'CREATE ROLE %s', (self.name,)
-
-
-class MariaDBQueryBuilder():
+class QueryBuilder():
     """Class to build and return queries specific to MariaDB.
 
     Args:
@@ -659,8 +557,6 @@ class MySQLRoleImpl():
     def set_admin(self, admin):
         """Set an admin of a role.
 
-        Not supported by MySQL, so ignored here.
-
         TODO: Implement the feature if this gets supported.
 
         Args:
@@ -754,19 +650,9 @@ class Role():
         self.cursor = cursor
         self.name = name
         self.server = server
-        self.is_mariadb = self.server.is_mariadb()
-
-        if self.is_mariadb:
-            self.q_builder = MariaDBQueryBuilder(self.name)
-            self.role_impl = MariaDBRoleImpl(self.module, self.cursor, self.name)
-            self.full_name = '`%s`' % self.name
-            self.host = ''
-        else:
-            self.host = '%'
-            self.q_builder = MySQLQueryBuilder(self.name, self.host)
-            self.role_impl = MySQLRoleImpl(self.module, self.cursor, self.name, self.host)
-            self.full_name = '`%s`@`%s`' % (self.name, self.host)
-
+        self.q_builder = QueryBuilder(self.name)
+        self.full_name = '`%s`' % self.name
+        self.host = ''
         self.exists = self.__role_exists()
         self.members = set()
 
@@ -809,8 +695,7 @@ class Role():
         if privs:
             for db_table, priv in privs.items():
                 privileges_grant(self.cursor, self.name, self.host,
-                                 db_table, priv, tls_requires=None,
-                                 maria_role=self.is_mariadb)
+                                 db_table, priv, tls_requires=None)
 
         return True
 
@@ -954,11 +839,11 @@ class Role():
                               plugin_auth_string=None, plugin_hash_string=None, salt=None,
                               new_priv=privs, append_privs=append_privs, subtract_privs=subtract_privs,
                               attributes=None, tls_requires=None, module=self.module, password_expire=None,
-                              password_expire_interval=None, role=True, maria_role=self.is_mariadb)
+                              password_expire_interval=None, role=True)
             changed = result['changed']
 
         if admin:
-            self.role_impl.set_admin(admin)
+            self.set_admin(admin)
 
         changed = changed or members_changed
 
@@ -970,15 +855,12 @@ class Role():
         Returns:
             set: Members.
         """
-        if self.is_mariadb:
-            self.cursor.execute('select user, host from mysql.roles_mapping where role = %s', (self.name,))
-        else:
-            self.cursor.execute('select TO_USER as user, TO_HOST as host from mysql.role_edges where FROM_USER = %s', (self.name,))
+        self.cursor.execute('select user, host from mysql.roles_mapping where role = %s', (self.name,))
         return set(self.cursor.fetchall())
 
 
 def main():
-    argument_spec = mysql_common_argument_spec()
+    argument_spec = mariadb_common_argument_spec()
     argument_spec.update(
         name=dict(type='str', required=True),
         state=dict(type='str', default='present', choices=['absent', 'present']),
@@ -1039,14 +921,14 @@ def main():
     if priv and isinstance(priv, dict):
         priv = convert_priv_dict_to_str(priv)
 
-    if mysql_driver is None:
-        module.fail_json(msg=mysql_driver_fail_msg)
+    if mariadb_driver is None:
+        module.fail_json(msg=mariadb_driver_fail_msg)
 
     cursor = None
     try:
         if check_implicit_admin:
             try:
-                cursor, db_conn = mysql_connect(module, 'root', '', config_file,
+                cursor, db_conn = mariadb_connect(module, 'root', '', config_file,
                                                 ssl_cert, ssl_key, ssl_ca, db,
                                                 connect_timeout=connect_timeout,
                                                 check_hostname=check_hostname,
@@ -1055,7 +937,7 @@ def main():
                 pass
 
         if not cursor:
-            cursor, db_conn = mysql_connect(module, login_user, login_password,
+            cursor, db_conn = mariadb_connect(module, login_user, login_password,
                                             config_file, ssl_cert, ssl_key,
                                             ssl_ca, db, connect_timeout=connect_timeout,
                                             check_hostname=check_hostname,
@@ -1095,14 +977,11 @@ def main():
         module.fail_json(msg=msg)
 
     if admin:
-        if not server.is_mariadb():
-            module.fail_json(msg='The "admin" option can be used only with MariaDB.')
-
         admin = normalize_users(module, [admin])[0]
         server.check_users_in_db([admin])
 
     if members:
-        members = normalize_users(module, members, server.is_mariadb())
+        members = normalize_users(module, members)
         if members_must_exist:
             server.check_users_in_db(members)
         else:

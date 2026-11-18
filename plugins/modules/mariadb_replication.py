@@ -261,17 +261,15 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ansible.mariadb.plugins.module_utils.command_resolver import (
     CommandResolver
 )
-from ansible_collections.ansible.mariadb.plugins.module_utils.implementations.mariadb.replication import (
-    uses_replica_terminology,
-)
-from ansible_collections.ansible.mariadb.plugins.module_utils.mysql import (
+from ansible_collections.ansible.mariadb.plugins.module_utils.mariadb import (
     get_server_version,
-    mysql_connect,
-    mysql_driver,
-    mysql_driver_fail_msg,
-    mysql_common_argument_spec,
+    mariadb_connect,
+    mariadb_driver,
+    mariadb_driver_fail_msg,
+    mariadb_common_argument_spec,
 )
 from ansible.module_utils.common.text.converters import to_native
+from ansible_collections.ansible.mariadb.plugins.module_utils.version import LooseVersion
 
 # Masks passwords in return values instead of relying on Ansible's no_log masking
 PASSWORD_MASK = '********'
@@ -314,7 +312,7 @@ def stop_replica(module, cursor, connection_name='', channel='', fail_on_error=F
         executed_queries.append(query)
         cursor.execute(query)
         stopped = True
-    except mysql_driver.Warning as e:
+    except mariadb_driver.Warning as e:
         stopped = False
     except Exception as e:
         if fail_on_error:
@@ -336,7 +334,7 @@ def reset_replica(module, cursor, connection_name='', channel='', fail_on_error=
         executed_queries.append(query)
         cursor.execute(query)
         reset = True
-    except mysql_driver.Warning as e:
+    except mariadb_driver.Warning as e:
         reset = False
     except Exception as e:
         if fail_on_error:
@@ -358,7 +356,7 @@ def reset_replica_all(module, cursor, connection_name='', channel='', fail_on_er
         executed_queries.append(query)
         cursor.execute(query)
         reset = True
-    except mysql_driver.Warning as e:
+    except mariadb_driver.Warning as e:
         reset = False
     except Exception as e:
         if fail_on_error:
@@ -373,7 +371,7 @@ def reset_primary(module, cursor, command_resolver, fail_on_error=False):
         executed_queries.append(query)
         cursor.execute(query)
         reset = True
-    except mysql_driver.Warning as e:
+    except mariadb_driver.Warning as e:
         reset = False
     except Exception as e:
         if fail_on_error:
@@ -395,7 +393,7 @@ def start_replica(module, cursor, connection_name='', channel='', fail_on_error=
         executed_queries.append(query)
         cursor.execute(query)
         started = True
-    except mysql_driver.Warning as e:
+    except mariadb_driver.Warning as e:
         started = False
     except Exception as e:
         if fail_on_error:
@@ -435,7 +433,7 @@ def changereplication(cursor, chm, channel='', primary_password=None):
 
 
 def main():
-    argument_spec = mysql_common_argument_spec()
+    argument_spec = mariadb_common_argument_spec()
     argument_spec.update(
         mode=dict(type='str', default='getreplica', choices=[
             'getprimary',
@@ -510,16 +508,16 @@ def main():
     channel = module.params['channel']
     fail_on_error = module.params['fail_on_error']
 
-    if mysql_driver is None:
-        module.fail_json(msg=mysql_driver_fail_msg)
+    if mariadb_driver is None:
+        module.fail_json(msg=mariadb_driver_fail_msg)
     else:
-        warnings.filterwarnings('error', category=mysql_driver.Warning)
+        warnings.filterwarnings('error', category=mariadb_driver.Warning)
 
     login_password = module.params["login_password"]
     login_user = module.params["login_user"]
 
     try:
-        cursor, db_conn = mysql_connect(module, login_user, login_password, config_file,
+        cursor, db_conn = mariadb_connect(module, login_user, login_password, config_file,
                                         ssl_cert, ssl_key, ssl_ca, None, cursor_class='DictCursor',
                                         connect_timeout=connect_timeout, check_hostname=check_hostname)
     except Exception as e:
@@ -534,7 +532,7 @@ def main():
     command_resolver = CommandResolver(server_version)
 
     # Since MariaDB 10.5.1, "REPLICA" must be used instead of "SLAVE"
-    if uses_replica_terminology(cursor):
+    if LooseVersion(server_version) >= LooseVersion('10.5.1') :
         replica_term = 'REPLICA'
     else:
         replica_term = 'SLAVE'
@@ -611,7 +609,7 @@ def main():
             chm.append("MASTER_USE_GTID=%s" % primary_use_gtid)  # MariaDB only
         try:
             changeprimary(cursor, command_resolver, chm, connection_name, channel, primary_password)
-        except mysql_driver.Warning as e:
+        except mariadb_driver.Warning as e:
             result['warning'] = to_native(e)
         except Exception as e:
             module.fail_json(msg='%s. Query == %s TO %s' % (to_native(e), command_resolver.resolve_command('CHANGE MASTER'), chm))
@@ -694,7 +692,7 @@ def main():
             chm.append("SOURCE_AUTO_POSITION=1")
         try:
             changereplication(cursor, chm, channel, primary_password)
-        except mysql_driver.Warning as e:
+        except mariadb_driver.Warning as e:
             result['warning'] = to_native(e)
         except Exception as e:
             module.fail_json(msg='%s. Query == CHANGE REPLICATION SOURCE TO %s' % (to_native(e), chm))

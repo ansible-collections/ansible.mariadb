@@ -129,13 +129,12 @@ from ansible.module_utils.common.text.converters import to_native
 from ansible_collections.ansible.mariadb.plugins.module_utils.command_resolver import (
     CommandResolver,
 )
-from ansible_collections.ansible.mariadb.plugins.module_utils.mysql import (
-    get_server_implementation,
+from ansible_collections.ansible.mariadb.plugins.module_utils.mariadb import (
     get_server_version,
-    mysql_common_argument_spec,
-    mysql_connect,
-    mysql_driver,
-    mysql_driver_fail_msg,
+    mariadb_common_argument_spec,
+    mariadb_connect,
+    mariadb_driver,
+    mariadb_driver_fail_msg,
 )
 
 
@@ -151,11 +150,10 @@ class MySQL_Binlog_Info(object):
         'encrypt_binlog',
     )
 
-    def __init__(self, module, cursor, server_implementation, server_version):
+    def __init__(self, module, cursor, server_version):
         self.module = module
         self.cursor = cursor
-        self.server_implementation = server_implementation
-        self.command_resolver = CommandResolver(server_implementation, server_version)
+        self.command_resolver = CommandResolver(server_version)
         self.info = {
             'current': {},
             'logs': [],
@@ -227,7 +225,7 @@ class MySQL_Binlog_Info(object):
         current = res[0]
         executed_gtid_set = current.get('Executed_Gtid_Set') or current.get('Gtid_Binlog_Pos')
 
-        if executed_gtid_set is None and self.server_implementation == 'mariadb':
+        if executed_gtid_set is None:
             gtid_res = self.__exec_sql('SELECT @@global.gtid_binlog_pos AS gtid_binlog_pos')
             if gtid_res:
                 executed_gtid_set = gtid_res[0].get('gtid_binlog_pos')
@@ -281,7 +279,7 @@ class MySQL_Binlog_Info(object):
 
 
 def main():
-    argument_spec = mysql_common_argument_spec()
+    argument_spec = mariadb_common_argument_spec()
     argument_spec.update(
         filter=dict(type='list', elements='str'),
     )
@@ -304,11 +302,11 @@ def main():
     if filter_:
         filter_ = [item.strip() for item in filter_]
 
-    if mysql_driver is None:
-        module.fail_json(msg=mysql_driver_fail_msg)
+    if mariadb_driver is None:
+        module.fail_json(msg=mariadb_driver_fail_msg)
 
     try:
-        cursor, _db_conn = mysql_connect(
+        cursor, _db_conn = mariadb_connect(
             module,
             login_user,
             login_password,
@@ -328,10 +326,9 @@ def main():
                 "Exception message: %s" % (config_file, to_native(e))
         )
 
-    server_implementation = get_server_implementation(cursor)
     server_version = get_server_version(cursor)
 
-    mysql = MySQL_Binlog_Info(module, cursor, server_implementation, server_version)
+    mysql = MySQL_Binlog_Info(module, cursor, server_version)
 
     module.exit_json(changed=False, **mysql.get_info(filter_))
 

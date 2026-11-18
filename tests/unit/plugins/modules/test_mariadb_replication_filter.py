@@ -787,12 +787,12 @@ def test_main_requires_at_least_one_filter_before_connect(monkeypatch):
     with set_module_args({'login_unix_socket': '/run/mysqld/mysqld.sock'}):
         monkeypatch.setattr(AnsibleModule, 'exit_json', exit_json)
         monkeypatch.setattr(AnsibleModule, 'fail_json', fail_json)
-        monkeypatch.setattr(mysql_replication_filter_module, 'mysql_driver', object())
+        monkeypatch.setattr(mysql_replication_filter_module, 'mariadb_driver', object())
 
         def unexpected_connect(*args, **kwargs):
-            raise AssertionError('mysql_connect should not be called')
+            raise AssertionError('mariadb_connect should not be called')
 
-        monkeypatch.setattr(mysql_replication_filter_module, 'mysql_connect', unexpected_connect)
+        monkeypatch.setattr(mysql_replication_filter_module, 'mariadb_connect', unexpected_connect)
 
         with pytest.raises(AnsibleFailJson) as exc:
             mysql_replication_filter_module.main()

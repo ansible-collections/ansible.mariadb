@@ -19,18 +19,18 @@ import configparser
 from ansible.module_utils.common.text.converters import to_native
 
 try:
-    import pymysql as mysql_driver
-    _mysql_cursor_param = 'cursor'
+    import pymysql as mariadb_driver
+    _mariadb_cursor_param = 'cursor'
 except ImportError:
     try:
         # mysqlclient is called MySQLdb
-        import MySQLdb as mysql_driver
+        import MySQLdb as mariadb_driver
         import MySQLdb.cursors
-        _mysql_cursor_param = 'cursorclass'
+        _mariadb_cursor_param = 'cursorclass'
     except ImportError:
-        mysql_driver = None
+        mariadb_driver = None
 
-mysql_driver_fail_msg = ('A MySQL module is required: for Python 2.7 either PyMySQL, or '
+mariadb_driver_fail_msg = ('A MySQL module is required: for Python 2.7 either PyMySQL, or '
                          'MySQL-python, or for Python 3.X mysqlclient or PyMySQL. '
                          'Consider setting ansible_python_interpreter to use '
                          'the intended Python version.')
@@ -75,7 +75,7 @@ def get_connector_version(connector):
         return 'Unknown'
 
 
-def parse_from_mysql_config_file(cnf):
+def parse_from_mariadb_config_file(cnf):
     # Default values of comment_prefix is '#' and ';'.
     # '!' added to prevent a parsing error
     # when a config file contains !includedir parameter.
@@ -84,7 +84,7 @@ def parse_from_mysql_config_file(cnf):
     return cp
 
 
-def mysql_connect(module, login_user=None, login_password=None, config_file='', ssl_cert=None,
+def mariadb_connect(module, login_user=None, login_password=None, config_file='', ssl_cert=None,
                   ssl_key=None, ssl_ca=None, db=None, cursor_class=None, connect_timeout=30,
                   autocommit=False, config_overrides_defaults=False, check_hostname=None):
     config = {}
@@ -94,7 +94,7 @@ def mysql_connect(module, login_user=None, login_password=None, config_file='', 
 
         if config_overrides_defaults:
             try:
-                cp = parse_from_mysql_config_file(config_file)
+                cp = parse_from_mariadb_config_file(config_file)
             except Exception as e:
                 module.fail_json(msg="Failed to parse %s: %s" % (config_file, to_native(e)))
 
@@ -134,16 +134,16 @@ def mysql_connect(module, login_user=None, login_password=None, config_file='', 
     if connect_timeout is not None:
         config['connect_timeout'] = connect_timeout
     if check_hostname is not None:
-        if get_connector_name(mysql_driver) == 'pymysql':
-            version_tuple = (n for n in mysql_driver.__version__.split('.') if n != 'None')
+        if get_connector_name(mariadb_driver) == 'pymysql':
+            version_tuple = (n for n in mariadb_driver.__version__.split('.') if n != 'None')
             if reduce(lambda x, y: int(x) * 100 + int(y), version_tuple) >= 711:
                 config['ssl']['check_hostname'] = check_hostname
             else:
                 module.fail_json(msg='To use check_hostname, pymysql >= 0.7.11 is required on the target host')
 
-    if get_connector_name(mysql_driver) == 'pymysql':
+    if get_connector_name(mariadb_driver) == 'pymysql':
         # In case of PyMySQL driver:
-        if mysql_driver.version_info[0] < 1:
+        if mariadb_driver.version_info[0] < 1:
             # for PyMySQL < 1.0.0, use 'db' instead of 'database' and 'passwd' instead of 'password'
             if 'database' in config:
                 config['db'] = config['database']
@@ -151,17 +151,16 @@ def mysql_connect(module, login_user=None, login_password=None, config_file='', 
             if 'password' in config:
                 config['passwd'] = config['password']
                 del config['password']
-        db_connection = mysql_driver.connect(autocommit=autocommit, **config)
+        db_connection = mariadb_driver.connect(autocommit=autocommit, **config)
     else:
         # In case of MySQLdb driver
 
         # Will be deprecated and dropped
         # https://github.com/ansible-collections/ansible.mysql/issues/654
         module.warn('Support of mysqlcline/MySQLdb connector is deprecated. '
-                    'We\'ll stop testing against it in collection version 4.0.0 '
-                    'and remove the related code in 5.0.0. Use PyMySQL connector instead.')
+                    'Use PyMySQL connector instead.')
 
-        if mysql_driver.version_info[0] < 2 or (mysql_driver.version_info[0] == 2 and mysql_driver.version_info[1] < 1):
+        if mariadb_driver.version_info[0] < 2 or (mariadb_driver.version_info[0] == 2 and mariadb_driver.version_info[1] < 1):
             # for MySQLdb < 2.1.0, use 'db' instead of 'database' and 'passwd' instead of 'password'
             if 'database' in config:
                 config['db'] = config['database']
@@ -169,7 +168,7 @@ def mysql_connect(module, login_user=None, login_password=None, config_file='', 
             if 'password' in config:
                 config['passwd'] = config['password']
                 del config['password']
-        db_connection = mysql_driver.connect(**config)
+        db_connection = mariadb_driver.connect(**config)
         if autocommit:
             db_connection.autocommit(True)
 
@@ -180,12 +179,12 @@ def mysql_connect(module, login_user=None, login_password=None, config_file='', 
     # Patched
 
     if cursor_class == 'DictCursor':
-        return db_connection.cursor(**{_mysql_cursor_param: mysql_driver.cursors.DictCursor}), db_connection
+        return db_connection.cursor(**{_mariadb_cursor_param: mariadb_driver.cursors.DictCursor}), db_connection
     else:
         return db_connection.cursor(), db_connection
 
 
-def mysql_common_argument_spec():
+def mariadb_common_argument_spec():
     return dict(
         login_user=dict(type='str', default=None),
         login_password=dict(type='str', no_log=True),
@@ -212,13 +211,6 @@ def get_server_version(cursor):
         version_str = result[0]
 
     return version_str
-
-
-def get_server_implementation(cursor):
-    if 'mariadb' in get_server_version(cursor).lower():
-        return "mariadb"
-    else:
-        return "mysql"
 
 
 def set_session_vars(module, cursor, session_vars):

@@ -94,11 +94,11 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.common.text.converters import to_native
 
 from ansible_collections.ansible.mariadb.plugins.module_utils.database import mysql_quote_identifier
-from ansible_collections.ansible.mariadb.plugins.module_utils.mysql import (
-    mysql_common_argument_spec,
-    mysql_connect,
-    mysql_driver,
-    mysql_driver_fail_msg,
+from ansible_collections.ansible.mariadb.plugins.module_utils.mariadb import (
+    mariadb_common_argument_spec,
+    mariadb_connect,
+    mariadb_driver,
+    mariadb_driver_fail_msg,
 )
 
 
@@ -204,7 +204,7 @@ class MariaDBPasswordPolicy(object):
 
 
 def main():
-    argument_spec = mysql_common_argument_spec()
+    argument_spec = mariadb_common_argument_spec()
     argument_spec.update(
         length=dict(type='int'),
         mixed_case_count=dict(type='int'),
@@ -223,11 +223,11 @@ def main():
         supports_check_mode=True,
     )
 
-    if mysql_driver is None:
-        module.fail_json(msg=mysql_driver_fail_msg)
+    if mariadb_driver is None:
+        module.fail_json(msg=mariadb_driver_fail_msg)
 
     try:
-        cursor, _db_conn = mysql_connect(
+        cursor, _db_conn = mariadb_connect(
             module,
             module.params['login_user'],
             module.params['login_password'],

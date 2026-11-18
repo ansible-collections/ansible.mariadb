@@ -140,11 +140,11 @@ import time
 import warnings
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.ansible.mariadb.plugins.module_utils.mysql import (
-    mysql_connect,
-    mysql_common_argument_spec,
-    mysql_driver,
-    mysql_driver_fail_msg,
+from ansible_collections.ansible.mariadb.plugins.module_utils.mariadb import (
+    mariadb_connect,
+    mariadb_common_argument_spec,
+    mariadb_driver,
+    mariadb_driver_fail_msg,
     set_session_vars,
 )
 from ansible.module_utils.common.text.converters import to_native
@@ -179,7 +179,7 @@ def execute_and_return_time(cursor, query, args):
 
 
 def main():
-    argument_spec = mysql_common_argument_spec()
+    argument_spec = mariadb_common_argument_spec()
     argument_spec.update(
         query=dict(type='raw', required=True),
         login_db=dict(type='str'),
@@ -230,12 +230,12 @@ def main():
     else:
         arguments = None
 
-    if mysql_driver is None:
-        module.fail_json(msg=mysql_driver_fail_msg)
+    if mariadb_driver is None:
+        module.fail_json(msg=mariadb_driver_fail_msg)
 
     # Connect to DB:
     try:
-        cursor, db_connection = mysql_connect(module, login_user, login_password,
+        cursor, db_connection = mariadb_connect(module, login_user, login_password,
                                               config_file, ssl_cert, ssl_key, ssl_ca, db,
                                               check_hostname=check_hostname,
                                               connect_timeout=connect_timeout,
@@ -265,12 +265,12 @@ def main():
             with warnings.catch_warnings():
                 warnings.filterwarnings(action='error',
                                         message='.*already exists*',
-                                        category=mysql_driver.Warning)
+                                        category=mariadb_driver.Warning)
 
                 try:
                     cursor, exec_time_ms = execute_and_return_time(cursor, q, arguments)
                     execution_time_ms.append(exec_time_ms)
-                except mysql_driver.Warning:
+                except mariadb_driver.Warning:
                     # When something is run with IF NOT EXISTS
                     # and there's "already exists" MySQL warning,
                     # set the flag as True.

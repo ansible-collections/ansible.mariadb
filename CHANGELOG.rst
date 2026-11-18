@@ -1,6 +1,6 @@
-====================================================
-Community MySQL and MariaDB Collection Release Notes
-====================================================
+==========================================
+Community MariaDB Collection Release Notes
+==========================================
 
 .. contents:: Topics
 

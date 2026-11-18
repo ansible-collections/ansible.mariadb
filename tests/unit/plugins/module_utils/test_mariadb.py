@@ -4,7 +4,7 @@ __metaclass__ = type
 
 import pytest
 
-from ansible_collections.ansible.mariadb.plugins.module_utils.mysql import get_server_version, get_server_implementation
+from ansible_collections.ansible.mariadb.plugins.module_utils.mariadb import get_server_version
 from ..utils import dummy_cursor_class
 
 
@@ -26,7 +26,7 @@ def test_get_server_version(cursor_return_version, cursor_return_type):
 
 
 @pytest.mark.parametrize(
-    'cursor_return_version,cursor_return_type,server_implementation',
+    'cursor_return_version,cursor_return_type',
     [
         ('5.7.0-mysql', 'dict', 'mysql'),
         ('8.0.0-mysql', 'list', 'mysql'),
@@ -34,10 +34,3 @@ def test_get_server_version(cursor_return_version, cursor_return_type):
         ('10.5.1-mariadb', 'list', 'mariadb'),
     ]
 )
-def test_get_server_implamentation(cursor_return_version, cursor_return_type, server_implementation):
-    """
-    Test that server implementation are handled properly by get_server_implementation() whether the server version returned as a list or dict.
-    """
-    cursor = dummy_cursor_class(cursor_return_version, cursor_return_type)
-
-    assert get_server_implementation(cursor) == server_implementation

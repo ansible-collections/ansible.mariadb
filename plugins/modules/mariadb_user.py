@@ -440,11 +440,11 @@ RETURN = '''#'''
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ansible.mariadb.plugins.module_utils.database import SQLParseError
-from ansible_collections.ansible.mariadb.plugins.module_utils.mysql import (
-    mysql_connect,
-    mysql_driver,
-    mysql_driver_fail_msg,
-    mysql_common_argument_spec,
+from ansible_collections.ansible.mariadb.plugins.module_utils.mariadb import (
+    mariadb_connect,
+    mariadb_driver,
+    mariadb_driver_fail_msg,
+    mariadb_common_argument_spec,
     set_session_vars,
 )
 from ansible_collections.ansible.mariadb.plugins.module_utils.user import (
@@ -468,7 +468,7 @@ from ansible.module_utils.common.text.converters import to_native
 
 
 def main():
-    argument_spec = mysql_common_argument_spec()
+    argument_spec = mariadb_common_argument_spec()
     argument_spec.update(
         name=dict(type='str', required=True),
         password=dict(type='str', no_log=True),
@@ -543,8 +543,8 @@ def main():
     if priv and isinstance(priv, dict):
         priv = convert_priv_dict_to_str(priv)
 
-    if mysql_driver is None:
-        module.fail_json(msg=mysql_driver_fail_msg)
+    if mariadb_driver is None:
+        module.fail_json(msg=mariadb_driver_fail_msg)
 
     if password_expire_interval and password_expire_interval < 1:
         module.fail_json(msg="password_expire_interval value \
@@ -562,13 +562,13 @@ def main():
     try:
         if check_implicit_admin:
             try:
-                cursor, db_conn = mysql_connect(module, "root", "", config_file, ssl_cert, ssl_key, ssl_ca, db,
+                cursor, db_conn = mariadb_connect(module, "root", "", config_file, ssl_cert, ssl_key, ssl_ca, db,
                                                 connect_timeout=connect_timeout, check_hostname=check_hostname, autocommit=True)
             except Exception:
                 pass
 
         if not cursor:
-            cursor, db_conn = mysql_connect(module, login_user, login_password, config_file, ssl_cert, ssl_key, ssl_ca, db,
+            cursor, db_conn = mariadb_connect(module, login_user, login_password, config_file, ssl_cert, ssl_key, ssl_ca, db,
                                             connect_timeout=connect_timeout, check_hostname=check_hostname, autocommit=True)
     except Exception as e:
         module.fail_json(msg="unable to connect to database, check login_user and login_password are correct or %s has the credentials. "
@@ -610,7 +610,7 @@ def main():
                 password_changed = result['password_changed']
                 final_attributes = result['attributes']
 
-            except (SQLParseError, InvalidPrivsError, mysql_driver.Error) as e:
+            except (SQLParseError, InvalidPrivsError, mariadb_driver.Error) as e:
                 module.fail_json(msg=to_native(e))
         else:
             if host_all:
@@ -629,7 +629,7 @@ def main():
                 if changed:
                     msg = "User added"
 
-            except (SQLParseError, InvalidPrivsError, mysql_driver.Error) as e:
+            except (SQLParseError, InvalidPrivsError, mariadb_driver.Error) as e:
                 module.fail_json(msg=to_native(e))
 
         if resource_limits:

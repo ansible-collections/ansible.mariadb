@@ -129,16 +129,17 @@ settings:
     min_examined_row_limit: 100
 '''
 
+from typing import ClassVar
+
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.common.text.converters import to_native
 
 from ansible_collections.ansible.mariadb.plugins.module_utils.database import mysql_quote_identifier
-from ansible_collections.ansible.mariadb.plugins.module_utils.mysql import (
-    get_server_implementation,
-    mysql_common_argument_spec,
-    mysql_connect,
-    mysql_driver,
-    mysql_driver_fail_msg,
+from ansible_collections.ansible.mariadb.plugins.module_utils.mariadb import (
+    mariadb_common_argument_spec,
+    mariadb_connect,
+    mariadb_driver,
+    mariadb_driver_fail_msg,
 )
 
 
@@ -195,34 +196,18 @@ def convert_bool_setting_value_wanted(val):
     return val
 
 
-class MySQLSlowLog(object):
-    VARIABLE_CANDIDATES = {
-        'enabled': {
-            'mysql': ('slow_query_log',),
-            'mariadb': ('log_slow_query', 'slow_query_log'),
-        },
-        'long_query_time': {
-            'mysql': ('long_query_time',),
-            'mariadb': ('log_slow_query_time', 'long_query_time'),
-        },
-        'log_output': {
-            'mysql': ('log_output',),
-            'mariadb': ('log_output',),
-        },
-        'log_queries_not_using_indexes': {
-            'mysql': ('log_queries_not_using_indexes',),
-            'mariadb': ('log_queries_not_using_indexes',),
-        },
-        'min_examined_row_limit': {
-            'mysql': ('min_examined_row_limit',),
-            'mariadb': ('log_slow_min_examined_row_limit', 'min_examined_row_limit'),
-        },
+class SlowLog:
+    VARIABLE_CANDIDATES: ClassVar = {
+        'enabled': ('log_slow_query', 'slow_query_log'),
+        'long_query_time': ('log_slow_query_time', 'long_query_time'),
+        'log_output': ('log_output',),
+        'log_queries_not_using_indexes': ('log_queries_not_using_indexes',),
+        'min_examined_row_limit': ('log_slow_min_examined_row_limit', 'min_examined_row_limit'),
     }
 
-    def __init__(self, module, cursor, server_implementation):
+    def __init__(self, module, cursor):
         self.module = module
         self.cursor = cursor
-        self.server_implementation = server_implementation
         self.variable_names = {}
 
     def configure(self, desired_settings, flush=False, check_mode=False):
@@ -281,7 +266,7 @@ class MySQLSlowLog(object):
         return settings
 
     def read_setting(self, setting_name):
-        for variable_name in self.VARIABLE_CANDIDATES[setting_name][self.server_implementation]:
+        for variable_name in self.VARIABLE_CANDIDATES[setting_name]:
             value = get_variable(self.cursor, variable_name)
             if value is not None:
                 return variable_name, value
@@ -327,7 +312,7 @@ class MySQLSlowLog(object):
 
 
 def main():
-    argument_spec = mysql_common_argument_spec()
+    argument_spec = mariadb_common_argument_spec()
     argument_spec.update(
         enabled=dict(type='bool'),
         long_query_time=dict(type='float'),
@@ -342,8 +327,8 @@ def main():
         supports_check_mode=True,
     )
 
-    if mysql_driver is None:
-        module.fail_json(msg=mysql_driver_fail_msg)
+    if mariadb_driver is None:
+        module.fail_json(msg=mariadb_driver_fail_msg)
 
     connect_timeout = module.params['connect_timeout']
     login_user = module.params['login_user']
@@ -355,7 +340,7 @@ def main():
     config_file = module.params['config_file']
 
     try:
-        cursor, _db_conn = mysql_connect(
+        cursor, _db_conn = mariadb_connect(
             module,
             login_user,
             login_password,
@@ -382,7 +367,7 @@ def main():
         'min_examined_row_limit': module.params['min_examined_row_limit'],
     }
 
-    slow_log = MySQLSlowLog(module, cursor, get_server_implementation(cursor))
+    slow_log = SlowLog(module, cursor)
 
     module.exit_json(
         **slow_log.configure(

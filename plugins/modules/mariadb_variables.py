@@ -103,7 +103,7 @@ from re import match
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ansible.mariadb.plugins.module_utils.database import SQLParseError, mysql_quote_identifier
-from ansible_collections.ansible.mariadb.plugins.module_utils.mysql import mysql_connect, mysql_driver, mysql_driver_fail_msg, mysql_common_argument_spec
+from ansible_collections.ansible.mariadb.plugins.module_utils.mariadb import mariadb_connect, mariadb_driver, mariadb_driver_fail_msg, mariadb_common_argument_spec
 from ansible.module_utils.common.text.converters import to_native
 
 executed_queries = []
@@ -201,7 +201,7 @@ def convert_bool_setting_value_wanted(val):
 
 
 def main():
-    argument_spec = mysql_common_argument_spec()
+    argument_spec = mariadb_common_argument_spec()
     argument_spec.update(
         variable=dict(type='str', required=True),
         value=dict(type='str'),
@@ -229,13 +229,13 @@ def main():
         module.fail_json(msg="Cannot run without variable to operate with")
     if match('^[0-9A-Za-z_.]+$', mysqlvar) is None:
         module.fail_json(msg="invalid variable name \"%s\"" % mysqlvar)
-    if mysql_driver is None:
-        module.fail_json(msg=mysql_driver_fail_msg)
+    if mariadb_driver is None:
+        module.fail_json(msg=mariadb_driver_fail_msg)
     else:
-        warnings.filterwarnings('error', category=mysql_driver.Warning)
+        warnings.filterwarnings('error', category=mariadb_driver.Warning)
 
     try:
-        cursor, db_conn = mysql_connect(module, user, password, config_file, ssl_cert, ssl_key, ssl_ca, db,
+        cursor, db_conn = mariadb_connect(module, user, password, config_file, ssl_cert, ssl_key, ssl_ca, db,
                                         connect_timeout=connect_timeout, check_hostname=check_hostname)
     except Exception as e:
         if os.path.exists(config_file):

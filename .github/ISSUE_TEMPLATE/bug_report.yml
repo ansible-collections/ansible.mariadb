@@ -48,8 +48,8 @@ body:
       label: Component Name
       description: >-
         Write the short name of the module, plugin, task or feature below,
-        *use your best guess if unsure*. Do not include `ansible.mysql.`!
-      placeholder: mysql_user, mysql_info, etc.
+        *use your best guess if unsure*. Do not include `ansible.mariadb.`!
+      placeholder: mariadb_user, mariadb_info, etc.
     validations:
       required: true
 
@@ -71,13 +71,13 @@ body:
 
   - type: textarea
     attributes:
-      label: Community.mysql Version
+      label: Community.mariadb Version
       description: >-
-        Paste verbatim output from "ansible-galaxy collection list ansible.mysql"
+        Paste verbatim output from "ansible-galaxy collection list ansible.mariadb"
         between triple backticks.
       value: |
         ```console (paste below)
-        $ ansible-galaxy collection list ansible.mysql
+        $ ansible-galaxy collection list ansible.mariadb
 
         ```
     validations:

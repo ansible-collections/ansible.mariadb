@@ -5,7 +5,7 @@ __metaclass__ = type
 
 import pytest
 
-from ansible_collections.ansible.mariadb.plugins.modules.mariadb_slow_log import MySQLSlowLog, typedvalue
+from ansible_collections.ansible.mariadb.plugins.modules.mariadb_slow_log import SlowLog, typedvalue
 
 
 class FakeCursor(object):
@@ -53,7 +53,7 @@ def test_typedvalue_raises_type_error_for_none():
 
 @pytest.mark.parametrize('value', ['', 'invalid'])
 def test_normalize_log_output_rejects_empty_and_invalid_values(value):
-    slow_log = MySQLSlowLog(ModuleStub(), FakeCursor({}), 'mysql')
+    slow_log = SlowLog(ModuleStub(), FakeCursor({}), 'mysql')
 
     with pytest.raises(RuntimeError) as exc_info:
         slow_log.normalize_log_output(value)
@@ -63,7 +63,7 @@ def test_normalize_log_output_rejects_empty_and_invalid_values(value):
 
 @pytest.mark.parametrize('value', ['NONE,FILE', 'TABLE,NONE'])
 def test_normalize_log_output_rejects_none_combined_with_other_values(value):
-    slow_log = MySQLSlowLog(ModuleStub(), FakeCursor({}), 'mysql')
+    slow_log = SlowLog(ModuleStub(), FakeCursor({}), 'mysql')
 
     with pytest.raises(RuntimeError) as exc_info:
         slow_log.normalize_log_output(value)
@@ -72,7 +72,7 @@ def test_normalize_log_output_rejects_none_combined_with_other_values(value):
 
 
 def test_read_setting_fails_when_variable_is_not_available():
-    slow_log = MySQLSlowLog(ModuleStub(), FakeCursor({}), 'mysql')
+    slow_log = SlowLog(ModuleStub(), FakeCursor({}), 'mysql')
 
     with pytest.raises(RuntimeError) as exc_info:
         slow_log.read_setting('log_output')
@@ -89,7 +89,7 @@ def test_configure_returns_unchanged_when_settings_already_match():
         'min_examined_row_limit': '100',
     })
 
-    slow_log = MySQLSlowLog(ModuleStub(), cursor, 'mysql')
+    slow_log = SlowLog(ModuleStub(), cursor, 'mysql')
 
     result = slow_log.configure({
         'enabled': True,
@@ -119,7 +119,7 @@ def test_configure_in_check_mode_predicts_changes_without_writes():
         'min_examined_row_limit': '0',
     })
 
-    slow_log = MySQLSlowLog(ModuleStub(), cursor, 'mysql')
+    slow_log = SlowLog(ModuleStub(), cursor, 'mysql')
 
     result = slow_log.configure({
         'enabled': True,
@@ -147,7 +147,7 @@ def test_configure_fails_when_flush_is_requested_without_file_output():
         'min_examined_row_limit': '100',
     })
 
-    slow_log = MySQLSlowLog(ModuleStub(), cursor, 'mysql')
+    slow_log = SlowLog(ModuleStub(), cursor, 'mysql')
 
     with pytest.raises(RuntimeError) as exc_info:
         slow_log.configure({}, flush=True)
@@ -164,7 +164,7 @@ def test_configure_uses_mariadb_aliases():
         'log_slow_min_examined_row_limit': '25',
     })
 
-    slow_log = MySQLSlowLog(ModuleStub(), cursor, 'mariadb')
+    slow_log = SlowLog(ModuleStub(), cursor, 'mariadb')
 
     result = slow_log.configure({
         'enabled': True,
@@ -193,7 +193,7 @@ def test_configure_appends_flush_after_setting_queries():
         'min_examined_row_limit': '100',
     })
 
-    slow_log = MySQLSlowLog(ModuleStub(), cursor, 'mysql')
+    slow_log = SlowLog(ModuleStub(), cursor, 'mysql')
 
     result = slow_log.configure({
         'enabled': True,
@@ -216,7 +216,7 @@ def test_configure_treats_string_boolean_values_as_idempotent():
         'min_examined_row_limit': '100',
     })
 
-    slow_log = MySQLSlowLog(ModuleStub(), cursor, 'mysql')
+    slow_log = SlowLog(ModuleStub(), cursor, 'mysql')
 
     result = slow_log.configure({
         'enabled': True,
