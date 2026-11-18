@@ -206,6 +206,11 @@
     - include_tasks: test_user_password.yml
 
     # ============================================================
+    # Test caching_sha2_password with plugin_auth_string and salt
+    # (https://github.com/ansible-collections/ansible.mariadb/issues/28)
+    - include_tasks: test_plugin_auth_salt.yml
+
+    # ============================================================
     # Assert create user with SELECT privileges, attempt to create database and update privileges to create database
     #
     - include_tasks: test_privs.yml
