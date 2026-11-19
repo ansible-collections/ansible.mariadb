@@ -570,11 +570,10 @@ def main():
     server_version = get_server_version(cursor)
     command_resolver = CommandResolver('mariadb', server_version)
     cursor.execute("SELECT VERSION()")
-    from ansible_collections.ansible.mariadb.plugins.module_utils.implementations.mariadb import replication as impl
+    from ansible_collections.ansible.mariadb.plugins.module_utils.replication import uses_replica_terminology
 
-    # Since MySQL 8.0.22 and MariaDB 10.5.1,
-    # "REPLICA" must be used instead of "SLAVE"
-    if impl.uses_replica_terminology(cursor):
+    # Since MariaDB 10.5.1 "REPLICA" must be used instead of "SLAVE"
+    if uses_replica_terminology(cursor):
         replica_term = 'REPLICA'
     else:
         replica_term = 'SLAVE'
