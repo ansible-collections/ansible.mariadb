@@ -10,6 +10,7 @@ from ansible_collections.ansible.mariadb.plugins.module_utils.user import (
     has_grant_on_col,
     normalize_col_grants,
     sort_column_order,
+    privileges_get,
     privileges_unpack,
 )
 
@@ -111,3 +112,44 @@ def test_normalize_col_grants(input_, expected):
 def test_privileges_unpack(priv, mode, column_case_sensitive, ensure_usage, expected):
     """Tests privileges_unpack function."""
     assert privileges_unpack(priv, mode, column_case_sensitive, ensure_usage) == expected
+
+
+class MockCursor:
+    def __init__(self, grants):
+        self.grants = grants
+        self.executed = []
+
+    def execute(self, query, params=None):
+        self.executed.append((query, params))
+
+    def fetchall(self):
+        return [(g,) for g in self.grants]
+
+
+@pytest.mark.parametrize(
+    'grants,maria_role,expected',
+    [
+        (
+            [
+                "GRANT USAGE ON *.* TO `role2`",
+                "GRANT SELECT ON `db`.* TO `role2`",
+                "GRANT `role1` TO `role2`",
+            ],
+            True,
+            {'*.*': ['USAGE'], '`db`.*': ['SELECT']},
+        ),
+        (
+            [
+                "GRANT USAGE ON *.* TO `user1`@`localhost`",
+                "GRANT `admin`@`%` TO `user1`@`localhost`",
+                "SET DEFAULT ROLE `admin`@`%` FOR `user1`@`localhost`",
+            ],
+            False,
+            {'*.*': ['USAGE']},
+        ),
+    ]
+)
+def test_privileges_get_ignores_granted_roles(grants, maria_role, expected):
+    """Tests that privileges_get skips roles granted to users and roles."""
+    cursor = MockCursor(grants)
+    assert privileges_get(cursor, 'role2', 'localhost', maria_role=maria_role) == expected

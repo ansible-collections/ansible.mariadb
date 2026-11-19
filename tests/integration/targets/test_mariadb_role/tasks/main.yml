@@ -25,3 +25,7 @@
 - name: Test column case sensitive
   ansible.builtin.import_tasks:
     file: test_column_case_sensitive.yml
+
+- name: Test roles granted to a role
+  ansible.builtin.import_tasks:
+    file: test_granted_role.yml

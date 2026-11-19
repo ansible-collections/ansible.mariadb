@@ -1,0 +1,83 @@
+---
+# Regression test for https://github.com/ansible-collections/ansible.mariadb/issues/16
+# A role that has another role granted to it must not make mariadb_role fail
+# with "unable to parse the MySQL grant string: GRANT `role1` TO `role2`".
+- vars:
+    mariadb_parameters: &mariadb_params
+      login_user: '{{ mariadb_user }}'
+      login_password: '{{ mariadb_password }}'
+      login_host: '{{ mariadb_host }}'
+      login_port: '{{ mariadb_primary_port }}'
+
+  block:
+
+    - name: Granted role | Create test database
+      mariadb_db:
+        <<: *mariadb_params
+        name: granted_role_db
+        state: present
+
+    - name: Granted role | Create the roles
+      mariadb_role:
+        <<: *mariadb_params
+        name: '{{ item }}'
+        state: present
+      loop:
+        - granted_role_inner
+        - granted_role_outer
+
+    - name: Granted role | Grant the inner role to the outer role
+      command: "{{ mariadb_command }} -e \"GRANT granted_role_inner TO granted_role_outer\""
+
+    - name: Granted role | Set privileges on the outer role
+      mariadb_role:
+        <<: *mariadb_params
+        name: granted_role_outer
+        priv: 'granted_role_db.*:SELECT'
+        state: present
+      register: result
+
+    - name: Granted role | Assert the privileges were changed
+      assert:
+        that:
+          - result is changed
+
+    - name: Granted role | Set the same privileges again
+      mariadb_role:
+        <<: *mariadb_params
+        name: granted_role_outer
+        priv: 'granted_role_db.*:SELECT'
+        state: present
+      register: result
+
+    - name: Granted role | Assert nothing changed
+      assert:
+        that:
+          - result is not changed
+
+    - name: Granted role | Show grants for the outer role
+      command: "{{ mariadb_command }} -e \"SHOW GRANTS FOR 'granted_role_outer'\""
+      register: result
+
+    - name: Granted role | Assert the granted role and privileges are still there
+      assert:
+        that:
+          - "'GRANT SELECT ON `granted_role_db`.*' in result.stdout"
+          - "'GRANT `granted_role_inner` TO `granted_role_outer`' in result.stdout"
+
+  always:
+
+    - name: Granted role | Drop the roles
+      mariadb_role:
+        <<: *mariadb_params
+        name: '{{ item }}'
+        state: absent
+      loop:
+        - granted_role_outer
+        - granted_role_inner
+
+    - name: Granted role | Drop test database
+      mariadb_db:
+        <<: *mariadb_params
+        name: granted_role_db
+        state: absent

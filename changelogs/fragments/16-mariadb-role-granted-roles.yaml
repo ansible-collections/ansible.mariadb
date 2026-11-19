@@ -1,0 +1,2 @@
+bugfixes:
+  - mariadb_role - fix ``unable to parse the MySQL grant string`` error when the role has another role granted to it, for example ``GRANT `role1` TO `role2```. Such grants are now ignored when reading the role's privileges, the same way as for users (https://github.com/ansible-collections/ansible.mariadb/issues/16).
