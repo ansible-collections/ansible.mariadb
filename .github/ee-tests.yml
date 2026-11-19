@@ -1,6 +1,6 @@
 # This playbook is used by the .github/workflows/ee.yml
 # workflow for EE configuration validation
-- name: Validate ansible.mysql EE
+- name: Validate ansible.mariadb EE
   hosts: localhost
   gather_facts: false
   tasks:
@@ -10,13 +10,13 @@
      changed_when: false
      register: _pymysql
 
-   - name: Verify ansible.mysql collection is installed
-     ansible.builtin.command: ansible-galaxy collection list ansible.mysql
+   - name: Verify ansible.mariadb collection is installed
+     ansible.builtin.command: ansible-galaxy collection list ansible.mariadb
      changed_when: false
      register: _collection
 
-   - name: Verify ansible.mysql.mysql_info module is documented
-     ansible.builtin.command: ansible-doc ansible.mysql.mysql_info
+   - name: Verify ansible.mariadb.mariadb_info module is documented
+     ansible.builtin.command: ansible-doc ansible.mariadb.mariadb_info
      changed_when: false
 
    - name: Print results

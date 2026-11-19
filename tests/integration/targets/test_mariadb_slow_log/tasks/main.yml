@@ -15,7 +15,6 @@
         slow_log_enabled_var: log_slow_query
         slow_log_time_var: log_slow_query_time
         slow_log_rows_var: log_slow_min_examined_row_limit
-      when: db_engine == 'mariadb'
 
     - name: MariaDB slow log | Set baseline settings
       ansible.mariadb.mariadb_slow_log:

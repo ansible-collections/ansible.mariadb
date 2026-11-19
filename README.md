@@ -9,7 +9,7 @@ This collection is a part of the Ansible package.
 ## Our mission
 
 The Ansible `ansible.mariadb` collection goals are to produce and maintain simple,
-flexible, and powerful open-source software for automating MySQL and MariaDB related tasks
+flexible, and powerful open-source software for automating MariaDB-related tasks
 providing good documentation for easy deployment and use.
 
 ## Community standards
@@ -115,7 +115,7 @@ For MariaDB, only Long Term releases are tested. When multiple LTS are available
 
 ## External requirements
 
-The MySQL modules rely on a [PyMySQL](https://github.com/PyMySQL/PyMySQL) connector.
+The MariaDB modules rely on a [PyMySQL](https://github.com/PyMySQL/PyMySQL) connector.
 
 The `mysqlclient` connector support has been [deprecated](https://github.com/ansible-collections/ansible.mariadb/issues/654) - use `PyMySQL` connector instead! We will stop testing against it in collection version 4.0.0 and remove the related code in 5.0.0.
 

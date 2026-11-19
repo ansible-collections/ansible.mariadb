@@ -20,7 +20,7 @@ jobs:
   # Use this to chose which version of Python vs Ansible to test:
   # https://docs.ansible.com/ansible/latest/reference_appendices/release_and_maintenance.html#ansible-core-control-node-python-support
   integration:
-    name: "Integration (Ⓐ${{ matrix.ansible }}, DB: ${{ matrix.db_engine_name }} ${{ matrix.db_engine_version }}, connector: ${{ matrix.connector_name }} ${{ matrix.connector_version }})"
+    name: "Integration (Ⓐ${{ matrix.ansible }}, DB: MariaDB ${{ matrix.db_engine_version }}, connector: ${{ matrix.connector_name }} ${{ matrix.connector_version }})"
     runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
@@ -32,8 +32,6 @@ jobs:
           - stable-2.21
           - stable-2.22
           - devel
-        db_engine_name:
-          - mariadb
         db_engine_version:
           - '10.11.8'
           - '11.8.7'
@@ -54,7 +52,7 @@ jobs:
 
     services:
       db_primary:
-        image: docker.io/library/${{ matrix.db_engine_name }}:${{ matrix.db_engine_version }}
+        image: docker.io/library/mariadb:${{ matrix.db_engine_version }}
         env:
           MARIADB_ROOT_PASSWORD: msandbox
         ports:
@@ -69,7 +67,7 @@ jobs:
           --health-retries 6
 
       db_replica1:
-        image: docker.io/library/${{ matrix.db_engine_name }}:${{ matrix.db_engine_version }}
+        image: docker.io/library/mariadb:${{ matrix.db_engine_version }}
         env:
           MARIADB_ROOT_PASSWORD: msandbox
         ports:
@@ -82,7 +80,7 @@ jobs:
           --health-retries 6
 
       db_replica2:
-        image: docker.io/library/${{ matrix.db_engine_name }}:${{ matrix.db_engine_version }}
+        image: docker.io/library/mariadb:${{ matrix.db_engine_version }}
         env:
           MARIADB_ROOT_PASSWORD: msandbox
         ports:
@@ -128,10 +126,6 @@ jobs:
           docker-image: >-
             ${{ matrix.ansible == 'devel' && 'ubuntu2604' || 'ubuntu2404' }}
           pre-test-cmd: >-
-            echo Setting db_engine_name to "${{ matrix.db_engine_name }}"...;
-            echo -n "${{ matrix.db_engine_name }}"
-            > tests/integration/db_engine_name;
-
             echo Setting db_engine_version to \
             "${{ matrix.db_engine_version }}"...;
             echo -n "${{ matrix.db_engine_version }}"
