@@ -317,7 +317,6 @@ from ansible_collections.ansible.mariadb.plugins.module_utils.mysql import (
     mysql_driver_fail_msg,
     get_connector_name,
     get_connector_version,
-    get_server_implementation,
     get_server_version,
 )
 
@@ -786,7 +785,7 @@ def main():
                'Exception message: %s' % (connector_name, connector_version, config_file, to_native(e)))
         module.fail_json(msg)
 
-    server_implementation = get_server_implementation(cursor)
+    server_implementation = 'mariadb'
     server_version = get_server_version(cursor)
     user_implementation = get_user_implementation(cursor)
 
@@ -796,7 +795,7 @@ def main():
     mysql = MySQL_Info(module, cursor, server_implementation, server_version, user_implementation)
 
     module.exit_json(changed=False,
-                     server_engine='MariaDB' if server_implementation == 'mariadb' else 'MySQL',
+                     server_engine='MariaDB',
                      connector_name=connector_name,
                      connector_version=connector_version,
                      **mysql.get_info(filter_, exclude_fields, return_empty_dbs))

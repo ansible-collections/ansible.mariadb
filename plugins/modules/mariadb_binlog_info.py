@@ -130,7 +130,6 @@ from ansible_collections.ansible.mariadb.plugins.module_utils.command_resolver i
     CommandResolver,
 )
 from ansible_collections.ansible.mariadb.plugins.module_utils.mysql import (
-    get_server_implementation,
     get_server_version,
     mysql_common_argument_spec,
     mysql_connect,
@@ -328,10 +327,9 @@ def main():
                 "Exception message: %s" % (config_file, to_native(e))
         )
 
-    server_implementation = get_server_implementation(cursor)
     server_version = get_server_version(cursor)
 
-    mysql = MySQL_Binlog_Info(module, cursor, server_implementation, server_version)
+    mysql = MySQL_Binlog_Info(module, cursor, 'mariadb', server_version)
 
     module.exit_json(changed=False, **mysql.get_info(filter_))
 

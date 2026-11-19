@@ -134,7 +134,6 @@ from ansible.module_utils.common.text.converters import to_native
 
 from ansible_collections.ansible.mariadb.plugins.module_utils.database import mysql_quote_identifier
 from ansible_collections.ansible.mariadb.plugins.module_utils.mysql import (
-    get_server_implementation,
     mysql_common_argument_spec,
     mysql_connect,
     mysql_driver,
@@ -382,7 +381,7 @@ def main():
         'min_examined_row_limit': module.params['min_examined_row_limit'],
     }
 
-    slow_log = MySQLSlowLog(module, cursor, get_server_implementation(cursor))
+    slow_log = MySQLSlowLog(module, cursor, 'mariadb')
 
     module.exit_json(
         **slow_log.configure(

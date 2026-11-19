@@ -198,7 +198,6 @@ from ansible.module_utils.common.text.converters import to_native
 
 from ansible_collections.ansible.mariadb.plugins.module_utils.database import check_input, mysql_quote_identifier
 from ansible_collections.ansible.mariadb.plugins.module_utils.mysql import (
-    get_server_implementation,
     get_server_version,
     mysql_common_argument_spec,
     mysql_connect,
@@ -584,7 +583,7 @@ def main():
     executor = MySQLReplicationFilter(
         module,
         cursor,
-        get_server_implementation(cursor),
+        'mariadb',
         get_server_version(cursor),
     )
 

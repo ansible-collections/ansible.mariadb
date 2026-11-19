@@ -303,7 +303,6 @@ from ansible_collections.ansible.mariadb.plugins.module_utils.command_resolver i
 )
 from ansible_collections.ansible.mariadb.plugins.module_utils.mysql import (
     get_server_version,
-    get_server_implementation,
     mysql_connect,
     mysql_driver,
     mysql_driver_fail_msg,
@@ -569,13 +568,9 @@ def main():
             module.fail_json(msg="unable to find %s. Exception message: %s" % (config_file, to_native(e)))
 
     server_version = get_server_version(cursor)
-    server_implementation = get_server_implementation(cursor)
-    command_resolver = CommandResolver(server_implementation, server_version)
+    command_resolver = CommandResolver('mariadb', server_version)
     cursor.execute("SELECT VERSION()")
-    if server_implementation == 'mariadb':
-        from ansible_collections.ansible.mariadb.plugins.module_utils.implementations.mariadb import replication as impl
-    else:
-        from ansible_collections.ansible.mariadb.plugins.module_utils.implementations.mysql import replication as impl
+    from ansible_collections.ansible.mariadb.plugins.module_utils.implementations.mariadb import replication as impl
 
     # Since MySQL 8.0.22 and MariaDB 10.5.1,
     # "REPLICA" must be used instead of "SLAVE"

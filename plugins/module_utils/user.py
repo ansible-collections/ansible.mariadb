@@ -17,7 +17,6 @@ import re
 
 from ansible_collections.ansible.mariadb.plugins.module_utils.mysql import (
     mysql_driver,
-    get_server_implementation,
 )
 from ansible_collections.ansible.mariadb.plugins.module_utils.implementations.mysql.hash import (
     mysql_sha256_password_hash,
@@ -1216,10 +1215,5 @@ def attributes_get(cursor, user, host):
 
 
 def get_user_implementation(cursor):
-    db_engine = get_server_implementation(cursor)
-    if db_engine == 'mariadb':
-        from ansible_collections.ansible.mariadb.plugins.module_utils.implementations.mariadb import user as mariauser
-        return mariauser
-    else:
-        from ansible_collections.ansible.mariadb.plugins.module_utils.implementations.mysql import user as mysqluser
-        return mysqluser
+    from ansible_collections.ansible.mariadb.plugins.module_utils.implementations.mariadb import user as mariauser
+    return mariauser
