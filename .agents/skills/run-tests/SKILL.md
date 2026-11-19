@@ -65,13 +65,13 @@ The project provides a Makefile (documented in `TESTING.md`) that handles spinni
 
 ```bash
 # Run all targets against MariaDB 11.8.7 with pymysql 1.1.1
-make ansible="stable-2.17" db_engine_name="mariadb" db_engine_version="11.8.7" connector_name="pymysql" connector_version="1.1.1"
+make ansible="stable-2.17" db_engine_version="11.8.7" connector_name="pymysql" connector_version="1.1.1"
 
 # MariaDB example
-make ansible="stable-2.17" db_engine_name="mariadb" db_engine_version="11.8.7" connector_name="pymysql" connector_version="1.1.1"
+make ansible="stable-2.17" db_engine_version="11.8.7" connector_name="pymysql" connector_version="1.1.1"
 ```
 
-Key Makefile options: `db_engine_name` (mariadb), `db_engine_version`, `connector_name` (pymysql), `connector_version`, `target` (single test target), `keep_containers_alive=1` (for debugging), `continue_on_errors=1`. See `TESTING.md` for the full list of supported versions and options.
+Key Makefile options: `db_engine_version`, `connector_name` (pymysql), `connector_version`, `target` (single test target), `keep_containers_alive=1` (for debugging), `continue_on_errors=1`. See `TESTING.md` for the full list of supported versions and options.
 
 ---
 
