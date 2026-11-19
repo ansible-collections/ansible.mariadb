@@ -69,7 +69,7 @@ notes:
 author:
 - Andrew Klychkov (@Andersson007)
 extends_documentation_fragment:
-- ansible.mariadb.mysql
+- ansible.mariadb.connect
 '''
 
 EXAMPLES = r'''
@@ -140,7 +140,7 @@ import time
 import warnings
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.ansible.mariadb.plugins.module_utils.mysql import (
+from ansible_collections.ansible.mariadb.plugins.module_utils.connect import (
     connect,
     common_argument_spec,
     driver,
@@ -236,10 +236,10 @@ def main():
     # Connect to DB:
     try:
         cursor, db_connection = connect(module, login_user, login_password,
-                                                config_file, ssl_cert, ssl_key, ssl_ca, db,
-                                                check_hostname=check_hostname,
-                                                connect_timeout=connect_timeout,
-                                                cursor_class='DictCursor', autocommit=autocommit)
+                                        config_file, ssl_cert, ssl_key, ssl_ca, db,
+                                        check_hostname=check_hostname,
+                                        connect_timeout=connect_timeout,
+                                        cursor_class='DictCursor', autocommit=autocommit)
     except Exception as e:
         module.fail_json(msg="unable to connect to database, check login_user and "
                              "login_password are correct or %s has the credentials. "

@@ -91,7 +91,7 @@ attributes:
     support: full
 
 extends_documentation_fragment:
-  - ansible.mariadb.mysql
+  - ansible.mariadb.connect
 '''
 
 EXAMPLES = r'''
@@ -197,7 +197,7 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.common.text.converters import to_native
 
 from ansible_collections.ansible.mariadb.plugins.module_utils.database import check_input, mysql_quote_identifier
-from ansible_collections.ansible.mariadb.plugins.module_utils.mysql import (
+from ansible_collections.ansible.mariadb.plugins.module_utils.connect import (
     get_server_version,
     common_argument_spec,
     connect,

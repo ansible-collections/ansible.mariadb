@@ -4,7 +4,7 @@ __metaclass__ = type
 
 import pytest
 
-from ansible_collections.ansible.mariadb.plugins.module_utils.mysql import get_server_version
+from ansible_collections.ansible.mariadb.plugins.module_utils.connect import get_server_version
 from ..utils import dummy_cursor_class
 
 

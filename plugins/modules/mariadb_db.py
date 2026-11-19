@@ -204,7 +204,7 @@ attributes:
     details:
       - The module is not idempotent when O(state=import) or when O(state=dump).
 extends_documentation_fragment:
-- ansible.mariadb.mysql
+- ansible.mariadb.connect
 '''
 
 EXAMPLES = r'''
@@ -351,7 +351,7 @@ import traceback
 import shlex
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.ansible.mariadb.plugins.module_utils.mysql import (
+from ansible_collections.ansible.mariadb.plugins.module_utils.connect import (
     connect,
     driver,
     driver_fail_msg,
@@ -728,8 +728,8 @@ def main():
 
         if not cursor:
             cursor, db_conn = connect(module, login_user, login_password, config_file, ssl_cert, ssl_key, ssl_ca,
-                                              connect_timeout=connect_timeout, config_overrides_defaults=config_overrides_defaults,
-                                              check_hostname=check_hostname)
+                                      connect_timeout=connect_timeout, config_overrides_defaults=config_overrides_defaults,
+                                      check_hostname=check_hostname)
     except Exception as e:
         if os.path.exists(config_file):
             module.fail_json(msg="unable to connect to database, check login_user and login_password are correct or %s has the credentials. "

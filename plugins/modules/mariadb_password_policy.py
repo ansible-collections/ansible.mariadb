@@ -111,7 +111,7 @@ seealso:
     link: https://mariadb.com/docs/server/reference/plugins/password-validation-plugins/simple-password-check-plugin
 
 extends_documentation_fragment:
-  - ansible.mariadb.mysql
+  - ansible.mariadb.connect
 '''
 
 EXAMPLES = r'''
@@ -153,7 +153,7 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.common.text.converters import to_native
 
 from ansible_collections.ansible.mariadb.plugins.module_utils.database import mysql_quote_identifier
-from ansible_collections.ansible.mariadb.plugins.module_utils.mysql import (
+from ansible_collections.ansible.mariadb.plugins.module_utils.connect import (
     common_argument_spec,
     connect,
     driver,

@@ -206,7 +206,7 @@ attributes:
       - The module is not idempotent for O(mode=resetprimary), O(mode=resetreplica), and O(mode=resetreplicaall).
 
 extends_documentation_fragment:
-- ansible.mariadb.mysql
+- ansible.mariadb.connect
 
 seealso:
 - module: ansible.mariadb.mariadb_info
@@ -301,7 +301,7 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ansible.mariadb.plugins.module_utils.command_resolver import (
     CommandResolver
 )
-from ansible_collections.ansible.mariadb.plugins.module_utils.mysql import (
+from ansible_collections.ansible.mariadb.plugins.module_utils.connect import (
     get_server_version,
     connect,
     driver,
@@ -557,8 +557,8 @@ def main():
 
     try:
         cursor, db_conn = connect(module, login_user, login_password, config_file,
-                                          ssl_cert, ssl_key, ssl_ca, None, cursor_class='DictCursor',
-                                          connect_timeout=connect_timeout, check_hostname=check_hostname)
+                                  ssl_cert, ssl_key, ssl_ca, None, cursor_class='DictCursor',
+                                  connect_timeout=connect_timeout, check_hostname=check_hostname)
     except Exception as e:
         if os.path.exists(config_file):
             module.fail_json(msg="unable to connect to database, check login_user and "

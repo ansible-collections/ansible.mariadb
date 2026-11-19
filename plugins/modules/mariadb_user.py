@@ -250,7 +250,7 @@ author:
 - E.S. Rosenberg (@Keeper-of-the-Keys)
 
 extends_documentation_fragment:
-- ansible.mariadb.mysql
+- ansible.mariadb.connect
 '''
 
 EXAMPLES = r'''
@@ -440,7 +440,7 @@ RETURN = '''#'''
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ansible.mariadb.plugins.module_utils.database import SQLParseError
-from ansible_collections.ansible.mariadb.plugins.module_utils.mysql import (
+from ansible_collections.ansible.mariadb.plugins.module_utils.connect import (
     connect,
     driver,
     driver_fail_msg,
@@ -563,13 +563,13 @@ def main():
         if check_implicit_admin:
             try:
                 cursor, db_conn = connect(module, "root", "", config_file, ssl_cert, ssl_key, ssl_ca, db,
-                                                  connect_timeout=connect_timeout, check_hostname=check_hostname, autocommit=True)
+                                          connect_timeout=connect_timeout, check_hostname=check_hostname, autocommit=True)
             except Exception:
                 pass
 
         if not cursor:
             cursor, db_conn = connect(module, login_user, login_password, config_file, ssl_cert, ssl_key, ssl_ca, db,
-                                              connect_timeout=connect_timeout, check_hostname=check_hostname, autocommit=True)
+                                      connect_timeout=connect_timeout, check_hostname=check_hostname, autocommit=True)
     except Exception as e:
         module.fail_json(msg="unable to connect to database, check login_user and login_password are correct or %s has the credentials. "
                              "Exception message: %s" % (config_file, to_native(e)))

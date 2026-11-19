@@ -85,8 +85,8 @@ def parse_from_config_file(cnf):
 
 
 def connect(module, login_user=None, login_password=None, config_file='', ssl_cert=None,
-                    ssl_key=None, ssl_ca=None, db=None, cursor_class=None, connect_timeout=30,
-                    autocommit=False, config_overrides_defaults=False, check_hostname=None):
+            ssl_key=None, ssl_ca=None, db=None, cursor_class=None, connect_timeout=30,
+            autocommit=False, config_overrides_defaults=False, check_hostname=None):
     config = {}
 
     if config_file and os.path.exists(config_file):

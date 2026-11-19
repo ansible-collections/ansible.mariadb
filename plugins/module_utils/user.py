@@ -15,7 +15,7 @@ import string
 import json
 import re
 
-from ansible_collections.ansible.mariadb.plugins.module_utils.mysql import (
+from ansible_collections.ansible.mariadb.plugins.module_utils.connect import (
     driver,
 )
 from ansible_collections.ansible.mariadb.plugins.module_utils.implementations.mysql.hash import (

@@ -65,7 +65,7 @@ notes:
    - Compatible with MariaDB or MySQL.
 
 extends_documentation_fragment:
-- ansible.mariadb.mysql
+- ansible.mariadb.connect
 '''
 
 EXAMPLES = r'''
@@ -103,7 +103,7 @@ from re import match
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ansible.mariadb.plugins.module_utils.database import SQLParseError, mysql_quote_identifier
-from ansible_collections.ansible.mariadb.plugins.module_utils.mysql import connect, driver, driver_fail_msg, common_argument_spec
+from ansible_collections.ansible.mariadb.plugins.module_utils.connect import connect, driver, driver_fail_msg, common_argument_spec
 from ansible.module_utils.common.text.converters import to_native
 
 executed_queries = []
@@ -236,7 +236,7 @@ def main():
 
     try:
         cursor, db_conn = connect(module, user, password, config_file, ssl_cert, ssl_key, ssl_ca, db,
-                                          connect_timeout=connect_timeout, check_hostname=check_hostname)
+                                  connect_timeout=connect_timeout, check_hostname=check_hostname)
     except Exception as e:
         if os.path.exists(config_file):
             module.fail_json(msg=("unable to connect to database, check login_user and "
