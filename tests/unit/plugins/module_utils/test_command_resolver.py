@@ -24,11 +24,11 @@ from ansible_collections.ansible.mariadb.plugins.module_utils.command_resolver i
     ],
 )
 def test_resolve_version_specific_commands(server_version, command, expected):
-    assert CommandResolver(server_version).resolve_command(command) == expected
+    assert CommandResolver('mariadb', server_version).resolve_command(command) == expected
 
 
 def test_resolve_command_is_case_insensitive():
-    assert CommandResolver('10.5.2').resolve_command('show master STATUS') == 'SHOW BINLOG STATUS'
+    assert CommandResolver('mariadb', '10.5.2').resolve_command('show master STATUS') == 'SHOW BINLOG STATUS'
 
 
 @pytest.mark.parametrize(
@@ -55,9 +55,9 @@ def test_resolve_command_is_case_insensitive():
     ],
 )
 def test_resolve_default_commands(command):
-    assert CommandResolver('11.8.0').resolve_command(command) == command
+    assert CommandResolver('mariadb', '11.8.0').resolve_command(command) == command
 
 
 def test_resolve_unsupported_command():
     with pytest.raises(ValueError, match='^Unsupported command: SHOW NOTHING$'):
-        CommandResolver('11.8.0').resolve_command('SHOW NOTHING')
+        CommandResolver('mariadb', '11.8.0').resolve_command('SHOW NOTHING')

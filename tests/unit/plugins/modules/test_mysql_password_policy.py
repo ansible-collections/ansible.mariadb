@@ -24,7 +24,7 @@ except ImportError:
 
 from ansible_collections.ansible.mariadb.plugins.modules import mariadb_password_policy
 from ansible_collections.ansible.mariadb.plugins.modules.mariadb_password_policy import (
-    MariaDBPasswordPolicy,
+    MySQLPasswordPolicy,
     get_variable,
     normalize_int_value,
     set_variable,
@@ -140,9 +140,9 @@ def test_get_variable_returns_none_when_variable_is_missing():
 def test_set_variable_executes_global_query():
     cursor = FakeCursor({})
 
-    set_variable(cursor, 'simple_password_check_minimal_length', 12)
+    set_variable(cursor, 'simple_password_check_minimal_length', 12, 'global')
 
-    assert cursor.executed[-1] == ("SET GLOBAL simple_password_check_minimal_length = %s", (12,))
+    assert cursor.executed[-1] == ("SET GLOBAL `simple_password_check_minimal_length` = %s", (12,))
     assert cursor.variables['simple_password_check_minimal_length'] == 12
 
 
@@ -154,7 +154,7 @@ def test_configure_uses_mariadb_simple_password_check_mapping():
         'simple_password_check_other_characters': '1',
     })
 
-    policy = MariaDBPasswordPolicy(ModuleStub(), cursor)
+    policy = MySQLPasswordPolicy(ModuleStub(), cursor, 'mariadb')
 
     result = policy.configure({
         'length': 12,
@@ -173,7 +173,7 @@ def test_configure_uses_mariadb_simple_password_check_mapping():
 
 
 def test_configure_fails_when_requested_validation_facility_is_missing():
-    policy = MariaDBPasswordPolicy(ModuleStub(), FakeCursor({}))
+    policy = MySQLPasswordPolicy(ModuleStub(), FakeCursor({}), 'mariadb')
 
     with pytest.raises(RuntimeError) as exc_info:
         policy.configure({'length': 12})
@@ -182,9 +182,10 @@ def test_configure_fails_when_requested_validation_facility_is_missing():
 
 
 def test_read_setting_returns_mapped_mariadb_variable_name_and_value():
-    policy = MariaDBPasswordPolicy(
+    policy = MySQLPasswordPolicy(
         ModuleStub(),
         FakeCursor({'simple_password_check_minimal_length': '12'}),
+        'mariadb',
     )
 
     variable_name, value = policy.read_setting('length')
@@ -194,14 +195,14 @@ def test_read_setting_returns_mapped_mariadb_variable_name_and_value():
 
 
 def test_normalize_value_handles_supported_setting_types():
-    policy = MariaDBPasswordPolicy(ModuleStub(), FakeCursor({}))
+    policy = MySQLPasswordPolicy(ModuleStub(), FakeCursor({}), 'mariadb')
 
     assert policy.normalize_value('length', '12') == 12
 
 
 def test_format_set_query_formats_expected_statement():
-    assert MariaDBPasswordPolicy.format_set_query('simple_password_check_minimal_length', 12) == (
-        "SET GLOBAL simple_password_check_minimal_length = 12"
+    assert MySQLPasswordPolicy.format_set_query('simple_password_check_minimal_length', 12, 'global') == (
+        "SET GLOBAL `simple_password_check_minimal_length` = 12"
     )
 
 
@@ -216,9 +217,11 @@ def test_main_returns_configure_result(monkeypatch):
         monkeypatch.setattr(AnsibleModule, 'fail_json', fail_json)
         monkeypatch.setattr(mariadb_password_policy, 'mysql_driver', object())
         monkeypatch.setattr(mariadb_password_policy, 'mysql_connect', lambda *args, **kwargs: (MagicMock(), MagicMock()))
+        monkeypatch.setattr(mariadb_password_policy, 'get_server_implementation', lambda cursor: 'mariadb')
 
-        def fake_configure(self, desired_settings, check_mode=False):
+        def fake_configure(self, desired_settings, mode='global', check_mode=False):
             assert desired_settings['length'] == 12
+            assert mode == 'global'
             assert check_mode is False
             return {
                 'changed': False,
@@ -226,7 +229,7 @@ def test_main_returns_configure_result(monkeypatch):
                 'settings': {'length': 12},
             }
 
-        monkeypatch.setattr(mariadb_password_policy.MariaDBPasswordPolicy, 'configure', fake_configure)
+        monkeypatch.setattr(mariadb_password_policy.MySQLPasswordPolicy, 'configure', fake_configure)
 
         with pytest.raises(AnsibleExitJson) as exc:
             mariadb_password_policy.main()
