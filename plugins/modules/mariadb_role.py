@@ -330,7 +330,6 @@ from ansible_collections.ansible.mariadb.plugins.module_utils.connect import (
 )
 from ansible_collections.ansible.mariadb.plugins.module_utils.user import (
     convert_priv_dict_to_str,
-    get_user_implementation,
     get_mode,
     user_mod,
     privileges_grant,
@@ -947,8 +946,6 @@ def main():
 
     # Set defaults
     changed = False
-
-    impl = get_user_implementation(cursor)
 
     if priv is not None:
         try:
