@@ -352,10 +352,10 @@ import shlex
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ansible.mariadb.plugins.module_utils.mysql import (
-    mysql_connect,
-    mysql_driver,
-    mysql_driver_fail_msg,
-    mysql_common_argument_spec,
+    connect,
+    driver,
+    driver_fail_msg,
+    common_argument_spec,
     get_server_version,
 )
 from ansible_collections.ansible.mariadb.plugins.module_utils.version import LooseVersion
@@ -621,7 +621,7 @@ def db_create(cursor, db, encoding, collation):
 
 
 def main():
-    argument_spec = mysql_common_argument_spec()
+    argument_spec = common_argument_spec()
     argument_spec.update(
         name=dict(type='list', elements='str', required=True, aliases=['db']),
         encoding=dict(type='str', default=''),
@@ -651,8 +651,8 @@ def main():
         supports_check_mode=True,
     )
 
-    if mysql_driver is None:
-        module.fail_json(msg=mysql_driver_fail_msg)
+    if driver is None:
+        module.fail_json(msg=driver_fail_msg)
 
     db = module.params["name"]
     if not db:
@@ -719,17 +719,17 @@ def main():
         cursor = None
         if check_implicit_admin:
             try:
-                cursor, db_conn = mysql_connect(module, 'root', '', config_file, ssl_cert, ssl_key, ssl_ca,
-                                                connect_timeout=connect_timeout, check_hostname=check_hostname,
-                                                config_overrides_defaults=config_overrides_defaults)
+                cursor, db_conn = connect(module, 'root', '', config_file, ssl_cert, ssl_key, ssl_ca,
+                                                  connect_timeout=connect_timeout, check_hostname=check_hostname,
+                                                  config_overrides_defaults=config_overrides_defaults)
             except Exception as e:
                 check_implicit_admin = False
                 pass
 
         if not cursor:
-            cursor, db_conn = mysql_connect(module, login_user, login_password, config_file, ssl_cert, ssl_key, ssl_ca,
-                                            connect_timeout=connect_timeout, config_overrides_defaults=config_overrides_defaults,
-                                            check_hostname=check_hostname)
+            cursor, db_conn = connect(module, login_user, login_password, config_file, ssl_cert, ssl_key, ssl_ca,
+                                              connect_timeout=connect_timeout, config_overrides_defaults=config_overrides_defaults,
+                                              check_hostname=check_hostname)
     except Exception as e:
         if os.path.exists(config_file):
             module.fail_json(msg="unable to connect to database, check login_user and login_password are correct or %s has the credentials. "

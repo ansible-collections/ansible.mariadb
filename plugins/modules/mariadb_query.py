@@ -141,10 +141,10 @@ import warnings
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ansible.mariadb.plugins.module_utils.mysql import (
-    mysql_connect,
-    mysql_common_argument_spec,
-    mysql_driver,
-    mysql_driver_fail_msg,
+    connect,
+    common_argument_spec,
+    driver,
+    driver_fail_msg,
     set_session_vars,
 )
 from ansible.module_utils.common.text.converters import to_native
@@ -179,7 +179,7 @@ def execute_and_return_time(cursor, query, args):
 
 
 def main():
-    argument_spec = mysql_common_argument_spec()
+    argument_spec = common_argument_spec()
     argument_spec.update(
         query=dict(type='raw', required=True),
         login_db=dict(type='str'),
@@ -230,16 +230,16 @@ def main():
     else:
         arguments = None
 
-    if mysql_driver is None:
-        module.fail_json(msg=mysql_driver_fail_msg)
+    if driver is None:
+        module.fail_json(msg=driver_fail_msg)
 
     # Connect to DB:
     try:
-        cursor, db_connection = mysql_connect(module, login_user, login_password,
-                                              config_file, ssl_cert, ssl_key, ssl_ca, db,
-                                              check_hostname=check_hostname,
-                                              connect_timeout=connect_timeout,
-                                              cursor_class='DictCursor', autocommit=autocommit)
+        cursor, db_connection = connect(module, login_user, login_password,
+                                                config_file, ssl_cert, ssl_key, ssl_ca, db,
+                                                check_hostname=check_hostname,
+                                                connect_timeout=connect_timeout,
+                                                cursor_class='DictCursor', autocommit=autocommit)
     except Exception as e:
         module.fail_json(msg="unable to connect to database, check login_user and "
                              "login_password are correct or %s has the credentials. "
@@ -265,12 +265,12 @@ def main():
             with warnings.catch_warnings():
                 warnings.filterwarnings(action='error',
                                         message='.*already exists*',
-                                        category=mysql_driver.Warning)
+                                        category=driver.Warning)
 
                 try:
                     cursor, exec_time_ms = execute_and_return_time(cursor, q, arguments)
                     execution_time_ms.append(exec_time_ms)
-                except mysql_driver.Warning:
+                except driver.Warning:
                     # When something is run with IF NOT EXISTS
                     # and there's "already exists" MySQL warning,
                     # set the flag as True.

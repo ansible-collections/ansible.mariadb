@@ -303,10 +303,10 @@ from ansible_collections.ansible.mariadb.plugins.module_utils.command_resolver i
 )
 from ansible_collections.ansible.mariadb.plugins.module_utils.mysql import (
     get_server_version,
-    mysql_connect,
-    mysql_driver,
-    mysql_driver_fail_msg,
-    mysql_common_argument_spec,
+    connect,
+    driver,
+    driver_fail_msg,
+    common_argument_spec,
 )
 from ansible.module_utils.common.text.converters import to_native
 
@@ -351,7 +351,7 @@ def stop_replica(module, cursor, connection_name='', channel='', fail_on_error=F
         executed_queries.append(query)
         cursor.execute(query)
         stopped = True
-    except mysql_driver.Warning as e:
+    except driver.Warning as e:
         stopped = False
     except Exception as e:
         if fail_on_error:
@@ -373,7 +373,7 @@ def reset_replica(module, cursor, connection_name='', channel='', fail_on_error=
         executed_queries.append(query)
         cursor.execute(query)
         reset = True
-    except mysql_driver.Warning as e:
+    except driver.Warning as e:
         reset = False
     except Exception as e:
         if fail_on_error:
@@ -395,7 +395,7 @@ def reset_replica_all(module, cursor, connection_name='', channel='', fail_on_er
         executed_queries.append(query)
         cursor.execute(query)
         reset = True
-    except mysql_driver.Warning as e:
+    except driver.Warning as e:
         reset = False
     except Exception as e:
         if fail_on_error:
@@ -410,7 +410,7 @@ def reset_primary(module, cursor, command_resolver, fail_on_error=False):
         executed_queries.append(query)
         cursor.execute(query)
         reset = True
-    except mysql_driver.Warning as e:
+    except driver.Warning as e:
         reset = False
     except Exception as e:
         if fail_on_error:
@@ -432,7 +432,7 @@ def start_replica(module, cursor, connection_name='', channel='', fail_on_error=
         executed_queries.append(query)
         cursor.execute(query)
         started = True
-    except mysql_driver.Warning as e:
+    except driver.Warning as e:
         started = False
     except Exception as e:
         if fail_on_error:
@@ -472,7 +472,7 @@ def changereplication(cursor, chm, channel='', primary_password=None):
 
 
 def main():
-    argument_spec = mysql_common_argument_spec()
+    argument_spec = common_argument_spec()
     argument_spec.update(
         mode=dict(type='str', default='getreplica', choices=[
             'getprimary',
@@ -547,18 +547,18 @@ def main():
     channel = module.params['channel']
     fail_on_error = module.params['fail_on_error']
 
-    if mysql_driver is None:
-        module.fail_json(msg=mysql_driver_fail_msg)
+    if driver is None:
+        module.fail_json(msg=driver_fail_msg)
     else:
-        warnings.filterwarnings('error', category=mysql_driver.Warning)
+        warnings.filterwarnings('error', category=driver.Warning)
 
     login_password = module.params["login_password"]
     login_user = module.params["login_user"]
 
     try:
-        cursor, db_conn = mysql_connect(module, login_user, login_password, config_file,
-                                        ssl_cert, ssl_key, ssl_ca, None, cursor_class='DictCursor',
-                                        connect_timeout=connect_timeout, check_hostname=check_hostname)
+        cursor, db_conn = connect(module, login_user, login_password, config_file,
+                                          ssl_cert, ssl_key, ssl_ca, None, cursor_class='DictCursor',
+                                          connect_timeout=connect_timeout, check_hostname=check_hostname)
     except Exception as e:
         if os.path.exists(config_file):
             module.fail_json(msg="unable to connect to database, check login_user and "
@@ -655,7 +655,7 @@ def main():
             chm.append("MASTER_USE_GTID=%s" % primary_use_gtid)  # MariaDB only
         try:
             changeprimary(cursor, command_resolver, chm, connection_name, channel, primary_password)
-        except mysql_driver.Warning as e:
+        except driver.Warning as e:
             result['warning'] = to_native(e)
         except Exception as e:
             module.fail_json(msg='%s. Query == %s TO %s' % (to_native(e), command_resolver.resolve_command('CHANGE MASTER'), chm))
@@ -738,7 +738,7 @@ def main():
             chm.append("SOURCE_AUTO_POSITION=1")
         try:
             changereplication(cursor, chm, channel, primary_password)
-        except mysql_driver.Warning as e:
+        except driver.Warning as e:
             result['warning'] = to_native(e)
         except Exception as e:
             module.fail_json(msg='%s. Query == CHANGE REPLICATION SOURCE TO %s' % (to_native(e), chm))

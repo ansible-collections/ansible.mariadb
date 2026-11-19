@@ -199,10 +199,10 @@ from ansible.module_utils.common.text.converters import to_native
 from ansible_collections.ansible.mariadb.plugins.module_utils.database import check_input, mysql_quote_identifier
 from ansible_collections.ansible.mariadb.plugins.module_utils.mysql import (
     get_server_version,
-    mysql_common_argument_spec,
-    mysql_connect,
-    mysql_driver,
-    mysql_driver_fail_msg,
+    common_argument_spec,
+    connect,
+    driver,
+    driver_fail_msg,
 )
 from ansible_collections.ansible.mariadb.plugins.module_utils.version import LooseVersion
 
@@ -388,12 +388,12 @@ def get_mysql_filter_rows(cursor, channel=''):
     return cursor.fetchall()
 
 
-def supports_mariadb_connection_name(server_version):
+def supports_connection_name(server_version):
     return LooseVersion(server_version) >= LooseVersion('10.0.1')
 
 
 def get_mariadb_filter_values(module, cursor, server_version, connection_name=''):
-    if connection_name and not supports_mariadb_connection_name(server_version):
+    if connection_name and not supports_connection_name(server_version):
         module.fail_json(msg='connection_name requires MariaDB 10.0.1 or newer')
 
     if connection_name:
@@ -526,7 +526,7 @@ class MySQLReplicationFilter(object):
 
 
 def main():
-    argument_spec = mysql_common_argument_spec()
+    argument_spec = common_argument_spec()
     for name in FILTER_DEFINITIONS:
         argument_spec[name] = dict(type='list', elements='str')
 
@@ -541,8 +541,8 @@ def main():
         supports_check_mode=True,
     )
 
-    if mysql_driver is None:
-        module.fail_json(msg=mysql_driver_fail_msg)
+    if driver is None:
+        module.fail_json(msg=driver_fail_msg)
 
     desired_filters = dict((name, module.params[name]) for name in FILTER_DEFINITIONS)
     if not any(values is not None for values in desired_filters.values()):
@@ -558,7 +558,7 @@ def main():
     config_file = module.params['config_file']
 
     try:
-        cursor, _db_conn = mysql_connect(
+        cursor, _db_conn = connect(
             module,
             login_user,
             login_password,

@@ -134,10 +134,10 @@ from ansible.module_utils.common.text.converters import to_native
 
 from ansible_collections.ansible.mariadb.plugins.module_utils.database import mysql_quote_identifier
 from ansible_collections.ansible.mariadb.plugins.module_utils.mysql import (
-    mysql_common_argument_spec,
-    mysql_connect,
-    mysql_driver,
-    mysql_driver_fail_msg,
+    common_argument_spec,
+    connect,
+    driver,
+    driver_fail_msg,
 )
 
 
@@ -326,7 +326,7 @@ class MySQLSlowLog(object):
 
 
 def main():
-    argument_spec = mysql_common_argument_spec()
+    argument_spec = common_argument_spec()
     argument_spec.update(
         enabled=dict(type='bool'),
         long_query_time=dict(type='float'),
@@ -341,8 +341,8 @@ def main():
         supports_check_mode=True,
     )
 
-    if mysql_driver is None:
-        module.fail_json(msg=mysql_driver_fail_msg)
+    if driver is None:
+        module.fail_json(msg=driver_fail_msg)
 
     connect_timeout = module.params['connect_timeout']
     login_user = module.params['login_user']
@@ -354,7 +354,7 @@ def main():
     config_file = module.params['config_file']
 
     try:
-        cursor, _db_conn = mysql_connect(
+        cursor, _db_conn = connect(
             module,
             login_user,
             login_password,

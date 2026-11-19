@@ -131,10 +131,10 @@ from ansible_collections.ansible.mariadb.plugins.module_utils.command_resolver i
 )
 from ansible_collections.ansible.mariadb.plugins.module_utils.mysql import (
     get_server_version,
-    mysql_common_argument_spec,
-    mysql_connect,
-    mysql_driver,
-    mysql_driver_fail_msg,
+    common_argument_spec,
+    connect,
+    driver,
+    driver_fail_msg,
 )
 
 
@@ -280,7 +280,7 @@ class MySQL_Binlog_Info(object):
 
 
 def main():
-    argument_spec = mysql_common_argument_spec()
+    argument_spec = common_argument_spec()
     argument_spec.update(
         filter=dict(type='list', elements='str'),
     )
@@ -303,11 +303,11 @@ def main():
     if filter_:
         filter_ = [item.strip() for item in filter_]
 
-    if mysql_driver is None:
-        module.fail_json(msg=mysql_driver_fail_msg)
+    if driver is None:
+        module.fail_json(msg=driver_fail_msg)
 
     try:
-        cursor, _db_conn = mysql_connect(
+        cursor, _db_conn = connect(
             module,
             login_user,
             login_password,

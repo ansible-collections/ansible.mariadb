@@ -323,10 +323,10 @@ RETURN = '''#'''
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ansible.mariadb.plugins.module_utils.mysql import (
-    mysql_connect,
-    mysql_driver,
-    mysql_driver_fail_msg,
-    mysql_common_argument_spec
+    connect,
+    driver,
+    driver_fail_msg,
+    common_argument_spec
 )
 from ansible_collections.ansible.mariadb.plugins.module_utils.user import (
     convert_priv_dict_to_str,
@@ -978,7 +978,7 @@ class Role():
 
 
 def main():
-    argument_spec = mysql_common_argument_spec()
+    argument_spec = common_argument_spec()
     argument_spec.update(
         name=dict(type='str', required=True),
         state=dict(type='str', default='present', choices=['absent', 'present']),
@@ -1039,27 +1039,27 @@ def main():
     if priv and isinstance(priv, dict):
         priv = convert_priv_dict_to_str(priv)
 
-    if mysql_driver is None:
-        module.fail_json(msg=mysql_driver_fail_msg)
+    if driver is None:
+        module.fail_json(msg=driver_fail_msg)
 
     cursor = None
     try:
         if check_implicit_admin:
             try:
-                cursor, db_conn = mysql_connect(module, 'root', '', config_file,
-                                                ssl_cert, ssl_key, ssl_ca, db,
-                                                connect_timeout=connect_timeout,
-                                                check_hostname=check_hostname,
-                                                autocommit=True)
+                cursor, db_conn = connect(module, 'root', '', config_file,
+                                                  ssl_cert, ssl_key, ssl_ca, db,
+                                                  connect_timeout=connect_timeout,
+                                                  check_hostname=check_hostname,
+                                                  autocommit=True)
             except Exception:
                 pass
 
         if not cursor:
-            cursor, db_conn = mysql_connect(module, login_user, login_password,
-                                            config_file, ssl_cert, ssl_key,
-                                            ssl_ca, db, connect_timeout=connect_timeout,
-                                            check_hostname=check_hostname,
-                                            autocommit=True)
+            cursor, db_conn = connect(module, login_user, login_password,
+                                              config_file, ssl_cert, ssl_key,
+                                              ssl_ca, db, connect_timeout=connect_timeout,
+                                              check_hostname=check_hostname,
+                                              autocommit=True)
 
     except Exception as e:
         module.fail_json(msg='unable to connect to database, '
