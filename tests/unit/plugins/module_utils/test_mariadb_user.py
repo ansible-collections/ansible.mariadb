@@ -3,7 +3,7 @@
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock, call
 
 import pytest
 
@@ -155,16 +155,15 @@ def test_privileges_get_uses_account_syntax(role, grant, expected_query, expecte
 def test_privileges_grant_uses_account_syntax(role, expected_query, expected_params):
     cursor = MagicMock()
 
-    with patch('ansible_collections.ansible.mariadb.plugins.module_utils.user.get_user_implementation'):
-        privileges_grant(
-            cursor,
-            'reader' if role else 'user2',
-            '' if role else 'localhost',
-            '*.*',
-            ['SELECT', 'GRANT'],
-            None,
-            role,
-        )
+    privileges_grant(
+        cursor,
+        'reader' if role else 'user2',
+        '' if role else 'localhost',
+        '*.*',
+        ['SELECT', 'GRANT'],
+        None,
+        role,
+    )
 
     cursor.execute.assert_called_once_with(expected_query, expected_params)
 

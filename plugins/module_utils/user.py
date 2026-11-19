@@ -22,10 +22,83 @@ from ansible_collections.ansible.mariadb.plugins.module_utils.implementations.my
     mysql_sha256_password_hash,
     mysql_sha256_password_hash_hex,
 )
+from ansible_collections.ansible.mariadb.plugins.module_utils.version import LooseVersion
+from ansible_collections.ansible.mariadb.plugins.module_utils.connect import get_server_version
 
 
 class InvalidPrivsError(Exception):
     pass
+
+def use_old_user_mgmt(cursor):
+    version = get_server_version(cursor)
+
+    return LooseVersion(version) < LooseVersion("10.2")
+
+
+def supports_identified_by_password(cursor):
+    return True
+
+
+def server_supports_mysql_native_password(cursor):
+    # MariaDB still supports mysql_native_password and SHA1().
+    return True
+
+
+def server_supports_alter_user(cursor):
+    version = get_server_version(cursor)
+
+    return LooseVersion(version) >= LooseVersion("10.2")
+
+
+def server_supports_password_expire(cursor):
+    version = get_server_version(cursor)
+
+    return LooseVersion(version) >= LooseVersion("10.4.3")
+
+
+def get_tls_requires(cursor, user, host):
+    """Get user TLS requirements.
+    Reads directly from mysql.user table allowing for a more
+    readable code.
+
+    Args:
+        cursor (cursor): DB driver cursor object.
+        user (str): User name.
+        host (str): User host name.
+
+    Returns: Dictionary containing current TLS required
+    """
+    tls_requires = dict()
+
+    query = ('SELECT ssl_type, ssl_cipher, x509_issuer, x509_subject '
+             'FROM mysql.user WHERE User = %s AND Host = %s')
+    cursor.execute(query, (user, host))
+    res = cursor.fetchone()
+
+    # Mysql_info use a DictCursor so we must convert back to a list
+    # otherwise we get KeyError 0
+    if isinstance(res, dict):
+        res = list(res.values())
+
+    # When user don't require SSL, res value is: ('', '', '', '')
+    if not any(res):
+        return None
+
+    if res[0] == 'ANY':
+        tls_requires['SSL'] = None
+
+    if res[0] == 'X509':
+        tls_requires['X509'] = None
+
+    if res[1]:
+        tls_requires['CIPHER'] = res[1]
+
+    if res[2]:
+        tls_requires['ISSUER'] = res[2]
+
+    if res[3]:
+        tls_requires['SUBJECT'] = res[3]
+    return tls_requires
 
 
 def get_mode(cursor):
@@ -180,8 +253,7 @@ def user_add(cursor, user, host, host_all, password, encrypted,
         return {'changed': True, 'password_changed': None, 'attributes': attributes}
 
     # Determine what user management method server uses
-    impl = get_user_implementation(cursor)
-    old_user_mgmt = impl.use_old_user_mgmt(cursor)
+    old_user_mgmt = use_old_user_mgmt(cursor)
 
     mogrify = do_not_mogrify_requires if old_user_mgmt else mogrify_requires
 
@@ -204,9 +276,9 @@ def user_add(cursor, user, host, host_all, password, encrypted,
                 used_existing_password = True
                 plugin = existing_auth[0]['plugin']  # What if plugin differ?
     if password and encrypted:
-        if impl.supports_identified_by_password(cursor):
+        if supports_identified_by_password(cursor):
             query_with_args = "CREATE USER %s@%s IDENTIFIED BY PASSWORD %s", (user, host, password)
-        elif impl.server_supports_mysql_native_password(cursor):
+        elif server_supports_mysql_native_password(cursor):
             query_with_args = "CREATE USER %s@%s IDENTIFIED WITH mysql_native_password AS %s", (user, host, password)
         else:
             # MySQL 9.7.0+: encrypted hashes are mysql_native_password format, unusable.
@@ -216,7 +288,7 @@ def user_add(cursor, user, host, host_all, password, encrypted,
     elif password and not encrypted:
         # MySQL 9.7.0+: SHA1() and mysql_native_password were removed;
         # let the server hash with caching_sha2_password via IDENTIFIED BY.
-        if old_user_mgmt or not impl.server_supports_mysql_native_password(cursor):
+        if old_user_mgmt or not server_supports_mysql_native_password(cursor):
             query_with_args = "CREATE USER %s@%s IDENTIFIED BY %s", (user, host, password)
         else:
             cursor.execute("SELECT CONCAT('*', UCASE(SHA1(UNHEX(SHA1(%s)))))", (password,))
@@ -247,7 +319,7 @@ def user_add(cursor, user, host, host_all, password, encrypted,
     cursor.execute(*mogrify(*query_with_args_and_tls_requires))
 
     if password_expire:
-        if not impl.server_supports_password_expire(cursor):
+        if not server_supports_password_expire(cursor):
             module.fail_json(msg="The server version does not match the requirements "
                              "for password_expire parameter. See module's documentation.")
         set_password_expire(cursor, user, host, password_expire, password_expire_interval)
@@ -287,8 +359,7 @@ def user_mod(cursor, user, host, host_all, password, encrypted,
     grant_option = False
 
     # Determine what user management method server uses
-    impl = get_user_implementation(cursor)
-    old_user_mgmt = impl.use_old_user_mgmt(cursor)
+    old_user_mgmt = use_old_user_mgmt(cursor)
 
     if host_all and not role:
         hostnames = user_get_hostnames(cursor, user)
@@ -300,7 +371,7 @@ def user_mod(cursor, user, host, host_all, password, encrypted,
         # Handle clear text and hashed passwords.
         if not role:
             if bool(password):
-                if not impl.server_supports_mysql_native_password(cursor):
+                if not server_supports_mysql_native_password(cursor):
                     # MySQL 9.7.0+: mysql_native_password and SHA1() are removed.
                     # We cannot compare password hashes (caching_sha2_password
                     # uses a random salt), so always update the password.
@@ -379,7 +450,7 @@ def user_mod(cursor, user, host, host_all, password, encrypted,
 
         # Handle password expiration
         if bool(password_expire):
-            if not impl.server_supports_password_expire(cursor):
+            if not server_supports_password_expire(cursor):
                 module.fail_json(msg="The server version does not match the requirements "
                                      "for password_expire parameter. See module's documentation.")
             update = False
@@ -413,6 +484,8 @@ def user_mod(cursor, user, host, host_all, password, encrypted,
                 update = True
 
             if salt:
+                # TODO: In MariaDB, the auth plugins is 'auth_mysql_sha2'.
+                # available to aid migrating from MySQL. Should we support this then?
                 if plugin in ['caching_sha2_password', 'sha256_password']:
                     if current_plugin[1] != mysql_sha256_password_hash(password=plugin_auth_string, salt=salt):
                         update = True
@@ -585,7 +658,7 @@ def user_mod(cursor, user, host, host_all, password, encrypted,
             continue
 
         # Handle TLS requirements
-        current_requires = sanitize_requires(impl.get_tls_requires(cursor, user, host))
+        current_requires = sanitize_requires(get_tls_requires(cursor, user, host))
         if current_requires != tls_requires:
             msg = "TLS requires updated"
             if not module.check_mode:
@@ -931,8 +1004,7 @@ def privileges_grant(cursor, user, host, db_table, priv, tls_requires, role=Fals
         query.append("TO %s@%s")
         params = (user, host)
 
-    impl = get_user_implementation(cursor)
-    if tls_requires and impl.use_old_user_mgmt(cursor):
+    if tls_requires and use_old_user_mgmt(cursor):
         query, params = mogrify_requires(" ".join(query), params, tls_requires)
         query = [query]
     if 'GRANT' in priv:
@@ -1068,8 +1140,7 @@ def limit_resources(module, cursor, user, host, resource_limits, check_mode):
 
     Returns: True, if changed, False otherwise.
     """
-    impl = get_user_implementation(cursor)
-    if not impl.server_supports_alter_user(cursor):
+    if not server_supports_alter_user(cursor):
         module.fail_json(msg="The server version does not match the requirements "
                              "for resource_limits parameter. See module's documentation.")
 
@@ -1197,8 +1268,3 @@ def attributes_get(cursor, user, host):
 
     # if the attributes dict is empty, return None instead
     return j if j else None
-
-
-def get_user_implementation(cursor):
-    from ansible_collections.ansible.mariadb.plugins.module_utils.implementations.mariadb import user as mariauser
-    return mariauser
