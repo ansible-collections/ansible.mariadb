@@ -3,6 +3,8 @@
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
+from unittest.mock import MagicMock, call
+
 import pytest
 
 from ansible_collections.ansible.mariadb.plugins.module_utils.user import (
@@ -10,6 +12,9 @@ from ansible_collections.ansible.mariadb.plugins.module_utils.user import (
     has_grant_on_col,
     normalize_col_grants,
     sort_column_order,
+    privileges_get,
+    privileges_grant,
+    privileges_revoke,
     privileges_unpack,
 )
 
@@ -111,3 +116,79 @@ def test_normalize_col_grants(input_, expected):
 def test_privileges_unpack(priv, mode, column_case_sensitive, ensure_usage, expected):
     """Tests privileges_unpack function."""
     assert privileges_unpack(priv, mode, column_case_sensitive, ensure_usage) == expected
+
+
+@pytest.mark.parametrize(
+    'role,grant,expected_query,expected_params,expected_privileges',
+    [
+        (
+            False,
+            "GRANT SELECT ON *.* TO `user2`@`localhost` WITH GRANT OPTION",
+            'SHOW GRANTS FOR %s@%s',
+            ('user2', 'localhost'),
+            {'*.*': ['SELECT', 'GRANT']},
+        ),
+        (
+            True,
+            'GRANT SELECT ON *.* TO `reader`',
+            'SHOW GRANTS FOR %s',
+            ('reader',),
+            {'*.*': ['SELECT']},
+        ),
+    ],
+)
+def test_privileges_get_uses_account_syntax(role, grant, expected_query, expected_params, expected_privileges):
+    cursor = MagicMock()
+    cursor.fetchall.return_value = [(grant,)]
+
+    assert privileges_get(cursor, 'reader' if role else 'user2', '' if role else 'localhost', role) == expected_privileges
+    cursor.execute.assert_called_once_with(expected_query, expected_params)
+
+
+@pytest.mark.parametrize(
+    'role,expected_query,expected_params',
+    [
+        (False, 'GRANT SELECT ON *.* TO %s@%s WITH GRANT OPTION', ('user2', 'localhost')),
+        (True, 'GRANT SELECT ON *.* TO %s WITH GRANT OPTION', ('reader',)),
+    ],
+)
+def test_privileges_grant_uses_account_syntax(role, expected_query, expected_params):
+    cursor = MagicMock()
+
+    privileges_grant(
+        cursor,
+        'reader' if role else 'user2',
+        '' if role else 'localhost',
+        '*.*',
+        ['SELECT', 'GRANT'],
+        None,
+        role,
+    )
+
+    cursor.execute.assert_called_once_with(expected_query, expected_params)
+
+
+@pytest.mark.parametrize(
+    'role,expected_query,expected_params',
+    [
+        (False, 'REVOKE GRANT OPTION ON *.* FROM %s@%s', ('user2', 'localhost')),
+        (True, 'REVOKE GRANT OPTION ON *.* FROM %s', ('reader',)),
+    ],
+)
+def test_privileges_revoke_uses_account_syntax(role, expected_query, expected_params):
+    cursor = MagicMock()
+
+    privileges_revoke(
+        cursor,
+        'reader' if role else 'user2',
+        '' if role else 'localhost',
+        '*.*',
+        ['GRANT'],
+        True,
+        role,
+    )
+
+    assert cursor.execute.call_args_list == [
+        call(expected_query, expected_params),
+        call('FLUSH PRIVILEGES'),
+    ]

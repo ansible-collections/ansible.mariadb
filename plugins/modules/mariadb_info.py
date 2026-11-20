@@ -324,7 +324,7 @@ from ansible_collections.ansible.mariadb.plugins.module_utils.user import (
     privileges_get,
     get_resource_limits,
     get_existing_authentication,
-    get_user_implementation,
+    get_tls_requires,
     user_is_locked,
 )
 from ansible.module_utils.common.text.converters import to_native
@@ -352,12 +352,11 @@ class MySQL_Info(object):
         5. add info about the new subset with an example to RETURN block
     """
 
-    def __init__(self, module, cursor, server_implementation, server_version, user_implementation):
+    def __init__(self, module, cursor, server_implementation, server_version):
         self.module = module
         self.cursor = cursor
         self.server_implementation = server_implementation
         self.server_version = server_version
-        self.user_implementation = user_implementation
         self.command_resolver = CommandResolver(self.server_implementation, self.server_version)
         self.info = {
             'version': {},
@@ -608,9 +607,8 @@ class MySQL_Info(object):
             user = line['User']
             host = line['Host']
 
-            # MariaDB roles have no host
-            is_role = self.server_implementation == 'mariadb' and not host
-            user_priv = privileges_get(self.cursor, user, host, maria_role=is_role)
+            # MariaDB roles have no host and use role grant syntax.
+            user_priv = privileges_get(self.cursor, user, host, role=not host)
 
             if not user_priv:
                 self.module.warn("No privileges found for %s on host %s" % (user, host))
@@ -634,7 +632,7 @@ class MySQL_Info(object):
             resource_limits = get_resource_limits(self.cursor, user, host)
             copy_ressource_limits = dict.copy(resource_limits)
 
-            tls_requires = self.user_implementation.get_tls_requires(
+            tls_requires = get_tls_requires(
                 self.cursor, user, host)
 
             output_dict = {
@@ -787,12 +785,11 @@ def main():
 
     server_implementation = 'mariadb'  # TODO remove in stacked PR #44
     server_version = get_server_version(cursor)
-    user_implementation = get_user_implementation(cursor)
 
     ###############################
     # Create object and do main job
 
-    mysql = MySQL_Info(module, cursor, server_implementation, server_version, user_implementation)
+    mysql = MySQL_Info(module, cursor, server_implementation, server_version)
 
     module.exit_json(changed=False,
                      server_engine='MariaDB',

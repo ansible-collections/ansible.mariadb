@@ -22,10 +22,83 @@ from ansible_collections.ansible.mariadb.plugins.module_utils.implementations.my
     mysql_sha256_password_hash,
     mysql_sha256_password_hash_hex,
 )
+from ansible_collections.ansible.mariadb.plugins.module_utils.version import LooseVersion
+from ansible_collections.ansible.mariadb.plugins.module_utils.connect import get_server_version
 
 
 class InvalidPrivsError(Exception):
     pass
+
+def use_old_user_mgmt(cursor):
+    version = get_server_version(cursor)
+
+    return LooseVersion(version) < LooseVersion("10.2")
+
+
+def supports_identified_by_password(cursor):
+    return True
+
+
+def server_supports_mysql_native_password(cursor):
+    # MariaDB still supports mysql_native_password and SHA1().
+    return True
+
+
+def server_supports_alter_user(cursor):
+    version = get_server_version(cursor)
+
+    return LooseVersion(version) >= LooseVersion("10.2")
+
+
+def server_supports_password_expire(cursor):
+    version = get_server_version(cursor)
+
+    return LooseVersion(version) >= LooseVersion("10.4.3")
+
+
+def get_tls_requires(cursor, user, host):
+    """Get user TLS requirements.
+    Reads directly from mysql.user table allowing for a more
+    readable code.
+
+    Args:
+        cursor (cursor): DB driver cursor object.
+        user (str): User name.
+        host (str): User host name.
+
+    Returns: Dictionary containing current TLS required
+    """
+    tls_requires = dict()
+
+    query = ('SELECT ssl_type, ssl_cipher, x509_issuer, x509_subject '
+             'FROM mysql.user WHERE User = %s AND Host = %s')
+    cursor.execute(query, (user, host))
+    res = cursor.fetchone()
+
+    # Mysql_info use a DictCursor so we must convert back to a list
+    # otherwise we get KeyError 0
+    if isinstance(res, dict):
+        res = list(res.values())
+
+    # When user don't require SSL, res value is: ('', '', '', '')
+    if not any(res):
+        return None
+
+    if res[0] == 'ANY':
+        tls_requires['SSL'] = None
+
+    if res[0] == 'X509':
+        tls_requires['X509'] = None
+
+    if res[1]:
+        tls_requires['CIPHER'] = res[1]
+
+    if res[2]:
+        tls_requires['ISSUER'] = res[2]
+
+    if res[3]:
+        tls_requires['SUBJECT'] = res[3]
+    return tls_requires
 
 
 def get_mode(cursor):
@@ -124,31 +197,21 @@ def get_existing_authentication(cursor, user, host=None):
     if isinstance(srv_type, dict):
         srv_type = list(srv_type.values())
 
-    if 'mariadb' in srv_type[0].lower():
-        # before MariaDB 10.2.19 and 10.3.11, "password" and "authentication_string" can differ
-        # when using mysql_native_password
-        if host:
-            cursor.execute("""select plugin, auth from (
-                select plugin, password as auth from mysql.user where user=%(user)s
-                and host=%(host)s
-                union select plugin, authentication_string as auth from mysql.user where user=%(user)s
-                and host=%(host)s) x group by plugin, auth
-            """, {'user': user, 'host': host})
-        else:
-            cursor.execute("""select plugin, auth from (
-                select plugin, password as auth from mysql.user where user=%(user)s
-                union select plugin, authentication_string as auth from mysql.user where user=%(user)s
-                ) x group by plugin, auth
-            """, {'user': user})
+    # before MariaDB 10.2.19 and 10.3.11, "password" and "authentication_string" can differ
+    # when using mysql_native_password
+    if host:
+        cursor.execute("""select plugin, auth from (
+            select plugin, password as auth from mysql.user where user=%(user)s
+            and host=%(host)s
+            union select plugin, authentication_string as auth from mysql.user where user=%(user)s
+            and host=%(host)s) x group by plugin, auth
+        """, {'user': user, 'host': host})
     else:
-        if host:
-            cursor.execute("""select plugin, authentication_string as auth
-                from mysql.user where user=%(user)s and host=%(host)s
-                group by plugin, authentication_string""", {'user': user, 'host': host})
-        else:
-            cursor.execute("""select plugin, authentication_string as auth
-                from mysql.user where user=%(user)s
-                group by plugin, authentication_string""", {'user': user})
+        cursor.execute("""select plugin, auth from (
+            select plugin, password as auth from mysql.user where user=%(user)s
+            union select plugin, authentication_string as auth from mysql.user where user=%(user)s
+            ) x group by plugin, auth
+        """, {'user': user})
 
     rows = cursor.fetchall()
 
@@ -190,8 +253,7 @@ def user_add(cursor, user, host, host_all, password, encrypted,
         return {'changed': True, 'password_changed': None, 'attributes': attributes}
 
     # Determine what user management method server uses
-    impl = get_user_implementation(cursor)
-    old_user_mgmt = impl.use_old_user_mgmt(cursor)
+    old_user_mgmt = use_old_user_mgmt(cursor)
 
     mogrify = do_not_mogrify_requires if old_user_mgmt else mogrify_requires
 
@@ -214,9 +276,9 @@ def user_add(cursor, user, host, host_all, password, encrypted,
                 used_existing_password = True
                 plugin = existing_auth[0]['plugin']  # What if plugin differ?
     if password and encrypted:
-        if impl.supports_identified_by_password(cursor):
+        if supports_identified_by_password(cursor):
             query_with_args = "CREATE USER %s@%s IDENTIFIED BY PASSWORD %s", (user, host, password)
-        elif impl.server_supports_mysql_native_password(cursor):
+        elif server_supports_mysql_native_password(cursor):
             query_with_args = "CREATE USER %s@%s IDENTIFIED WITH mysql_native_password AS %s", (user, host, password)
         else:
             # MySQL 9.7.0+: encrypted hashes are mysql_native_password format, unusable.
@@ -226,7 +288,7 @@ def user_add(cursor, user, host, host_all, password, encrypted,
     elif password and not encrypted:
         # MySQL 9.7.0+: SHA1() and mysql_native_password were removed;
         # let the server hash with caching_sha2_password via IDENTIFIED BY.
-        if old_user_mgmt or not impl.server_supports_mysql_native_password(cursor):
+        if old_user_mgmt or not server_supports_mysql_native_password(cursor):
             query_with_args = "CREATE USER %s@%s IDENTIFIED BY %s", (user, host, password)
         else:
             cursor.execute("SELECT CONCAT('*', UCASE(SHA1(UNHEX(SHA1(%s)))))", (password,))
@@ -257,7 +319,7 @@ def user_add(cursor, user, host, host_all, password, encrypted,
     cursor.execute(*mogrify(*query_with_args_and_tls_requires))
 
     if password_expire:
-        if not impl.server_supports_password_expire(cursor):
+        if not server_supports_password_expire(cursor):
             module.fail_json(msg="The server version does not match the requirements "
                              "for password_expire parameter. See module's documentation.")
         set_password_expire(cursor, user, host, password_expire, password_expire_interval)
@@ -291,14 +353,13 @@ def is_hash(password):
 def user_mod(cursor, user, host, host_all, password, encrypted,
              plugin, plugin_hash_string, plugin_auth_string, salt, new_priv,
              append_privs, subtract_privs, attributes, tls_requires, module,
-             password_expire, password_expire_interval, locked=None, role=False, maria_role=False):
+             password_expire, password_expire_interval, locked=None, role=False):
     changed = False
     msg = "User unchanged"
     grant_option = False
 
     # Determine what user management method server uses
-    impl = get_user_implementation(cursor)
-    old_user_mgmt = impl.use_old_user_mgmt(cursor)
+    old_user_mgmt = use_old_user_mgmt(cursor)
 
     if host_all and not role:
         hostnames = user_get_hostnames(cursor, user)
@@ -310,7 +371,7 @@ def user_mod(cursor, user, host, host_all, password, encrypted,
         # Handle clear text and hashed passwords.
         if not role:
             if bool(password):
-                if not impl.server_supports_mysql_native_password(cursor):
+                if not server_supports_mysql_native_password(cursor):
                     # MySQL 9.7.0+: mysql_native_password and SHA1() are removed.
                     # We cannot compare password hashes (caching_sha2_password
                     # uses a random salt), so always update the password.
@@ -389,12 +450,11 @@ def user_mod(cursor, user, host, host_all, password, encrypted,
 
         # Handle password expiration
         if bool(password_expire):
-            if not impl.server_supports_password_expire(cursor):
+            if not server_supports_password_expire(cursor):
                 module.fail_json(msg="The server version does not match the requirements "
                                      "for password_expire parameter. See module's documentation.")
             update = False
-            mariadb_role = True if "implementations.mariadb." in str(impl.__name__) else False
-            current_password_policy = get_password_expiration_policy(cursor, user, host, maria_role=mariadb_role)
+            current_password_policy = get_password_expiration_policy(cursor, user, host)
             password_expired = is_password_expired(cursor, user, host)
             # Check if changes needed to be applied.
             if not ((current_password_policy == -1 and password_expire == "default") or
@@ -424,6 +484,8 @@ def user_mod(cursor, user, host, host_all, password, encrypted,
                 update = True
 
             if salt:
+                # TODO: In MariaDB, the auth plugins is 'auth_mysql_sha2'.
+                # available to aid migrating from MySQL. Should we support this then?
                 if plugin in ['caching_sha2_password', 'sha256_password']:
                     if current_plugin[1] != mysql_sha256_password_hash(password=plugin_auth_string, salt=salt):
                         update = True
@@ -462,7 +524,7 @@ def user_mod(cursor, user, host, host_all, password, encrypted,
 
         # Handle privileges
         if new_priv is not None:
-            curr_priv = privileges_get(cursor, user, host, maria_role)
+            curr_priv = privileges_get(cursor, user, host, role)
 
             # If the user has privileges on a db.table that doesn't appear at all in
             # the new specification, then revoke all privileges on it.
@@ -475,7 +537,7 @@ def user_mod(cursor, user, host, host_all, password, encrypted,
                         if user != "root" and "PROXY" not in priv:
                             msg = "Privileges updated"
                             if not module.check_mode:
-                                privileges_revoke(cursor, user, host, db_table, priv, grant_option, maria_role)
+                                privileges_revoke(cursor, user, host, db_table, priv, grant_option, role)
                             changed = True
 
             # If the user doesn't currently have any privileges on a db.table, then
@@ -485,7 +547,7 @@ def user_mod(cursor, user, host, host_all, password, encrypted,
                     if db_table not in curr_priv:
                         msg = "New privileges granted"
                         if not module.check_mode:
-                            privileges_grant(cursor, user, host, db_table, priv, tls_requires, maria_role)
+                            privileges_grant(cursor, user, host, db_table, priv, tls_requires, role)
                         changed = True
 
             # If the db.table specification exists in both the user's current privileges
@@ -526,14 +588,14 @@ def user_mod(cursor, user, host, host_all, password, encrypted,
                     msg = "Privileges updated: granted %s, revoked %s" % (grant_privs, revoke_privs)
                     if not module.check_mode:
                         if len(revoke_privs) > 0:
-                            privileges_revoke(cursor, user, host, db_table, revoke_privs, grant_option, maria_role)
+                            privileges_revoke(cursor, user, host, db_table, revoke_privs, grant_option, role)
                         if len(grant_privs) > 0:
-                            privileges_grant(cursor, user, host, db_table, grant_privs, tls_requires, maria_role)
+                            privileges_grant(cursor, user, host, db_table, grant_privs, tls_requires, role)
                     else:
                         changed = True
 
             # after privilege manipulation, compare privileges from before and now
-            after_priv = privileges_get(cursor, user, host, maria_role)
+            after_priv = privileges_get(cursor, user, host, role)
             changed = changed or (curr_priv != after_priv)
 
         # Handle attributes
@@ -596,7 +658,7 @@ def user_mod(cursor, user, host, host_all, password, encrypted,
             continue
 
         # Handle TLS requirements
-        current_requires = sanitize_requires(impl.get_tls_requires(cursor, user, host))
+        current_requires = sanitize_requires(get_tls_requires(cursor, user, host))
         if current_requires != tls_requires:
             msg = "TLS requires updated"
             if not module.check_mode:
@@ -647,10 +709,10 @@ def user_get_hostnames(cursor, user):
     return hostnames
 
 
-def privileges_get(cursor, user, host, maria_role=False):
-    """ MySQL doesn't have a better method of getting privileges aside from the
+def privileges_get(cursor, user, host, role=False):
+    """ MariaDB doesn't have a better method of getting privileges aside from the
     SHOW GRANTS query syntax, which requires us to then parse the returned string.
-    Here's an example of the string that is returned from MySQL:
+    Here's an example of the string that is returned from MariaDB:
 
      GRANT USAGE ON *.* TO 'user'@'localhost' IDENTIFIED BY 'pass';
 
@@ -658,10 +720,10 @@ def privileges_get(cursor, user, host, maria_role=False):
     The dictionary format is the same as that returned by privileges_unpack() below.
     """
     output = {}
-    if not maria_role:
-        cursor.execute("SHOW GRANTS FOR %s@%s", (user, host))
-    else:
+    if role:
         cursor.execute("SHOW GRANTS FOR %s", (user,))
+    else:
+        cursor.execute("SHOW GRANTS FOR %s@%s", (user, host))
     grants = cursor.fetchall()
 
     def pick(x):
@@ -677,10 +739,10 @@ def privileges_get(cursor, user, host, maria_role=False):
         if isinstance(grant, dict):
             grant = list(grant.values())
 
-        if not maria_role:
-            res = re.match("""GRANT (.+) ON (.+) TO (['`"]).*\\3@(['`"]).*\\4( IDENTIFIED BY PASSWORD (['`"]).+\\6)? ?(.*)""", grant[0])
-        else:
+        if role:
             res = re.match("""GRANT (.+) ON (.+) TO .*""", grant[0])
+        else:
+            res = re.match("""GRANT (.+) ON (.+) TO (['`"]).*\\3@(['`"]).*\\4( IDENTIFIED BY PASSWORD (['`"]).+\\6)? ?(.*)""", grant[0])
 
         if res is None:
             # If a user has roles or a default role assigned,
@@ -696,7 +758,7 @@ def privileges_get(cursor, user, host, maria_role=False):
                 grant[0]
             )
 
-            if not maria_role and res:
+            if res:
                 continue
 
             raise InvalidPrivsError('unable to parse the MySQL grant string: %s' % grant[0])
@@ -711,9 +773,8 @@ def privileges_get(cursor, user, host, maria_role=False):
         # Determine if there's a case similar to the above:
         privileges = normalize_col_grants(privileges)
 
-        if not maria_role:
-            if "WITH GRANT OPTION" in res.group(7):
-                privileges.append('GRANT')
+        if not role and "WITH GRANT OPTION" in res.group(7):
+            privileges.append('GRANT')
         db = res.group(2)
         output.setdefault(db, []).extend(privileges)
     return output
@@ -890,59 +951,60 @@ def privileges_unpack(priv, mode, column_case_sensitive, ensure_usage=True):
     return output
 
 
-def privileges_revoke(cursor, user, host, db_table, priv, grant_option, maria_role=False):
+def privileges_revoke(cursor, user, host, db_table, priv, grant_option, role=False):
     # Escape '%' since mysql db.execute() uses a format string
     db_table = db_table.replace('%', '%%')
     if grant_option:
         query = ["REVOKE GRANT OPTION ON %s" % db_table]
-        if not maria_role:
-            query.append("FROM %s@%s")
-        else:
+        if role:
             query.append("FROM %s")
+            params = (user,)
+        else:
+            query.append("FROM %s@%s")
+            params = (user, host)
 
         query = ' '.join(query)
-        cursor.execute(query, (user, host))
+        cursor.execute(query, params)
     priv_string = ",".join([p for p in priv if p not in ('GRANT', )])
 
     if priv_string != "" and not (grant_option and priv_string == "USAGE"):
         query = ["REVOKE %s ON %s" % (priv_string, db_table)]
 
-        if not maria_role:
-            query.append("FROM %s@%s")
-            params = (user, host)
-        else:
+        if role:
             query.append("FROM %s")
             params = (user,)
+        else:
+            query.append("FROM %s@%s")
+            params = (user, host)
 
         query = ' '.join(query)
         cursor.execute(query, params)
     cursor.execute("FLUSH PRIVILEGES")
 
 
-def privileges_grant(cursor, user, host, db_table, priv, tls_requires, maria_role=False):
-    # Escape '%' since mysql db.execute uses a format string and the
+def privileges_grant(cursor, user, host, db_table, priv, tls_requires, role=False):
+    # Escape '%' since mariadb db.execute uses a format string and the
     # specification of db and table often use a % (SQL wildcard)
     db_table = db_table.replace('%', '%%')
     priv_string = ",".join([p for p in priv if p not in ('GRANT', )])
     query = ["GRANT %s ON %s" % (priv_string, db_table)]
 
-    # MySQL and MariaDB don't store roles in the user table the same manner:
+    # MariaDB don't store roles in the user table the same manner:
     # select user, host from mysql.user;
-    # +------------------+-----------+
-    # | user             | host      |
-    # +------------------+-----------+
-    # | role_foo         | %         | <- MySQL
-    # | role_foo         |           | <- MariaDB
-    # +------------------+-----------+
-    if not maria_role:
+    # +----------+-----------+
+    # | user     | host      |
+    # +----------+-----------+
+    # | foo      | %         | <- User
+    # | foo      |           | <- Role
+    # +----------+-----------+
+    if role:
+        query.append("TO %s")
+        params = (user,)
+    else:
         query.append("TO %s@%s")
         params = (user, host)
-    else:
-        query.append("TO %s")
-        params = (user)
 
-    impl = get_user_implementation(cursor)
-    if tls_requires and impl.use_old_user_mgmt(cursor):
+    if tls_requires and use_old_user_mgmt(cursor):
         query, params = mogrify_requires(" ".join(query), params, tls_requires)
         query = [query]
     if 'GRANT' in priv:
@@ -1078,8 +1140,7 @@ def limit_resources(module, cursor, user, host, resource_limits, check_mode):
 
     Returns: True, if changed, False otherwise.
     """
-    impl = get_user_implementation(cursor)
-    if not impl.server_supports_alter_user(cursor):
+    if not server_supports_alter_user(cursor):
         module.fail_json(msg="The server version does not match the requirements "
                              "for resource_limits parameter. See module's documentation.")
 
@@ -1131,25 +1192,20 @@ def set_password_expire(cursor, user, host, password_expire, password_expire_int
     cursor.execute("ALTER USER %s@%s " + statement, (user, host))
 
 
-def get_password_expiration_policy(cursor, user, host, maria_role=False):
+def get_password_expiration_policy(cursor, user, host):
     """Function to get password policy for user.
 
     Args:
         cursor (cursor): DB driver cursor object.
         user (str): User name.
         host (str): User hostname.
-        maria_role (bool, optional): mariadb or mysql. Defaults to False.
 
     Returns:
         policy (int): Current users password policy.
     """
-    if not maria_role:
-        statement = "SELECT IFNULL(password_lifetime, -1) FROM mysql.user \
-            WHERE User = %s AND Host = %s", (user, host)
-    else:
-        statement = "SELECT IFNULL(JSON_EXTRACT(Priv, '$.password_lifetime'), -1) AS password_lifetime \
-            FROM mysql.global_priv \
-            WHERE User = %s AND Host = %s", (user, host)
+    statement = "SELECT IFNULL(JSON_EXTRACT(Priv, '$.password_lifetime'), -1) AS password_lifetime \
+        FROM mysql.global_priv \
+        WHERE User = %s AND Host = %s", (user, host)
     cursor.execute(*statement)
     policy = cursor.fetchone()[0]
     return int(policy)
@@ -1212,8 +1268,3 @@ def attributes_get(cursor, user, host):
 
     # if the attributes dict is empty, return None instead
     return j if j else None
-
-
-def get_user_implementation(cursor):
-    from ansible_collections.ansible.mariadb.plugins.module_utils.implementations.mariadb import user as mariauser
-    return mariauser

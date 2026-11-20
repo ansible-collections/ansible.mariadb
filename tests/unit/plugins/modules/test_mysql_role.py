@@ -86,34 +86,30 @@ def test_query_builder_role_revoke(builder, user, output):
 
 
 @pytest.mark.parametrize(
-    'input_,output,is_mariadb',
+    'input_,output',
     [
-        (['user'], [('user', '')], True),
-        (['user'], [('user', '%')], False),
-        (['user@%'], [('user', '%')], True),
-        (['user@%'], [('user', '%')], False),
-        (['user@localhost'], [('user', 'localhost')], True),
-        (['user@localhost'], [('user', 'localhost')], False),
-        (['user', 'user@%'], [('user', ''), ('user', '%')], True),
-        (['user', 'user@%'], [('user', '%'), ('user', '%')], False),
+        (['user'], [('user', '')]),
+        (['user'], [('user', '%')]),
+        (['user@%'], [('user', '%')]),
+        (['user@localhost'], [('user', 'localhost')]),
+        (['user', 'user@%'], [('user', ''), ('user', '%')]),
+        (['user', 'user@%'], [('user', '%'), ('user', '%')]),
     ]
 )
-def test_normalize_users(input_, output, is_mariadb):
+def test_normalize_users(input_, output):
     """Test normalize_users function with expected input."""
-    assert normalize_users(None, input_, is_mariadb) == output
+    assert normalize_users(None, input_) == output
 
 
 @pytest.mark.parametrize(
-    'input_,is_mariadb,err_msg',
+    'input_,err_msg',
     [
-        ([''], True, "Member's name cannot be empty."),
-        ([''], False, "Member's name cannot be empty."),
-        ([None], True, "Error occured while parsing"),
-        ([None], False, "Error occured while parsing"),
+        ([''], "Member's name cannot be empty."),
+        ([None], "Error occured while parsing"),
     ]
 )
-def test_normalize_users_failing(input_, is_mariadb, err_msg):
+def test_normalize_users_failing(input_, err_msg):
     """Test normalize_users function with wrong input."""
 
-    normalize_users(module, input_, is_mariadb)
+    normalize_users(module, input_)
     assert err_msg in module.msg
