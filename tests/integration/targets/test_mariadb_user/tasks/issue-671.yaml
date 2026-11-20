@@ -50,7 +50,7 @@
         <<: *mariadb_params
         variable: sql_mode
         value: '{{ sql_mode_orig.query_result[0][0].sql_mode }},ANSI_QUOTES'
-        mode: "{% if db_engine == 'mariadb' %}global{% else %}persist{% endif %}"
+        mode: global
 
     - name: Issue-671| Copy SQL scripts to remote
       ansible.builtin.copy:
@@ -102,7 +102,7 @@
         <<: *mariadb_params
         variable: sql_mode
         value: '{{ sql_mode_orig.query_result[0][0].sql_mode }}'
-        mode: "{% if db_engine == 'mariadb' %}global{% else %}persist{% endif %}"
+        mode: global
 
     - name: Issue-671| Teardown user_name_2
       ansible.builtin.include_tasks:

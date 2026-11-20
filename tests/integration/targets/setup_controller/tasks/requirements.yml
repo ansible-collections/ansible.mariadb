@@ -6,7 +6,7 @@
   ansible.builtin.apt:
     name:
       - bzip2     # To test mysql_db dump compression
-      - "{{ db_engine }}-client"
+      - mariadb-client
     update_cache: true
     state: present
 

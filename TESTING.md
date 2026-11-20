@@ -55,21 +55,12 @@ The Makefile accept the following options
     - "devel"
   - Description: Version of ansible to install in a venv to run ansible-test
 
-- `db_engine_name`
-  - Mandatory: true
-  - Choices:
-    - "mysql"
-    - "mariadb"
-  - Description: The name of the database engine to use for the service containers that will host a primary database and two replicas.
-
 - `db_engine_version`
   - Mandatory: true
   - Choices:
-    - "8.4.9" <- mysql
-    - "9.7.0" <- mysql
-    - "10.11.8" <- mariadb
-    - "11.8.7" <- mariadb
-  - Description: The tag of the container to use for the service containers that will host a primary database and two replicas. Do not use short version, like `mysql:8` (don't do that) because our tests expect a full version to filter tests precisely. For instance: `when: db_version is version ('8.0.22', '>')`. You can use any tag available on [hub.docker.com/_/mysql](https://hub.docker.com/_/mysql) and [hub.docker.com/_/mariadb](https://hub.docker.com/_/mariadb) but GitHub Action will only use the versions listed above.
+    - "10.11.8"
+    - "11.8.7"
+  - Description: The tag of the MariaDB container to use for the service containers that will host a primary database and two replicas. Do not use a short version, like `mariadb:11`, because our tests expect a full version to filter tests precisely. For instance: `when: db_version is version('10.5.1', '>=')`. You can use any tag available on [hub.docker.com/_/mariadb](https://hub.docker.com/_/mariadb) but GitHub Actions will only use the versions listed above.
 
 - `connector_name`
   - Mandatory: true
@@ -114,17 +105,17 @@ tests will overwrite the 3 databases containers so no need to kill them in advan
 
 ```sh
 # Run all targets
-make ansible="stable-2.17" db_engine_name="mysql" db_engine_version="8.4.9" connector_name="pymysql" connector_version="1.1.1"
+make ansible="stable-2.18" db_engine_version="10.11.8" connector_name="pymysql" connector_version="1.1.1"
 
 # A single target
-make ansible="stable-2.17" db_engine_name="mysql" db_engine_version="8.4.9" connector_name="pymysql" connector_version="1.1.1" target="test_mariadb_info"
+make ansible="stable-2.18" db_engine_version="10.11.8" connector_name="pymysql" connector_version="1.1.1" target="test_mariadb_info"
 
 # Keep databases and ansible tests containers alives
 # A single target and continue on errors
-make ansible="stable-2.17" db_engine_name="mysql" db_engine_version="8.4.9" connector_name="pymysql" connector_version="1.1.1" target="test_mariadb_query" keep_containers_alive=1 continue_on_errors=1
+make ansible="stable-2.18" db_engine_version="10.11.8" connector_name="pymysql" connector_version="1.1.1" target="test_mariadb_query" keep_containers_alive=1 continue_on_errors=1
 
 # If your system has an usupported version of Python:
-make local_python_version="3.10" ansible="stable-2.17" db_engine_name="mariadb" db_engine_version="11.8.7" connector_name="pymysql" connector_version="1.1.1"
+make local_python_version="3.10" ansible="stable-2.18" db_engine_version="11.8.7" connector_name="pymysql" connector_version="1.1.1"
 ```
 
 

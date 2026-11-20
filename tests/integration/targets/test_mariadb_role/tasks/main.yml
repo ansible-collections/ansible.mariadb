@@ -3,13 +3,8 @@
 # and should not be used as examples of how to write Ansible roles #
 ####################################################################
 
-# mysql_role module initial CI tests
-
-# mariadb_role_initial.yml is disabled as there are issues running on
-# MariaDB hosts. TODO: fix issues with tests and remove 'when' clause.
-- include_tasks: mariadb_role_initial.yml
-  when:
-    - db_engine != 'mariadb'
+# TODO: fix issues
+# - include_tasks: mariadb_role_initial.yml
 
 - include_tasks: test_sql_log_bin.yml
 

@@ -86,9 +86,9 @@ body:
 
   - type: textarea
     attributes:
-      label: MySQL/MariaDB Server Version
+      label: MariaDB Server Version
       description: >-
-        Paste your RDBMS type and version between triple backticks.
+        Paste your MariaDB server version between triple backticks.
       value: |
         ```console (paste below)
 

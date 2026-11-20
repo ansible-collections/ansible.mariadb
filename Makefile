@@ -19,20 +19,8 @@ else
 	_docker_image = ubuntu2204
 endif
 
-# Set command variables based on database engine
-# Required for MariaDB 11+ which no longer includes mysql named compatible
-# executable symlinks
-ifeq ($(db_engine_name),mysql)
-	_command = mysqld
-	_health_cmd = mysqladmin
-else
-	_command = mariadbd
-	_health_cmd = mariadb-admin
-endif
-
 .PHONY: test-integration
 test-integration:
-	@echo -n $(db_engine_name) > tests/integration/db_engine_name
 	@echo -n $(db_engine_version) > tests/integration/db_engine_version
 	@echo -n $(connector_name) > tests/integration/connector_name
 	@echo -n $(connector_version) > tests/integration/connector_version
@@ -45,46 +33,36 @@ test-integration:
 		--replace \
 		--name primary \
 		--env MARIADB_ROOT_PASSWORD=msandbox \
-		--env MYSQL_ROOT_PASSWORD=msandbox \
 		--network podman \
 		--publish 3307:3306 \
-		--health-cmd '$(_health_cmd) ping -P 3306 -pmsandbox | grep alive || exit 1' \
-		docker.io/library/$(db_engine_name):$(db_engine_version) \
-		$(_command)
+		--health-cmd 'mariadb-admin ping -P 3306 -pmsandbox | grep alive || exit 1' \
+		docker.io/library/mariadb:$(db_engine_version) \
+		mariadbd
 	podman run \
 		--detach \
 		--replace \
 		--name replica1 \
 		--env MARIADB_ROOT_PASSWORD=msandbox \
-		--env MYSQL_ROOT_PASSWORD=msandbox \
 		--network podman \
 		--publish 3308:3306 \
-		--health-cmd '$(_health_cmd) ping -P 3306 -pmsandbox | grep alive || exit 1' \
-		docker.io/library/$(db_engine_name):$(db_engine_version) \
-		$(_command)
+		--health-cmd 'mariadb-admin ping -P 3306 -pmsandbox | grep alive || exit 1' \
+		docker.io/library/mariadb:$(db_engine_version) \
+		mariadbd
 	podman run \
 		--detach \
 		--replace \
 		--name replica2 \
 		--env MARIADB_ROOT_PASSWORD=msandbox \
-		--env MYSQL_ROOT_PASSWORD=msandbox \
 		--network podman \
 		--publish 3309:3306 \
-		--health-cmd '$(_health_cmd) ping -P 3306 -pmsandbox | grep alive || exit 1' \
-		docker.io/library/$(db_engine_name):$(db_engine_version) \
-		$(_command)
+		--health-cmd 'mariadb-admin ping -P 3306 -pmsandbox | grep alive || exit 1' \
+		docker.io/library/mariadb:$(db_engine_version) \
+		mariadbd
 	# Setup replication and restart containers using the same subshell to keep variables alive
 	db_ver=$(db_engine_version); \
-	maj="$${db_ver%.*.*}"; \
-	if [[ "$(db_engine_name)" == "mysql" && "$$maj" -eq 8 ]]; then \
-		prima_conf='[mysqld]\\nserver-id=1\\nlog-bin=/var/lib/mysql/primary-bin\\nmysql-native-password=1'; \
-		repl1_conf='[mysqld]\\nserver-id=2\\nlog-bin=/var/lib/mysql/replica1-bin\\nmysql-native-password=1'; \
-		repl2_conf='[mysqld]\\nserver-id=3\\nlog-bin=/var/lib/mysql/replica2-bin\\nmysql-native-password=1'; \
-	else \
-		prima_conf='[mysqld]\\nserver-id=1\\nlog-bin=/var/lib/mysql/primary-bin'; \
-		repl1_conf='[mysqld]\\nserver-id=2\\nlog-bin=/var/lib/mysql/replica1-bin'; \
-		repl2_conf='[mysqld]\\nserver-id=3\\nlog-bin=/var/lib/mysql/replica2-bin'; \
-	fi; \
+	prima_conf='[mysqld]\\nserver-id=1\\nlog-bin=/var/lib/mysql/primary-bin'; \
+	repl1_conf='[mysqld]\\nserver-id=2\\nlog-bin=/var/lib/mysql/replica1-bin'; \
+	repl2_conf='[mysqld]\\nserver-id=3\\nlog-bin=/var/lib/mysql/replica2-bin'; \
 	podman exec -e cnf="$$prima_conf" primary bash -c 'echo -e "$${cnf//\\n/\n}" > /etc/mysql/conf.d/replication.cnf'; \
 	podman exec -e cnf="$$repl1_conf" replica1 bash -c 'echo -e "$${cnf//\\n/\n}" > /etc/mysql/conf.d/replication.cnf'; \
 	podman exec -e cnf="$$repl2_conf" replica2 bash -c 'echo -e "$${cnf//\\n/\n}" > /etc/mysql/conf.d/replication.cnf'
@@ -111,7 +89,6 @@ test-integration:
 	set +x
 	# End of venv
 
-	rm tests/integration/db_engine_name
 	rm tests/integration/db_engine_version
 	rm tests/integration/connector_name
 	rm tests/integration/connector_version
