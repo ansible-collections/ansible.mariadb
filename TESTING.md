@@ -9,6 +9,7 @@ The tests covers plugins and roles (no role available yet, but tests are ready) 
 
 Everytime you push on your fork or you create a pull request, both workflows runs. You can see the output on the "Actions" tab.
 
+For local test on your computer, we assume you [prepared your local environment](https://docs.ansible.com/projects/ansible/devel/community/create_pr_quick_start.html#prepare-your-environment) as described in the guide before running the following commands. Otherwise, the command will fail.
 
 ## Integration tests
 
@@ -143,3 +144,27 @@ python run_all_tests.py
 New components version should be added to this file: [.github/workflows/ansible-test-plugins.yml](https://github.com/ansible-collections/ansible.mariadb/tree/main/.github/workflows)
 
 Be careful to not add too much tests. The matrix creates an exponential number of virtual machines!
+
+## Sanity tests
+
+Checks style, documentation, and imports for a changed file:
+
+```bash
+ansible-test sanity --docker -v
+
+# Or a single test:
+ansible-test sanity path/to/changed_file.py --docker -v
+```
+
+## Unit tests
+
+Unit tests live under `tests/unit/plugins/` and use the **PyTest** framework. Every new function or class method MUST have a corresponding unit test.
+
+Runs unit tests:
+
+```bash
+ansible-test units --docker -v
+
+# Or a single test:
+ansible-test units tests/unit/plugins/unit_test_file.py --docker -v
+```
