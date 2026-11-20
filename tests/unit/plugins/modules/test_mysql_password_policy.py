@@ -215,9 +215,8 @@ def test_main_returns_configure_result(monkeypatch):
     ):
         monkeypatch.setattr(AnsibleModule, 'exit_json', exit_json)
         monkeypatch.setattr(AnsibleModule, 'fail_json', fail_json)
-        monkeypatch.setattr(mariadb_password_policy, 'mysql_driver', object())
-        monkeypatch.setattr(mariadb_password_policy, 'mysql_connect', lambda *args, **kwargs: (MagicMock(), MagicMock()))
-        monkeypatch.setattr(mariadb_password_policy, 'get_server_implementation', lambda cursor: 'mariadb')
+        monkeypatch.setattr(mariadb_password_policy, 'driver', object())
+        monkeypatch.setattr(mariadb_password_policy, 'connect', lambda *args, **kwargs: (MagicMock(), MagicMock()))
 
         def fake_configure(self, desired_settings, mode='global', check_mode=False):
             assert desired_settings['length'] == 12

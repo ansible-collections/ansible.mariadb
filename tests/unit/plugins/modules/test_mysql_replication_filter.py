@@ -40,7 +40,7 @@ else:
     normalize_mariadb_filter_values = mysql_replication_filter_module.normalize_mariadb_filter_values
     normalize_mysql_filter_rows = mysql_replication_filter_module.normalize_mysql_filter_rows
     plan_filter_changes = mysql_replication_filter_module.plan_filter_changes
-    supports_mariadb_connection_name = mysql_replication_filter_module.supports_mariadb_connection_name
+    supports_connection_name = mysql_replication_filter_module.supports_connection_name
     _IMPORT_ERROR = None
 
 
@@ -433,11 +433,11 @@ def test_get_mysql_filter_rows_uses_channel_table():
     ]
 
 
-def test_supports_mariadb_connection_name_checks_version_threshold():
+def test_supports_connection_name_checks_version_threshold():
     _require_module()
 
-    assert supports_mariadb_connection_name('10.0.0-MariaDB') is False
-    assert supports_mariadb_connection_name('10.0.1-MariaDB') is True
+    assert supports_connection_name('10.0.0-MariaDB') is False
+    assert supports_connection_name('10.0.1-MariaDB') is True
 
 
 def test_get_mariadb_filter_values_uses_connection_status_context():
@@ -787,12 +787,12 @@ def test_main_requires_at_least_one_filter_before_connect(monkeypatch):
     with set_module_args({'login_unix_socket': '/run/mysqld/mysqld.sock'}):
         monkeypatch.setattr(AnsibleModule, 'exit_json', exit_json)
         monkeypatch.setattr(AnsibleModule, 'fail_json', fail_json)
-        monkeypatch.setattr(mysql_replication_filter_module, 'mysql_driver', object())
+        monkeypatch.setattr(mysql_replication_filter_module, 'driver', object())
 
         def unexpected_connect(*args, **kwargs):
-            raise AssertionError('mysql_connect should not be called')
+            raise AssertionError('connect should not be called')
 
-        monkeypatch.setattr(mysql_replication_filter_module, 'mysql_connect', unexpected_connect)
+        monkeypatch.setattr(mysql_replication_filter_module, 'connect', unexpected_connect)
 
         with pytest.raises(AnsibleFailJson) as exc:
             mysql_replication_filter_module.main()

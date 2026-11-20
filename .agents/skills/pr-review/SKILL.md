@@ -83,7 +83,7 @@ Architecture and Type Conversion categories are fully covered by `AGENTS.md` —
 
 - All errors call `module.fail_json(msg=...)` with a descriptive, actionable message — no bare `raise` or `sys.exit()`.
 - `mariadb_info` and similar read-only modules handle privilege errors gracefully (return partial results, not a failure).
-- Connection and query utilities from `module_utils/mysql.py` are used for database interactions.
+- Connection and query utilities from `module_utils/connect.py` are used for database interactions.
 
 ### Testing
 
