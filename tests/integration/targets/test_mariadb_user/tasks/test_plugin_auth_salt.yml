@@ -1,0 +1,130 @@
+---
+# Create and change a caching_sha2_password user from plugin_auth_string and
+# salt, then log in as that user. MariaDB rejected the hex literal the module
+# used to send (AS 0x...) with error 1064.
+# (https://github.com/ansible-collections/ansible.mariadb/issues/28)
+#
+# MariaDB has caching_sha2_password from 11.4.9, 11.8.4 and 12.1, so the
+# tests only run when the server reports the plugin as ACTIVE.
+
+- vars:
+    mariadb_parameters: &mariadb_params
+      login_user: '{{ mariadb_user }}'
+      login_password: '{{ mariadb_password }}'
+      login_host: '{{ mariadb_host }}'
+      login_port: '{{ mariadb_primary_port }}'
+    salt_user: 'test_salt_user'
+    salt_value: 'TDwqdanU82d0yNtvaabb'
+    salt_password_1: 'Pw1-salted-sha2'
+    salt_password_2: 'Pw2-salted-sha2'
+
+  block:
+
+    - name: Salt | Check whether the caching_sha2_password plugin is active
+      ansible.builtin.command: >-
+        {{ mariadb_command }} -BNe "SELECT PLUGIN_STATUS
+        FROM information_schema.PLUGINS
+        WHERE PLUGIN_NAME = 'caching_sha2_password'"
+      register: salt_plugin_status
+      changed_when: false
+
+    - name: Salt | Run the tests when caching_sha2_password is available
+      when: salt_plugin_status.stdout == 'ACTIVE'
+      block:
+
+        - name: Salt | Create user with plugin_auth_string and salt
+          ansible.mariadb.mariadb_user:
+            <<: *mariadb_params
+            name: '{{ salt_user }}'
+            host: '%'
+            plugin: caching_sha2_password
+            plugin_auth_string: '{{ salt_password_1 }}'
+            salt: '{{ salt_value }}'
+          register: result
+
+        - name: Salt | Assert user was created
+          ansible.builtin.assert:
+            that:
+              - result is changed
+
+        - name: Salt | Read the stored plugin and authentication string
+          ansible.builtin.command: >-
+            {{ mariadb_command }} -BNe "SELECT plugin, LEFT(authentication_string, 27)
+            FROM mysql.user WHERE user = '{{ salt_user }}' AND host = '%'"
+          register: salt_auth
+          changed_when: false
+
+        - name: Salt | Assert the hash uses the given salt
+          ansible.builtin.assert:
+            that:
+              - salt_auth.stdout == 'caching_sha2_password\t$A$005$' ~ salt_value
+
+        - name: Salt | Create the same user again
+          ansible.mariadb.mariadb_user:
+            <<: *mariadb_params
+            name: '{{ salt_user }}'
+            host: '%'
+            plugin: caching_sha2_password
+            plugin_auth_string: '{{ salt_password_1 }}'
+            salt: '{{ salt_value }}'
+          register: result
+
+        - name: Salt | Assert nothing changed
+          ansible.builtin.assert:
+            that:
+              - result is not changed
+
+        - name: Salt | Log in as the user with the password
+          ansible.mariadb.mariadb_query:
+            login_user: '{{ salt_user }}'
+            login_password: '{{ salt_password_1 }}'
+            login_host: '{{ mariadb_host }}'
+            login_port: '{{ mariadb_primary_port }}'
+            query: 'SELECT 1'
+
+        - name: Salt | Change the password, keeping the salt
+          ansible.mariadb.mariadb_user:
+            <<: *mariadb_params
+            name: '{{ salt_user }}'
+            host: '%'
+            plugin: caching_sha2_password
+            plugin_auth_string: '{{ salt_password_2 }}'
+            salt: '{{ salt_value }}'
+          register: result
+
+        - name: Salt | Assert password was changed
+          ansible.builtin.assert:
+            that:
+              - result is changed
+
+        - name: Salt | Log in as the user with the new password
+          ansible.mariadb.mariadb_query:
+            login_user: '{{ salt_user }}'
+            login_password: '{{ salt_password_2 }}'
+            login_host: '{{ mariadb_host }}'
+            login_port: '{{ mariadb_primary_port }}'
+            query: 'SELECT 1'
+
+        - name: Salt | Log in as the user with the old password
+          ansible.mariadb.mariadb_query:
+            login_user: '{{ salt_user }}'
+            login_password: '{{ salt_password_1 }}'
+            login_host: '{{ mariadb_host }}'
+            login_port: '{{ mariadb_primary_port }}'
+            query: 'SELECT 1'
+          register: result
+          ignore_errors: true
+
+        - name: Salt | Assert the old password no longer works
+          ansible.builtin.assert:
+            that:
+              - result is failed
+
+  always:
+
+    - name: Salt | Drop the user
+      ansible.mariadb.mariadb_user:
+        <<: *mariadb_params
+        name: '{{ salt_user }}'
+        host: '%'
+        state: absent

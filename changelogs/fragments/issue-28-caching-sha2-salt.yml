@@ -1,0 +1,2 @@
+bugfixes:
+  - mariadb_user - fix SQL syntax error (1064) when creating or updating a user with ``plugin=caching_sha2_password`` or ``plugin=sha256_password`` and ``salt``. The generated hash is now passed as a quoted string instead of a MySQL-style hex literal, which MariaDB does not accept (https://github.com/ansible-collections/ansible.mariadb/issues/28).
