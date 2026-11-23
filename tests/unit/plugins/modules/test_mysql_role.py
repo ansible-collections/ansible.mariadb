@@ -89,11 +89,9 @@ def test_query_builder_role_revoke(builder, user, output):
     'input_,output',
     [
         (['user'], [('user', '')]),
-        (['user'], [('user', '%')]),
         (['user@%'], [('user', '%')]),
         (['user@localhost'], [('user', 'localhost')]),
         (['user', 'user@%'], [('user', ''), ('user', '%')]),
-        (['user', 'user@%'], [('user', '%'), ('user', '%')]),
     ]
 )
 def test_normalize_users(input_, output):

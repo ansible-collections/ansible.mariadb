@@ -342,7 +342,7 @@ def normalize_users(module, users):
     """Normalize passed user names.
 
     Example of transformation:
-    ['user0'] => [('user0', '')] / ['user0'] => [('user0', '%')]
+    ['user0'] => [('user0', '')]
     ['user0@host0'] => [('user0', 'host0')]
 
     Args:
