@@ -20,7 +20,6 @@ from ansible_collections.ansible.mariadb.plugins.module_utils.connect import (
 )
 from ansible_collections.ansible.mariadb.plugins.module_utils.hash import (
     mysql_sha256_password_hash,
-    mysql_sha256_password_hash_hex,
 )
 from ansible_collections.ansible.mariadb.plugins.module_utils.version import LooseVersion
 from ansible_collections.ansible.mariadb.plugins.module_utils.connect import get_server_version
@@ -33,15 +32,6 @@ def use_old_user_mgmt(cursor):
     version = get_server_version(cursor)
 
     return LooseVersion(version) < LooseVersion("10.2")
-
-
-def supports_identified_by_password(cursor):
-    return True
-
-
-def server_supports_mysql_native_password(cursor):
-    # MariaDB still supports mysql_native_password and SHA1().
-    return True
 
 
 def server_supports_alter_user(cursor):
@@ -237,6 +227,29 @@ def get_existing_authentication(cursor, user, host=None):
     return existing_auth_list
 
 
+def _get_plugin_auth_clause(plugin, plugin_hash_string, plugin_auth_string, salt):
+    """Return the expected stored auth string, SQL clause, and clause arguments."""
+    if plugin_hash_string:
+        return plugin_hash_string, " AS %s", (plugin_hash_string,)
+
+    if not plugin_auth_string:
+        return None, "", ()
+
+    if salt:
+        expected_auth_string = mysql_sha256_password_hash(password=plugin_auth_string, salt=salt)
+        auth_clause = " AS 0x" + expected_auth_string.encode().hex().upper()
+        return expected_auth_string, auth_clause, ()
+
+    if plugin == 'pam':
+        auth_clause = " USING %s"
+    elif plugin in ('ed25519', 'parsec'):
+        auth_clause = " USING PASSWORD(%s)"
+    else:
+        auth_clause = " BY %s"
+
+    return plugin_auth_string, auth_clause, (plugin_auth_string,)
+
+
 def user_add(cursor, user, host, host_all, password, encrypted,
              plugin, plugin_hash_string, plugin_auth_string, salt, new_priv,
              attributes, tls_requires, reuse_existing_password, module,
@@ -276,42 +289,18 @@ def user_add(cursor, user, host, host_all, password, encrypted,
                 used_existing_password = True
                 plugin = existing_auth[0]['plugin']  # What if plugin differ?
     if password and encrypted:
-        if supports_identified_by_password(cursor):
-            query_with_args = "CREATE USER %s@%s IDENTIFIED BY PASSWORD %s", (user, host, password)
-        elif server_supports_mysql_native_password(cursor):
-            query_with_args = "CREATE USER %s@%s IDENTIFIED WITH mysql_native_password AS %s", (user, host, password)
-        else:
-            # MySQL 9.7.0+: encrypted hashes are mysql_native_password format, unusable.
-            module.fail_json(msg="The 'encrypted' option is not supported on MySQL 9.7.0+ "
-                                 "because the mysql_native_password plugin has been removed. "
-                                 "Use a plaintext password instead.")
+        query_with_args = "CREATE USER %s@%s IDENTIFIED BY PASSWORD %s", (user, host, password)
     elif password and not encrypted:
-        # MySQL 9.7.0+: SHA1() and mysql_native_password were removed;
-        # let the server hash with caching_sha2_password via IDENTIFIED BY.
-        if old_user_mgmt or not server_supports_mysql_native_password(cursor):
+        if old_user_mgmt:
             query_with_args = "CREATE USER %s@%s IDENTIFIED BY %s", (user, host, password)
         else:
             cursor.execute("SELECT CONCAT('*', UCASE(SHA1(UNHEX(SHA1(%s)))))", (password,))
             encrypted_password = cursor.fetchone()[0]
             query_with_args = "CREATE USER %s@%s IDENTIFIED WITH mysql_native_password AS %s", (user, host, encrypted_password)
-    elif plugin and plugin_hash_string:
-        query_with_args = "CREATE USER %s@%s IDENTIFIED WITH %s AS %s", (user, host, plugin, plugin_hash_string)
-    elif plugin and plugin_auth_string:
-        # Mysql and MariaDB differ in naming pam plugin and Syntax to set it
-        if plugin == 'pam':  # Used by MariaDB which requires the USING keyword, not BY
-            query_with_args = "CREATE USER %s@%s IDENTIFIED WITH %s USING %s", (user, host, plugin, plugin_auth_string)
-        elif plugin in ['ed25519', 'parsec']:  # Used by MariaDB which requires the USING keyword, not BY
-            query_with_args = "CREATE USER %s@%s IDENTIFIED WITH %s USING PASSWORD(%s)", (user, host, plugin, plugin_auth_string)
-        elif salt:
-            if plugin in ['caching_sha2_password', 'sha256_password']:
-                generated_hash_string = mysql_sha256_password_hash_hex(password=plugin_auth_string, salt=salt)
-            else:
-                module.fail_json(msg="salt not handled for %s authentication plugin" % plugin)
-            query_with_args = ("CREATE USER %s@%s IDENTIFIED WITH %s AS 0x" + generated_hash_string), (user, host, plugin)
-        else:
-            query_with_args = "CREATE USER %s@%s IDENTIFIED WITH %s BY %s", (user, host, plugin, plugin_auth_string)
     elif plugin:
-        query_with_args = "CREATE USER %s@%s IDENTIFIED WITH %s", (user, host, plugin)
+        _, auth_clause, auth_args = _get_plugin_auth_clause(plugin, plugin_hash_string, plugin_auth_string, salt)
+        query_with_args = ("CREATE USER %s@%s IDENTIFIED WITH %s" + auth_clause,
+                           (user, host, plugin) + auth_args)
     else:
         query_with_args = "CREATE USER %s@%s", (user, host)
 
@@ -473,52 +462,19 @@ def user_mod(cursor, user, host, host_all, password, encrypted,
         if plugin and not role:
             cursor.execute("SELECT plugin, authentication_string FROM mysql.user "
                            "WHERE user = %s AND host = %s", (user, host))
-            current_plugin = cursor.fetchone()
+            current_plugin, current_auth_string = cursor.fetchone()
+            expected_auth_string, auth_clause, auth_args = _get_plugin_auth_clause(
+                plugin, plugin_hash_string, plugin_auth_string, salt)
 
-            update = False
-
-            if current_plugin[0] != plugin:
-                update = True
-
-            if plugin_hash_string and current_plugin[1] != plugin_hash_string:
-                update = True
-
-            if salt:
-                # TODO: In MariaDB, the auth plugins is 'auth_mysql_sha2'.
-                # available to aid migrating from MySQL. Should we support this then?
-                if plugin in ['caching_sha2_password', 'sha256_password']:
-                    if current_plugin[1] != mysql_sha256_password_hash(password=plugin_auth_string, salt=salt):
-                        update = True
-            elif plugin_auth_string and current_plugin[1] != plugin_auth_string:
-                # this case can cause more updates than expected,
-                # as plugin can hash auth_string in any way it wants
-                # and there's no way to figure it out for
-                # a check, so I prefer to update more often than never
-                update = True
+            # Without a fixed salt, a plugin may hash the cleartext auth string
+            # differently on every update, making an exact comparison impossible.
+            update = (current_plugin != plugin or
+                      (expected_auth_string is not None and current_auth_string != expected_auth_string))
 
             if update:
-                query_with_args = None
-                if plugin_hash_string:
-                    query_with_args = "ALTER USER %s@%s IDENTIFIED WITH %s AS %s", (user, host, plugin, plugin_hash_string)
-                elif plugin_auth_string:
-                    # Mysql and MariaDB differ in naming pam plugin and syntax to set it
-                    if plugin == 'pam':
-                        query_with_args = "ALTER USER %s@%s IDENTIFIED WITH %s USING %s", (user, host, plugin, plugin_auth_string)
-                    elif plugin == 'ed25519':
-                        query_with_args = "ALTER USER %s@%s IDENTIFIED WITH %s USING PASSWORD(%s)", (user, host, plugin, plugin_auth_string)
-                    elif salt:
-                        if plugin in ['caching_sha2_password', 'sha256_password']:
-                            generated_hash_string = mysql_sha256_password_hash_hex(password=plugin_auth_string, salt=salt)
-                        else:
-                            module.fail_json(msg="salt not handled for %s authentication plugin" % plugin)
-                        query_with_args = ("ALTER USER %s@%s IDENTIFIED WITH %s AS 0x" + generated_hash_string), (user, host, plugin)
-                    else:
-                        query_with_args = "ALTER USER %s@%s IDENTIFIED WITH %s BY %s", (user, host, plugin, plugin_auth_string)
-                else:
-                    query_with_args = "ALTER USER %s@%s IDENTIFIED WITH %s", (user, host, plugin)
-
                 if not module.check_mode:
-                    cursor.execute(*query_with_args)
+                    cursor.execute("ALTER USER %s@%s IDENTIFIED WITH %s" + auth_clause,
+                                   (user, host, plugin) + auth_args)
                 password_changed = True
                 changed = True
 

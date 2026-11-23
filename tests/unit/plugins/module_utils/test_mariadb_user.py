@@ -8,6 +8,7 @@ from unittest.mock import MagicMock, call
 import pytest
 
 from ansible_collections.ansible.mariadb.plugins.module_utils.user import (
+    _get_plugin_auth_clause,
     handle_grant_on_col,
     has_grant_on_col,
     normalize_col_grants,
@@ -17,6 +18,32 @@ from ansible_collections.ansible.mariadb.plugins.module_utils.user import (
     privileges_revoke,
     privileges_unpack,
 )
+
+
+@pytest.mark.parametrize(
+    'plugin,plugin_hash_string,plugin_auth_string,salt,expected',
+    [
+        ('mysql_native_password', '*hash', None, None, ('*hash', ' AS %s', ('*hash',))),
+        ('pam', None, 'system-auth', None, ('system-auth', ' USING %s', ('system-auth',))),
+        ('ed25519', None, 'secret', None, ('secret', ' USING PASSWORD(%s)', ('secret',))),
+        ('parsec', None, 'secret', None, ('secret', ' USING PASSWORD(%s)', ('secret',))),
+        ('caching_sha2_password', None, 'secret', None, ('secret', ' BY %s', ('secret',))),
+        (
+            'caching_sha2_password', None, 'password', '1234567890abcdefghij',
+            (
+                '$A$005$1234567890abcdefghijZhkXqsPwdUcxIevlDledVLOK0Oqn.RxGRi3b./OHKW/',
+                (
+                    ' AS 0x24412430303524313233343536373839306162636465666768696A5A686B5871735077645563784965766C'
+                    '446C6564564C4F4B304F716E2E527847526933622E2F4F484B572F'
+                ),
+                (),
+            ),
+        ),
+        ('mysql_native_password', None, None, None, (None, '', ())),
+    ],
+)
+def test_get_plugin_auth_clause(plugin, plugin_hash_string, plugin_auth_string, salt, expected):
+    assert _get_plugin_auth_clause(plugin, plugin_hash_string, plugin_auth_string, salt) == expected
 
 
 @pytest.mark.parametrize(
