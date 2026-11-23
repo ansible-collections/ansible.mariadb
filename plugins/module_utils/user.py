@@ -18,7 +18,7 @@ import re
 from ansible_collections.ansible.mariadb.plugins.module_utils.connect import (
     driver,
 )
-from ansible_collections.ansible.mariadb.plugins.module_utils.implementations.mysql.hash import (
+from ansible_collections.ansible.mariadb.plugins.module_utils.hash import (
     mysql_sha256_password_hash,
     mysql_sha256_password_hash_hex,
 )
