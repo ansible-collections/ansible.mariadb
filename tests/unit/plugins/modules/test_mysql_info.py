@@ -14,15 +14,12 @@ from ansible_collections.ansible.mariadb.plugins.modules.mariadb_info import MyS
 
 
 @pytest.mark.parametrize(
-    'suffix,cursor_output,server_implementation,server_version,user_implementation',
+    'suffix,cursor_output,server_implementation,server_version',
     [
-        ('mysql', '5.5.1-mysql', 'mysql', '5.5.1', 'mysql'),
-        ('log', '5.7.31-log', 'mysql', '5.7.31', 'mysql'),
-        ('mariadb', '10.5.0-mariadb', 'mariadb', '10.5.0', 'mariadb'),
-        ('', '8.0.22', 'mysql', '8.0.22', 'mysql'),
+        ('mariadb', '10.5.0-mariadb', 'mariadb', '10.5.0'),
     ]
 )
-def test_get_info_suffix(suffix, cursor_output, server_implementation, server_version, user_implementation):
+def test_get_info_suffix(suffix, cursor_output, server_implementation, server_version):
     def __cursor_return_value(input_parameter):
         if input_parameter == "SHOW GLOBAL VARIABLES":
             cursor.fetchall.return_value = [{"Variable_name": "version", "Value": cursor_output}]
@@ -32,6 +29,6 @@ def test_get_info_suffix(suffix, cursor_output, server_implementation, server_ve
     cursor = MagicMock()
     cursor.execute.side_effect = __cursor_return_value
 
-    info = MySQL_Info(MagicMock(), cursor, server_implementation, server_version, user_implementation)
+    info = MySQL_Info(MagicMock(), cursor, server_implementation, server_version)
 
     assert info.get_info([], [], False)['version']['suffix'] == suffix
