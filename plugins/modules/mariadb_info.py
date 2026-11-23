@@ -357,7 +357,7 @@ class MySQL_Info(object):
         self.cursor = cursor
         self.server_implementation = server_implementation
         self.server_version = server_version
-        self.command_resolver = CommandResolver(self.server_implementation, self.server_version)
+        self.command_resolver = CommandResolver(self.server_version)
         self.info = {
             'version': {},
             'databases': {},
