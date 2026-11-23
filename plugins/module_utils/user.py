@@ -28,6 +28,7 @@ from ansible_collections.ansible.mariadb.plugins.module_utils.connect import get
 class InvalidPrivsError(Exception):
     pass
 
+
 def use_old_user_mgmt(cursor):
     version = get_server_version(cursor)
 
@@ -298,7 +299,8 @@ def user_add(cursor, user, host, host_all, password, encrypted,
             encrypted_password = cursor.fetchone()[0]
             query_with_args = "CREATE USER %s@%s IDENTIFIED WITH mysql_native_password AS %s", (user, host, encrypted_password)
     elif plugin:
-        _, auth_clause, auth_args = _get_plugin_auth_clause(plugin, plugin_hash_string, plugin_auth_string, salt)
+        auth_clause, auth_args = _get_plugin_auth_clause(
+            plugin, plugin_hash_string, plugin_auth_string, salt)[1:]
         query_with_args = ("CREATE USER %s@%s IDENTIFIED WITH %s" + auth_clause,
                            (user, host, plugin) + auth_args)
     else:
@@ -339,10 +341,93 @@ def is_hash(password):
     return ishash
 
 
+def _privileges_mod(cursor, user, host, new_priv, append_privs, subtract_privs,
+                    tls_requires, check_mode, role=False, grant_option=False):
+    """Reconcile privileges and return change status, message, and grant-option state."""
+    changed = False
+    msg = None
+
+    curr_priv = privileges_get(cursor, user, host, role)
+
+    # If the user has privileges on a db.table that doesn't appear at all in
+    # the new specification, then revoke all privileges on it.
+    if not append_privs and not subtract_privs:
+        for db_table, priv in curr_priv.items():
+            # If the user has the GRANT OPTION on a db.table, revoke it first.
+            if "GRANT" in priv:
+                grant_option = True
+            if db_table not in new_priv:
+                if user != "root" and "PROXY" not in priv:
+                    msg = "Privileges updated"
+                    if not check_mode:
+                        privileges_revoke(cursor, user, host, db_table, priv, grant_option, role)
+                    changed = True
+
+    # If the user doesn't currently have any privileges on a db.table, then
+    # we can perform a straight grant operation.
+    if not subtract_privs:
+        for db_table, priv in new_priv.items():
+            if db_table not in curr_priv:
+                msg = "New privileges granted"
+                if not check_mode:
+                    privileges_grant(cursor, user, host, db_table, priv, tls_requires, role)
+                changed = True
+
+    # If the db.table specification exists in both the user's current privileges
+    # and in the new privileges, then we need to see if there's a difference.
+    db_table_intersect = set(new_priv.keys()) & set(curr_priv.keys())
+    for db_table in db_table_intersect:
+
+        grant_privs = []
+        revoke_privs = []
+        if append_privs:
+            # When appending privileges, only missing privileges need to be granted. Nothing is revoked.
+            grant_privs = list(set(new_priv[db_table]) - set(curr_priv[db_table]))
+        elif subtract_privs:
+            # When subtracting privileges, revoke only the intersection of requested and current privileges.
+            # No privileges are granted.
+            revoke_privs = list(set(new_priv[db_table]) & set(curr_priv[db_table]))
+        else:
+            # When replacing (neither append_privs nor subtract_privs), grant all missing privileges
+            # and revoke existing privileges that were not requested...
+            grant_privs = list(set(new_priv[db_table]) - set(curr_priv[db_table]))
+            revoke_privs = list(set(curr_priv[db_table]) - set(new_priv[db_table]))
+
+            # ... avoiding pointless revocations when ALL are granted
+            if 'ALL' in grant_privs or 'ALL PRIVILEGES' in grant_privs:
+                revoke_privs = list(set(['GRANT', 'PROXY']).intersection(set(revoke_privs)))
+
+            # Only revoke grant option if it exists and absence is requested
+            #
+            # For more details
+            # https://github.com/ansible-collections/ansible.mysql/issues/77#issuecomment-1209693807
+            grant_option = 'GRANT' in revoke_privs and 'GRANT' not in grant_privs
+
+        if grant_privs == ['GRANT']:
+            # USAGE grants no privileges, it is only needed because 'WITH GRANT OPTION' cannot stand alone
+            grant_privs.append('USAGE')
+
+        if len(grant_privs) + len(revoke_privs) > 0:
+            msg = "Privileges updated: granted %s, revoked %s" % (grant_privs, revoke_privs)
+            if not check_mode:
+                if len(revoke_privs) > 0:
+                    privileges_revoke(cursor, user, host, db_table, revoke_privs, grant_option, role)
+                if len(grant_privs) > 0:
+                    privileges_grant(cursor, user, host, db_table, grant_privs, tls_requires, role)
+            else:
+                changed = True
+
+    # after privilege manipulation, compare privileges from before and now
+    after_priv = privileges_get(cursor, user, host, role)
+    changed = changed or (curr_priv != after_priv)
+
+    return changed, msg, grant_option
+
+
 def user_mod(cursor, user, host, host_all, password, encrypted,
              plugin, plugin_hash_string, plugin_auth_string, salt, new_priv,
              append_privs, subtract_privs, attributes, tls_requires, module,
-             password_expire, password_expire_interval, locked=None, role=False):
+             password_expire, password_expire_interval, locked=None):
     changed = False
     msg = "User unchanged"
     grant_option = False
@@ -350,7 +435,7 @@ def user_mod(cursor, user, host, host_all, password, encrypted,
     # Determine what user management method server uses
     old_user_mgmt = use_old_user_mgmt(cursor)
 
-    if host_all and not role:
+    if host_all:
         hostnames = user_get_hostnames(cursor, user)
     else:
         hostnames = [host]
@@ -358,7 +443,7 @@ def user_mod(cursor, user, host, host_all, password, encrypted,
     password_changed = False
     for host in hostnames:
         # Handle clear text and hashed passwords.
-        if not role and password:
+        if password:
             # Select hash from either Password or authentication_string, depending on which one is filled.
             cursor.execute("""
                 SELECT COALESCE(NULLIF(Password, ''), NULLIF(authentication_string, ''))
@@ -413,7 +498,7 @@ def user_mod(cursor, user, host, host_all, password, encrypted,
                     changed = True
 
         # Handle plugin authentication
-        if plugin and not role:
+        if plugin:
             cursor.execute("SELECT plugin, authentication_string FROM mysql.user "
                            "WHERE user = %s AND host = %s", (user, host))
             current_plugin, current_auth_string = cursor.fetchone()
@@ -434,79 +519,12 @@ def user_mod(cursor, user, host, host_all, password, encrypted,
 
         # Handle privileges
         if new_priv is not None:
-            curr_priv = privileges_get(cursor, user, host, role)
-
-            # If the user has privileges on a db.table that doesn't appear at all in
-            # the new specification, then revoke all privileges on it.
-            if not append_privs and not subtract_privs:
-                for db_table, priv in curr_priv.items():
-                    # If the user has the GRANT OPTION on a db.table, revoke it first.
-                    if "GRANT" in priv:
-                        grant_option = True
-                    if db_table not in new_priv:
-                        if user != "root" and "PROXY" not in priv:
-                            msg = "Privileges updated"
-                            if not module.check_mode:
-                                privileges_revoke(cursor, user, host, db_table, priv, grant_option, role)
-                            changed = True
-
-            # If the user doesn't currently have any privileges on a db.table, then
-            # we can perform a straight grant operation.
-            if not subtract_privs:
-                for db_table, priv in new_priv.items():
-                    if db_table not in curr_priv:
-                        msg = "New privileges granted"
-                        if not module.check_mode:
-                            privileges_grant(cursor, user, host, db_table, priv, tls_requires, role)
-                        changed = True
-
-            # If the db.table specification exists in both the user's current privileges
-            # and in the new privileges, then we need to see if there's a difference.
-            db_table_intersect = set(new_priv.keys()) & set(curr_priv.keys())
-            for db_table in db_table_intersect:
-
-                grant_privs = []
-                revoke_privs = []
-                if append_privs:
-                    # When appending privileges, only missing privileges need to be granted. Nothing is revoked.
-                    grant_privs = list(set(new_priv[db_table]) - set(curr_priv[db_table]))
-                elif subtract_privs:
-                    # When subtracting privileges, revoke only the intersection of requested and current privileges.
-                    # No privileges are granted.
-                    revoke_privs = list(set(new_priv[db_table]) & set(curr_priv[db_table]))
-                else:
-                    # When replacing (neither append_privs nor subtract_privs), grant all missing privileges
-                    # and revoke existing privileges that were not requested...
-                    grant_privs = list(set(new_priv[db_table]) - set(curr_priv[db_table]))
-                    revoke_privs = list(set(curr_priv[db_table]) - set(new_priv[db_table]))
-
-                    # ... avoiding pointless revocations when ALL are granted
-                    if 'ALL' in grant_privs or 'ALL PRIVILEGES' in grant_privs:
-                        revoke_privs = list(set(['GRANT', 'PROXY']).intersection(set(revoke_privs)))
-
-                    # Only revoke grant option if it exists and absence is requested
-                    #
-                    # For more details
-                    # https://github.com/ansible-collections/ansible.mysql/issues/77#issuecomment-1209693807
-                    grant_option = 'GRANT' in revoke_privs and 'GRANT' not in grant_privs
-
-                if grant_privs == ['GRANT']:
-                    # USAGE grants no privileges, it is only needed because 'WITH GRANT OPTION' cannot stand alone
-                    grant_privs.append('USAGE')
-
-                if len(grant_privs) + len(revoke_privs) > 0:
-                    msg = "Privileges updated: granted %s, revoked %s" % (grant_privs, revoke_privs)
-                    if not module.check_mode:
-                        if len(revoke_privs) > 0:
-                            privileges_revoke(cursor, user, host, db_table, revoke_privs, grant_option, role)
-                        if len(grant_privs) > 0:
-                            privileges_grant(cursor, user, host, db_table, grant_privs, tls_requires, role)
-                    else:
-                        changed = True
-
-            # after privilege manipulation, compare privileges from before and now
-            after_priv = privileges_get(cursor, user, host, role)
-            changed = changed or (curr_priv != after_priv)
+            privileges_changed, privileges_msg, grant_option = _privileges_mod(
+                cursor, user, host, new_priv, append_privs, subtract_privs,
+                tls_requires, module.check_mode, grant_option=grant_option)
+            changed = changed or privileges_changed
+            if privileges_msg is not None:
+                msg = privileges_msg
 
         # Handle attributes
         attribute_support = get_attribute_support(cursor)
@@ -548,7 +566,7 @@ def user_mod(cursor, user, host, host_all, password, encrypted,
             if attribute_support:
                 final_attributes = attributes_get(cursor, user, host)
 
-        if not role and locked is not None and user_is_locked(cursor, user, host) != locked:
+        if locked is not None and user_is_locked(cursor, user, host) != locked:
             if not module.check_mode:
                 if locked:
                     cursor.execute("ALTER USER %s@%s ACCOUNT LOCK", (user, host))
@@ -563,9 +581,6 @@ def user_mod(cursor, user, host, host_all, password, encrypted,
                     msg = 'User will be unlocked'
 
             changed = True
-
-        if role:
-            continue
 
         # Handle TLS requirements
         current_requires = sanitize_requires(get_tls_requires(cursor, user, host))

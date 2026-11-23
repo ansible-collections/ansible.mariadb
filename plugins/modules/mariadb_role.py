@@ -329,9 +329,9 @@ from ansible_collections.ansible.mariadb.plugins.module_utils.connect import (
     common_argument_spec
 )
 from ansible_collections.ansible.mariadb.plugins.module_utils.user import (
+    _privileges_mod,
     convert_priv_dict_to_str,
     get_mode,
-    user_mod,
     privileges_grant,
     privileges_unpack,
 )
@@ -826,13 +826,10 @@ class Role():
                                                       set_default_role_all=set_default_role_all)
 
         if privs:
-            result = user_mod(cursor=self.cursor, user=self.name, host=self.host,
-                              host_all=None, password=None, encrypted=None, plugin=None,
-                              plugin_auth_string=None, plugin_hash_string=None, salt=None,
-                              new_priv=privs, append_privs=append_privs, subtract_privs=subtract_privs,
-                              attributes=None, tls_requires=None, module=self.module, password_expire=None,
-                              password_expire_interval=None, role=True)
-            changed = result['changed']
+            changed = _privileges_mod(
+                cursor=self.cursor, user=self.name, host=self.host, new_priv=privs,
+                append_privs=append_privs, subtract_privs=subtract_privs,
+                tls_requires=None, check_mode=self.module.check_mode, role=True)[0]
 
         if admin:
             self.__set_admin(admin)

@@ -3,12 +3,13 @@
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
-from unittest.mock import MagicMock, call
+from unittest.mock import MagicMock, call, patch
 
 import pytest
 
 from ansible_collections.ansible.mariadb.plugins.module_utils.user import (
     _get_plugin_auth_clause,
+    _privileges_mod,
     handle_grant_on_col,
     has_grant_on_col,
     normalize_col_grants,
@@ -44,6 +45,46 @@ from ansible_collections.ansible.mariadb.plugins.module_utils.user import (
 )
 def test_get_plugin_auth_clause(plugin, plugin_hash_string, plugin_auth_string, salt, expected):
     assert _get_plugin_auth_clause(plugin, plugin_hash_string, plugin_auth_string, salt) == expected
+
+
+@pytest.mark.parametrize('role,user,host', [
+    (False, 'user2', 'localhost'),
+    (True, 'reader', ''),
+])
+def test_privileges_mod_idempotency(role, user, host):
+    cursor = MagicMock()
+    priv = {'*.*': ['SELECT']}
+    get_path = 'ansible_collections.ansible.mariadb.plugins.module_utils.user.privileges_get'
+
+    with patch(get_path, return_value=priv) as privileges_get:
+        result = _privileges_mod(
+            cursor, user, host, priv, False, False, None, False, role=role)
+
+    assert result == (False, None, False)
+    assert privileges_get.call_args_list == [
+        call(cursor, user, host, role),
+        call(cursor, user, host, role),
+    ]
+
+
+@pytest.mark.parametrize('role,user,host', [
+    (False, 'user2', 'localhost'),
+    (True, 'reader', ''),
+])
+def test_privileges_mod_grants_missing_privileges(role, user, host):
+    cursor = MagicMock()
+    module_path = 'ansible_collections.ansible.mariadb.plugins.module_utils.user'
+    current_priv = {'*.*': ['SELECT']}
+    updated_priv = {'*.*': ['SELECT', 'INSERT']}
+
+    with patch(module_path + '.privileges_get', side_effect=[current_priv, updated_priv]), \
+            patch(module_path + '.privileges_grant') as privileges_grant:
+        result = _privileges_mod(
+            cursor, user, host, updated_priv, False, False, None, False, role=role)
+
+    assert result == (True, "Privileges updated: granted ['INSERT'], revoked []", False)
+    privileges_grant.assert_called_once_with(
+        cursor, user, host, '*.*', ['INSERT'], None, role)
 
 
 @pytest.mark.parametrize(
