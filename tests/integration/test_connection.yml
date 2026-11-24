@@ -5,23 +5,23 @@
   gather_facts: false
   vars:
     mariadb_parameters: &mariadb_params
-      login_user: '{{ mysql_user }}'
-      login_password: '{{ mysql_password }}'
-      login_host: '{{ mysql_host }}'
-      login_port: '{{ mysql_primary_port }}'
+      login_user: '{{ mariadb_user }}'
+      login_password: '{{ mariadb_password }}'
+      login_host: '{{ mariadb_host }}'
+      login_port: '{{ mariadb_primary_port }}'
   tasks:
 
     # Create default MySQL config file with credentials
-    - name: mysql_info - create default config file
+    - name: Mariadb_info - create default config file
       template:
         src: my.cnf.j2
         dest: /root/.my.cnf
         mode: '0400'
 
     # Create non-default MySQL config file with credentials
-    - name: mysql_info - create non-default config file
+    - name: Mariadb_info - create non-default config file
       template:
-        src: tests/integration/targets/test_mysql_info/templates/my.cnf.j2
+        src: tests/integration/targets/test_mariadb_info/templates/my.cnf.j2
         dest: /root/non-default_my.cnf
         mode: '0400'
 
@@ -29,11 +29,11 @@
     # Do tests
 
     # Access by default cred file
-    - name: mysql_info - collect default cred file
+    - name: Mariadb_info - collect default cred file
       mariadb_info:
-        login_user: '{{ mysql_user }}'
-        login_host: '{{ mysql_host }}'
-        login_port: '{{ mysql_primary_port }}'
+        login_user: '{{ mariadb_user }}'
+        login_host: '{{ mariadb_host }}'
+        login_port: '{{ mariadb_primary_port }}'
       register: result
 
     - assert:
@@ -47,11 +47,11 @@
           - result.users != {}
 
     # Access by non-default cred file
-    - name: mysql_info - check non-default cred file
+    - name: Mariadb_info - check non-default cred file
       mariadb_info:
-        login_user: '{{ mysql_user }}'
-        login_host: '{{ mysql_host }}'
-        login_port: '{{ mysql_primary_port }}'
+        login_user: '{{ mariadb_user }}'
+        login_host: '{{ mariadb_host }}'
+        login_port: '{{ mariadb_primary_port }}'
         config_file: /root/non-default_my.cnf
       register: result
 
@@ -61,7 +61,7 @@
           - result.version != {}
 
     # Remove cred files
-    - name: mysql_info - remove cred files
+    - name: Mariadb_info - remove cred files
       file:
         path: '{{ item }}'
         state: absent
@@ -70,7 +70,7 @@
         - /root/non-default_my.cnf
 
     # Access with password
-    - name: mysql_info - check access with password
+    - name: Mariadb_info - check access with password
       mariadb_info:
         <<: *mariadb_params
       register: result

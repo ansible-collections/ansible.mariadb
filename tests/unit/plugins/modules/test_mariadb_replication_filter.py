@@ -18,12 +18,12 @@ try:
 except ImportError:
     patch_module_args = None
 
-MYSQL_REPLICATION_FILTER_MODULE = 'ansible_collections.ansible.mariadb.plugins.modules.mariadb_replication_filter'
+MARIADB_REPLICATION_FILTER_MODULE = 'ansible_collections.ansible.mariadb.plugins.modules.mariadb_replication_filter'
 
 try:
-    mysql_replication_filter_module = importlib.import_module(MYSQL_REPLICATION_FILTER_MODULE)
+    mariadb_replication_filter_module = importlib.import_module(MARIADB_REPLICATION_FILTER_MODULE)
 except ModuleNotFoundError as exc:
-    if exc.name != MYSQL_REPLICATION_FILTER_MODULE:
+    if exc.name != MARIADB_REPLICATION_FILTER_MODULE:
         raise
     MySQLReplicationFilter = None
     _IMPORT_ERROR = (
@@ -31,16 +31,16 @@ except ModuleNotFoundError as exc:
         "plugins/modules/mariadb_replication_filter.py first. Original error: %s" % exc
     )
 else:
-    build_mariadb_set_query = mysql_replication_filter_module.build_mariadb_set_query
-    build_mysql_filter_query = mysql_replication_filter_module.build_mysql_filter_query
-    get_mariadb_filter_values = mysql_replication_filter_module.get_mariadb_filter_values
-    get_mysql_filter_rows = mysql_replication_filter_module.get_mysql_filter_rows
-    MySQLReplicationFilter = mysql_replication_filter_module.MySQLReplicationFilter
-    normalize_filter_values = mysql_replication_filter_module.normalize_filter_values
-    normalize_mariadb_filter_values = mysql_replication_filter_module.normalize_mariadb_filter_values
-    normalize_mysql_filter_rows = mysql_replication_filter_module.normalize_mysql_filter_rows
-    plan_filter_changes = mysql_replication_filter_module.plan_filter_changes
-    supports_connection_name = mysql_replication_filter_module.supports_connection_name
+    build_mariadb_set_query = mariadb_replication_filter_module.build_mariadb_set_query
+    build_mysql_filter_query = mariadb_replication_filter_module.build_mysql_filter_query
+    get_mariadb_filter_values = mariadb_replication_filter_module.get_mariadb_filter_values
+    get_mysql_filter_rows = mariadb_replication_filter_module.get_mysql_filter_rows
+    MySQLReplicationFilter = mariadb_replication_filter_module.MySQLReplicationFilter
+    normalize_filter_values = mariadb_replication_filter_module.normalize_filter_values
+    normalize_mariadb_filter_values = mariadb_replication_filter_module.normalize_mariadb_filter_values
+    normalize_mysql_filter_rows = mariadb_replication_filter_module.normalize_mysql_filter_rows
+    plan_filter_changes = mariadb_replication_filter_module.plan_filter_changes
+    supports_connection_name = mariadb_replication_filter_module.supports_connection_name
     _IMPORT_ERROR = None
 
 
@@ -98,7 +98,7 @@ def _require_module():
 
 
 class FakeCursor(object):
-    def __init__(self, version='8.4.0-mysql', global_rows=None, channel_rows=None, variables=None, connection_variables=None):
+    def __init__(self, version='10.4.0-mariadb', global_rows=None, channel_rows=None, variables=None, connection_variables=None):
         self.version = version
         self.global_rows = list(global_rows or [])
         self.channel_rows = dict(channel_rows or {})
@@ -236,7 +236,7 @@ def test_normalize_filter_values_orders_and_deduplicates_items():
     ]
 
 
-def test_normalize_mysql_filter_rows_maps_filter_names_and_empty_rules():
+def test_normalize_mariadb_filter_rows_maps_filter_names_and_empty_rules():
     _require_module()
 
     rows = [
@@ -349,7 +349,7 @@ def test_plan_filter_changes_treats_order_only_difference_as_idempotent():
     assert planned['queries'] == []
 
 
-def test_build_mysql_filter_query_quotes_identifier_values_and_channel():
+def test_build_mariadb_filter_query_quotes_identifier_values_and_channel():
     _require_module()
 
     assert build_mysql_filter_query(
@@ -370,7 +370,7 @@ def test_build_mysql_filter_query_quotes_identifier_values_and_channel():
     }
 
 
-def test_build_mysql_filter_query_quotes_wildcard_values_and_clears_empty_lists():
+def test_build_mariadb_filter_query_quotes_wildcard_values_and_clears_empty_lists():
     _require_module()
 
     assert build_mysql_filter_query(
@@ -406,7 +406,7 @@ def test_build_mariadb_set_query_uses_csv_values_and_clear():
     }
 
 
-def test_get_mysql_filter_rows_uses_channel_table():
+def test_get_mariadb_filter_rows_uses_channel_table():
     _require_module()
 
     cursor = CursorStub([[
@@ -543,7 +543,7 @@ def test_get_mariadb_filter_values_rejects_connection_name_on_old_versions():
     assert str(exc_info.value) == 'connection_name requires MariaDB 10.0.1 or newer'
 
 
-def test_apply_mysql_check_mode_predicts_channel_query_without_writes():
+def test_apply_mariadb_check_mode_predicts_channel_query_without_writes():
     _require_module()
 
     cursor = FakeCursor(channel_rows={
@@ -588,7 +588,7 @@ def test_apply_mysql_check_mode_predicts_channel_query_without_writes():
     ]
 
 
-def test_apply_mysql_executes_change_query_in_real_mode():
+def test_apply_mariadb_executes_change_query_in_real_mode():
     _require_module()
 
     cursor = FakeCursor(global_rows=[])
@@ -616,7 +616,7 @@ def test_apply_mysql_executes_change_query_in_real_mode():
     ]
 
 
-def test_apply_mysql_returns_unchanged_when_filter_matches_different_order():
+def test_apply_mariadb_returns_unchanged_when_filter_matches_different_order():
     _require_module()
 
     cursor = FakeCursor(global_rows=[
@@ -636,7 +636,7 @@ def test_apply_mysql_returns_unchanged_when_filter_matches_different_order():
     ]
 
 
-def test_apply_mysql_rejects_connection_name():
+def test_apply_mariadb_rejects_connection_name():
     _require_module()
 
     manager = MySQLReplicationFilter(ModuleStub(check_mode=False), FakeCursor(), 'mysql', '8.4.0')
@@ -787,14 +787,14 @@ def test_main_requires_at_least_one_filter_before_connect(monkeypatch):
     with set_module_args({'login_unix_socket': '/run/mysqld/mysqld.sock'}):
         monkeypatch.setattr(AnsibleModule, 'exit_json', exit_json)
         monkeypatch.setattr(AnsibleModule, 'fail_json', fail_json)
-        monkeypatch.setattr(mysql_replication_filter_module, 'driver', object())
+        monkeypatch.setattr(mariadb_replication_filter_module, 'driver', object())
 
         def unexpected_connect(*args, **kwargs):
             raise AssertionError('connect should not be called')
 
-        monkeypatch.setattr(mysql_replication_filter_module, 'connect', unexpected_connect)
+        monkeypatch.setattr(mariadb_replication_filter_module, 'connect', unexpected_connect)
 
         with pytest.raises(AnsibleFailJson) as exc:
-            mysql_replication_filter_module.main()
+            mariadb_replication_filter_module.main()
 
     assert exc.value.args[0]['msg'] == 'at least one replication filter option must be provided'

@@ -17,7 +17,7 @@
 # along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
 
 # ============================================================
-# Assert output variable name/value match mysql variable name/value
+# Assert output variable name/value match MariaDB variable name/value
 #
 - name: assert output message changed value
   assert:
@@ -32,7 +32,7 @@
   command: "{{ mariadb_command }} \"-e show variables like '{{var_name}}'\""
   register: result
 
-- name: assert output variable info match mysql variable info
+- name: assert output variable info match MariaDB variable info
   assert:
     that:
       - result is changed

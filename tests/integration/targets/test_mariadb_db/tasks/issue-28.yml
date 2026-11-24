@@ -21,7 +21,7 @@
         dest: /tmp/cert.pem
       delegate_to: localhost
 
-    - name: Drop mysql user if exists
+    - name: Drop MariaDB user if exists
       mariadb_user:
         <<: *mariadb_params
         name: '{{ user_name_1 }}'
@@ -80,7 +80,7 @@
         that:
           - result is succeeded or 'pymysql >= 0.7.11 is required' in result.msg
 
-    - name: Drop mysql user
+    - name: Drop MariaDB user
       mariadb_user:
         <<: *mariadb_params
         name: '{{ user_name_1 }}'

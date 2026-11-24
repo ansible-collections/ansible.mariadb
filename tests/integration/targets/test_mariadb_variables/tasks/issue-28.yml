@@ -24,7 +24,7 @@
         dest: /tmp/cert.pem
       delegate_to: localhost
 
-    - name: Drop mysql user if exists
+    - name: Drop MariaDB user if exists
       ansible.mariadb.mariadb_user:
         <<: *mariadb_params
         name: '{{ user_name_1 }}'
@@ -74,7 +74,7 @@
       failed_when:
         - result is failed or 'pymysql >= 0.7.11 is required' not in result.msg
 
-    - name: Drop mysql user
+    - name: Drop MariaDB user
       ansible.mariadb.mariadb_user:
         <<: *mariadb_params
         name: '{{ user_name_1 }}'

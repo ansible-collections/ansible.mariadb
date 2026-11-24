@@ -10,7 +10,7 @@
   block:
 
     # ========================= Prepare =======================================
-    - name: Mysql_user Lock user | Create a test database
+    - name: Mariadb_user Lock user | Create a test database
       ansible.mariadb.mariadb_db:
         <<: *mariadb_params
         name: mariadb_lock_user_test
@@ -18,7 +18,7 @@
 
     # ========================== Tests ========================================
 
-    - name: Mysql_user Lock user | create locked | Create test user
+    - name: Mariadb_user Lock user | create locked | Create test user
       ansible.mariadb.mariadb_user:
         <<: *mariadb_params
         name: mariadb_locked_user
@@ -27,7 +27,7 @@
         priv:
           'mariadb_lock_user_test.*': 'SELECT'
 
-    - name: Mysql_user Lock user | create locked | Assert that test user is locked
+    - name: Mariadb_user Lock user | create locked | Assert that test user is locked
       ansible.mariadb.mariadb_query:
         <<: *mariadb_params
         query:
@@ -36,7 +36,7 @@
       failed_when:
         - locked_user_creation.query_result[0][0] is not search('ACCOUNT LOCK')
 
-    - name: 'Mysql_user Lock user | create locked | Idempotence check'
+    - name: 'Mariadb_user Lock user | create locked | Idempotence check'
       check_mode: true
       ansible.mariadb.mariadb_user:
         <<: *mariadb_params
@@ -47,7 +47,7 @@
       register: idempotence_check
       failed_when: idempotence_check is changed
 
-    - name: 'Mysql_user Lock user | create locked | Check that absense of locked does not unlock the user'
+    - name: 'Mariadb_user Lock user | create locked | Check that absense of locked does not unlock the user'
       check_mode: true
       ansible.mariadb.mariadb_user:
         <<: *mariadb_params
@@ -57,7 +57,7 @@
       register: idempotence_check
       failed_when: idempotence_check is changed
 
-    - name: 'Mysql_user Lock user | create locked | Unlock test user check_mode: true'
+    - name: 'Mariadb_user Lock user | create locked | Unlock test user check_mode: true'
       check_mode: true
       ansible.mariadb.mariadb_user:
         <<: *mariadb_params
@@ -66,7 +66,7 @@
         priv:
           'mariadb_lock_user_test.*': 'SELECT'
 
-    - name: Mysql_user Lock user | create locked | Assert that test user is locked
+    - name: Mariadb_user Lock user | create locked | Assert that test user is locked
       ansible.mariadb.mariadb_query:
         <<: *mariadb_params
         query:
@@ -75,7 +75,7 @@
       failed_when:
         - locked_user_creation.query_result[0][0] is not search('ACCOUNT LOCK')
 
-    - name: Mysql_user Lock user | create locked | Unlock test user
+    - name: Mariadb_user Lock user | create locked | Unlock test user
       ansible.mariadb.mariadb_user:
         <<: *mariadb_params
         name: mariadb_locked_user
@@ -83,7 +83,7 @@
         priv:
           'mariadb_lock_user_test.*': 'SELECT'
 
-    - name: Mysql_user Lock user | create locked | Assert that test user is not locked
+    - name: Mariadb_user Lock user | create locked | Assert that test user is not locked
       ansible.mariadb.mariadb_query:
         <<: *mariadb_params
         query:
@@ -92,91 +92,22 @@
       failed_when:
         - locked_user_creation.query_result[0][0] is search('ACCOUNT LOCK')
 
-    - name: Mysql_user Lock user | create locked | Remove test user
-      ansible.mariadb.mariadb_user:
-        <<: *mariadb_params
-        name: mariadb_locked_user
-        state: absent
-        
-    - name: Mysql_user Lock user | create unlocked | Create test user
-      ansible.mariadb.mariadb_user:
-        <<: *mariadb_params
-        name: mariadb_locked_user
-        password: 'msandbox'
-        locked: false
-        priv:
-          'mariadb_lock_user_test.*': 'SELECT'
-
-    - name: Mysql_user Lock user | create unlocked | Assert that test user is not locked
-      ansible.mariadb.mariadb_query:
-        <<: *mariadb_params
-        query:
-          - SHOW CREATE USER 'mariadb_locked_user'@'localhost'
-      register: locked_user_creation
-      failed_when:
-        - locked_user_creation.query_result[0][0] is search('ACCOUNT LOCK')
-
-    - name: 'Mysql_user Lock user | create unlocked | Idempotence check'
-      check_mode: true
-      ansible.mariadb.mariadb_user:
-        <<: *mariadb_params
-        name: mariadb_locked_user
-        locked: false
-        priv:
-          'mariadb_lock_user_test.*': 'SELECT'
-      register: idempotence_check
-      failed_when: idempotence_check is changed
-
-    - name: 'Mysql_user Lock user | create unlocked | Lock test user check_mode: true'
-      check_mode: true
-      ansible.mariadb.mariadb_user:
-        <<: *mariadb_params
-        name: mariadb_locked_user
-        locked: true
-        priv:
-          'mariadb_lock_user_test.*': 'SELECT'
-
-    - name: Mysql_user Lock user | create unlocked | Assert that test user is not locked
-      ansible.mariadb.mariadb_query:
-        <<: *mariadb_params
-        query:
-          - SHOW CREATE USER 'mariadb_locked_user'@'localhost'
-      register: locked_user_creation
-      failed_when:
-        - locked_user_creation.query_result[0][0] is search('ACCOUNT LOCK')
-
-    - name: Mysql_user Lock user | create unlocked | Lock test user
-      ansible.mariadb.mariadb_user:
-        <<: *mariadb_params
-        name: mariadb_locked_user
-        locked: true
-        priv:
-          'mariadb_lock_user_test.*': 'SELECT'
-
-    - name: Mysql_user Lock user | create unlocked | Assert that test user is locked
-      ansible.mariadb.mariadb_query:
-        <<: *mariadb_params
-        query:
-          - SHOW CREATE USER 'mariadb_locked_user'@'localhost'
-      register: locked_user_creation
-      failed_when:
-        - locked_user_creation.query_result[0][0] is not search('ACCOUNT LOCK')
-
-    - name: Mysql_user Lock user | create unlocked | Remove test user
+    - name: Mariadb_user Lock user | create locked | Remove test user
       ansible.mariadb.mariadb_user:
         <<: *mariadb_params
         name: mariadb_locked_user
         state: absent
 
-    - name: Mysql_user Lock user | create default | Create test user
+    - name: Mariadb_user Lock user | create unlocked | Create test user
       ansible.mariadb.mariadb_user:
         <<: *mariadb_params
         name: mariadb_locked_user
         password: 'msandbox'
+        locked: false
         priv:
           'mariadb_lock_user_test.*': 'SELECT'
 
-    - name: Mysql_user Lock user | create default | Assert that test user is not locked
+    - name: Mariadb_user Lock user | create unlocked | Assert that test user is not locked
       ansible.mariadb.mariadb_query:
         <<: *mariadb_params
         query:
@@ -185,7 +116,76 @@
       failed_when:
         - locked_user_creation.query_result[0][0] is search('ACCOUNT LOCK')
 
-    - name: Mysql_user Lock user | create default | Remove test user
+    - name: 'Mariadb_user Lock user | create unlocked | Idempotence check'
+      check_mode: true
+      ansible.mariadb.mariadb_user:
+        <<: *mariadb_params
+        name: mariadb_locked_user
+        locked: false
+        priv:
+          'mariadb_lock_user_test.*': 'SELECT'
+      register: idempotence_check
+      failed_when: idempotence_check is changed
+
+    - name: 'Mariadb_user Lock user | create unlocked | Lock test user check_mode: true'
+      check_mode: true
+      ansible.mariadb.mariadb_user:
+        <<: *mariadb_params
+        name: mariadb_locked_user
+        locked: true
+        priv:
+          'mariadb_lock_user_test.*': 'SELECT'
+
+    - name: Mariadb_user Lock user | create unlocked | Assert that test user is not locked
+      ansible.mariadb.mariadb_query:
+        <<: *mariadb_params
+        query:
+          - SHOW CREATE USER 'mariadb_locked_user'@'localhost'
+      register: locked_user_creation
+      failed_when:
+        - locked_user_creation.query_result[0][0] is search('ACCOUNT LOCK')
+
+    - name: Mariadb_user Lock user | create unlocked | Lock test user
+      ansible.mariadb.mariadb_user:
+        <<: *mariadb_params
+        name: mariadb_locked_user
+        locked: true
+        priv:
+          'mariadb_lock_user_test.*': 'SELECT'
+
+    - name: Mariadb_user Lock user | create unlocked | Assert that test user is locked
+      ansible.mariadb.mariadb_query:
+        <<: *mariadb_params
+        query:
+          - SHOW CREATE USER 'mariadb_locked_user'@'localhost'
+      register: locked_user_creation
+      failed_when:
+        - locked_user_creation.query_result[0][0] is not search('ACCOUNT LOCK')
+
+    - name: Mariadb_user Lock user | create unlocked | Remove test user
+      ansible.mariadb.mariadb_user:
+        <<: *mariadb_params
+        name: mariadb_locked_user
+        state: absent
+
+    - name: Mariadb_user Lock user | create default | Create test user
+      ansible.mariadb.mariadb_user:
+        <<: *mariadb_params
+        name: mariadb_locked_user
+        password: 'msandbox'
+        priv:
+          'mariadb_lock_user_test.*': 'SELECT'
+
+    - name: Mariadb_user Lock user | create default | Assert that test user is not locked
+      ansible.mariadb.mariadb_query:
+        <<: *mariadb_params
+        query:
+          - SHOW CREATE USER 'mariadb_locked_user'@'localhost'
+      register: locked_user_creation
+      failed_when:
+        - locked_user_creation.query_result[0][0] is search('ACCOUNT LOCK')
+
+    - name: Mariadb_user Lock user | create default | Remove test user
       ansible.mariadb.mariadb_user:
         <<: *mariadb_params
         name: mariadb_locked_user
@@ -193,7 +193,7 @@
 
     # ========================= Teardown ======================================
 
-    - name: Mysql_user Lock user | Delete test database
+    - name: Mariadb_user Lock user | Delete test database
       ansible.mariadb.mariadb_db:
         <<: *mariadb_params
         name: mariadb_lock_user_test
