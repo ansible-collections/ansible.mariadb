@@ -38,7 +38,7 @@
     - name: Dump all databases from the primary
       shell:
         cmd: >-
-          mysqldump
+          mariadb-dump
           -u{{ mariadb_user }}
           -p{{ mariadb_password }}
           -h{{ mariadb_host }}
