@@ -11,14 +11,14 @@
       login_port: '{{ mariadb_primary_port }}'
   tasks:
 
-    # Create default MySQL config file with credentials
+    # Create default MariaDB config file with credentials
     - name: Mariadb_info - create default config file
       template:
         src: my.cnf.j2
         dest: /root/.my.cnf
         mode: '0400'
 
-    # Create non-default MySQL config file with credentials
+    # Create non-default MariaDB config file with credentials
     - name: Mariadb_info - create non-default config file
       template:
         src: tests/integration/targets/test_mariadb_info/templates/my.cnf.j2

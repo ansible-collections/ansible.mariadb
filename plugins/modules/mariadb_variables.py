@@ -39,8 +39,7 @@ options:
     - C(persist_only) persists C(value) to the mysqld-auto.cnf option file in the data directory
       but without setting the global variable runtime value
       (the value will be changed after the next service restart).
-    - Supported by MySQL 8.0 or later.
-    - For more information see U(https://dev.mysql.com/doc/refman/8.0/en/set-variable.html).
+    - For more information see U(https://mariadb.com/docs/server/ha-and-performance/mariadb-memory-allocation#how-to-set-variables).
     type: str
     choices: ['global', 'persist', 'persist_only']
     default: global
@@ -57,12 +56,12 @@ attributes:
 
 seealso:
 - module: ansible.mariadb.mariadb_info
-- name: MySQL SET command reference
-  description: Complete reference of the MySQL SET command documentation.
-  link: https://dev.mysql.com/doc/refman/8.0/en/set-statement.html
+- name: MariaDB SET command reference
+  description: Complete reference of the MariaDB SET server system variables
+  link: https://mariadb.com/docs/server/server-management/variables-and-modes/server-system-variables
 
 notes:
-   - Compatible with MariaDB or MySQL.
+   - Compatible with MariaDB.
 
 extends_documentation_fragment:
 - ansible.mariadb.connect
@@ -83,7 +82,7 @@ EXAMPLES = r'''
     mode: persist
 
 - name: Set a boolean using ON/OFF notation
-  mysql_variables:
+  mariadb_variables:
     variable: log_slow_replica_statements
     value: "ON"  # Make sure it's quoted
 '''

@@ -120,7 +120,7 @@ make local_python_version="3.10" ansible="stable-2.18" db_engine_version="11.8.7
 
 ### Run all tests
 
-GitHub Action offer a test matrix that run every combination of MySQL, MariaDB and Connector against each other. To reproduce this, this repo provides a script called *run_all_tests.py*.
+GitHub Action offer a test matrix that run every combination of MariaDB and Connector against each other. To reproduce this, this repo provides a script called *run_all_tests.py*.
 
 Examples:
 

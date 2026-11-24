@@ -48,7 +48,7 @@ options:
     default: false
 
 notes:
-- Compatible with MariaDB or MySQL.
+- Compatible with MariaDB.
 - Calculating the size of a database might be slow, depending on the number and size of tables in it.
   To avoid this, use I(exclude_fields=db_size).
 - filters C(users_info) doesn't support MariaDB roles.
@@ -75,20 +75,20 @@ extends_documentation_fragment:
 '''
 
 EXAMPLES = r'''
-# Display info from mysql-hosts group (using creds from ~/.my.cnf to connect):
-# ansible mysql-hosts -m mysql_info
+# Display info from mariadb-hosts group (using creds from ~/.my.cnf to connect):
+# ansible mariadb-hosts -m mariadb_info
 
 # Display only databases and users info:
-# ansible mysql-hosts -m mysql_info -a 'filter=databases,users'
+# ansible mariadb-hosts -m mariadb_info -a 'filter=databases,users'
 
 # Display all users privileges:
-# ansible mysql-hosts -m mysql_info -a 'filter=users_info'
+# ansible mariadb-hosts -m mariadb_info -a 'filter=users_info'
 
 # Display only slave status:
-# ansible standby -m mysql_info -a 'filter=slave_status'
+# ansible standby -m mariadb_info -a 'filter=slave_status'
 
 # Display all info from databases group except settings:
-# ansible databases -m mysql_info -a 'filter=!settings'
+# ansible databases -m mariadb_info -a 'filter=!settings'
 
 # If you encounter the "Please explicitly state intended protocol" error,
 # use the login_unix_socket argument
@@ -97,7 +97,7 @@ EXAMPLES = r'''
     login_user: root
     login_unix_socket: /run/mysqld/mysqld.sock
 
-- name: Get MySQL version with non-default credentials
+- name: Get MariaDB version with non-default credentials
   ansible.mariadb.mariadb_info:
     login_user: mysuperuser
     login_password: mysuperpass
@@ -196,7 +196,7 @@ version:
       type: int
       sample: 60
     suffix:
-      description: Server suffix, for example MySQL, MariaDB, other or none.
+      description: Server suffix, for example MariaDB, other or none.
       returned: if not excluded by filter
       type: str
       sample: "MariaDB"
@@ -331,12 +331,12 @@ from ansible.module_utils.common.text.converters import to_native
 
 
 # ===========================================
-# MySQL module specific support methods.
+# MariaDB module specific support methods.
 #
 
 class MySQL_Info(object):
 
-    """Class for collection MySQL instance information.
+    """Class for collection MariaDB instance information.
 
     Arguments:
         module (AnsibleModule): Object of AnsibleModule class.
@@ -372,7 +372,7 @@ class MySQL_Info(object):
         }
 
     def get_info(self, filter_, exclude_fields, return_empty_dbs):
-        """Get MySQL instance information based on filter_.
+        """Get MariaDB instance information based on filter_.
 
         Arguments:
             filter_ (list): List of collected subsets (e.g., databases, users, etc.),
@@ -582,7 +582,7 @@ class MySQL_Info(object):
         """Get user privileges, passwords, resources_limits, ...
 
         Query the server to get all the users and return a string
-        of privileges that can be used by the mysql_user plugin.
+        of privileges that can be used by the mariadb_user plugin.
         For instance:
 
         "users_info": [
@@ -617,7 +617,7 @@ class MySQL_Info(object):
             priv_string = list()
             for db_table, priv in user_priv.items():
                 # Proxy privileges are hard to work with because of different quotes or
-                # backticks like ''@'', ''@'%' or even ``@``. In addition, MySQL will
+                # backticks like ''@'', ''@'%' or even ``@``. In addition, MariaDB will
                 # forbid you to grant a proxy privileges through TCP.
                 if set(priv) == {'PROXY', 'GRANT'} or set(priv) == {'PROXY'}:
                     continue
@@ -665,7 +665,7 @@ class MySQL_Info(object):
                 output_dict['locked'] = user_is_locked(self.cursor, user, host)
 
             # TODO password_option
-            # but both are not supported by mysql_user atm. So no point yet.
+            # but both are not supported by mariadb_user atm. So no point yet.
 
             output.append(output_dict)
 

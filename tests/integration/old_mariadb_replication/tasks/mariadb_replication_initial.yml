@@ -3,25 +3,25 @@
 
 # Preparation:
 - name: Create user for replication
-  shell: "echo \"GRANT REPLICATION SLAVE ON *.* TO '{{ replication_user }}'@'localhost' IDENTIFIED BY '{{ replication_pass }}'; FLUSH PRIVILEGES;\" | mysql -P {{ primary_db.port }} -h '{{ mysql_host }}'"
+  shell: "echo \"GRANT REPLICATION SLAVE ON *.* TO '{{ replication_user }}'@'localhost' IDENTIFIED BY '{{ replication_pass }}'; FLUSH PRIVILEGES;\" | mysql -P {{ primary_db.port }} -h '{{ mariadb_host }}'"
 
 - name: Create test database
   mariadb_db:
-    login_host: '{{ mysql_host }}'
+    login_host: '{{mariadb_host }}'
     login_port: '{{ primary_db.port }}'
     state: present
     name: '{{ test_db }}'
 
 - name: Dump all databases from the master
-  shell: 'mysqldump -P {{ primary_db.port }} -h 127.0.01 --all-databases --master-data=2 > {{ dump_path }}'
+  shell: 'mariadb-dump -P {{ primary_db.port }} -h 127.0.01 --all-databases --master-data=2 > {{ dump_path }}'
 
 - name: Restore the dump to the replica
-  shell: "mysql -P {{ replica_db.port }} -h '{{ mysql_host }}' < {{ dump_path }}"
+  shell: "mariadb -P {{ replica_db.port }} -h '{{ mariadb_host }}' < {{ dump_path }}"
 
 # Test getmaster mode:
 - name: Get master status
   mariadb_replication:
-    login_host: '{{ mysql_host }}'
+    login_host: '{{ mariadb_host }}'
     login_port: "{{ primary_db.port }}"
     mode: getmaster
   register: master_status
@@ -35,10 +35,10 @@
 # Test changemaster mode:
 - name: Run replication
   mariadb_replication:
-    login_host: '{{ mysql_host }}'
+    login_host: '{{ mariadb_host }}'
     login_port: "{{ replica_db.port }}"
     mode: changemaster
-    master_host: '{{ mysql_host }}'
+    master_host: '{{ mariadb_host }}'
     master_port: "{{ primary_db.port }}"
     master_user: "{{ replication_user }}"
     master_password: "{{ replication_pass }}"
@@ -54,7 +54,7 @@
 # Test startslave mode:
 - name: Start slave
   mariadb_replication:
-    login_host: '{{ mysql_host }}'
+    login_host: '{{ mariadb_host }}'
     login_port: "{{ replica_db.port }}"
     mode: startslave
   register: result
@@ -67,7 +67,7 @@
 # Test getslave mode:
 - name: Get replica status
   mariadb_replication:
-    login_host: '{{ mysql_host }}'
+    login_host: '{{ mariadb_host }}'
     login_port: "{{ replica_db.port }}"
     mode: getslave
   register: slave_status
@@ -75,7 +75,7 @@
 - assert:
     that:
     - slave_status.Is_Slave == true
-    - slave_status.Master_Host == ''{{ mysql_host }}''
+    - slave_status.Master_Host == ''{{ mariadb_host }}''
     - slave_status.Exec_Master_Log_Pos == master_status.Position
     - slave_status.Master_Port == {{ primary_db.port }}
     - slave_status.Last_IO_Errno == 0
@@ -85,7 +85,7 @@
 # Test stopslave mode:
 - name: Stop slave
   mariadb_replication:
-    login_host: '{{ mysql_host }}'
+    login_host: '{{ mariadb_host }}'
     login_port: "{{ replica_db.port }}"
     mode: stopslave
   register: result

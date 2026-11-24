@@ -66,7 +66,7 @@ def get_tls_requires(cursor, user, host):
     cursor.execute(query, (user, host))
     res = cursor.fetchone()
 
-    # Mysql_info use a DictCursor so we must convert back to a list
+    # mariadb_info use a DictCursor so we must convert back to a list
     # otherwise we get KeyError 0
     if isinstance(res, dict):
         res = list(res.values())
@@ -183,7 +183,7 @@ def get_existing_authentication(cursor, user, host=None):
     """
     cursor.execute("SELECT VERSION()")
     srv_type = cursor.fetchone()
-    # Mysql_info use a DictCursor so we must convert back to a list
+    # mariadb_info use a DictCursor so we must convert back to a list
     # otherwise we get KeyError 0
     if isinstance(srv_type, dict):
         srv_type = list(srv_type.values())
@@ -209,7 +209,7 @@ def get_existing_authentication(cursor, user, host=None):
     if len(rows) == 0:
         return []
 
-    # Mysql_info use a DictCursor so we must convert list(dict)
+    # mariadb_info use a DictCursor so we must convert list(dict)
     # to list(tuple) otherwise we get KeyError 0
     if isinstance(rows[0], dict):
         rows = [tuple(row.values()) for row in rows]
@@ -217,7 +217,7 @@ def get_existing_authentication(cursor, user, host=None):
     existing_auth_list = []
 
     # 'plugin_auth_string' contains the hash string.
-    # Removed from mysql_info output in c.mysql 4.0.0
+    # Removed from mariadb_info output in c.mysql 4.0.0
     # See https://github.com/ansible-collections/ansible.mysql/pull/629
     for r in rows:
         existing_auth_list.append({
@@ -659,7 +659,7 @@ def privileges_get(cursor, user, host, role=False):
 
     for grant in grants:
 
-        # Mysql_info use a DictCursor so we must convert back to a list
+        # mariadb_info use a DictCursor so we must convert back to a list
         # otherwise we get KeyError 0
         if isinstance(grant, dict):
             grant = list(grant.values())
@@ -676,7 +676,7 @@ def privileges_get(cursor, user, host, role=False):
             # or
             # SET DEFAULT ROLE `admin`@`%` FOR `user1`@`localhost`
             # which will result None as res value.
-            # As we use the mysql_role module to manipulate roles
+            # As we use the mariadb_role module to manipulate roles
             # we just ignore such privs below:
             res = re.match(
                 """GRANT (.+) TO (['`"]).*|SET DEFAULT ROLE (.+) FOR (['`"]).*""",
@@ -710,7 +710,7 @@ def normalize_col_grants(privileges):
 
     Make ['SELECT (A, B)', 'INSERT (A, B)', 'DETELE']
     from ['SELECT (A', 'B)', 'INSERT (B', 'A)', 'DELETE'].
-    See unit tests in tests/unit/plugins/modules/test_mysql_user.py
+    See unit tests in tests/unit/plugins/modules/test_mariadb_user.py
     """
     for grant in ('SELECT', 'UPDATE', 'INSERT', 'REFERENCES'):
         start, end = has_grant_on_col(privileges, grant)
@@ -779,15 +779,15 @@ def handle_grant_on_col(privileges, start, end):
 def sort_column_order(statement):
     """Sort column order in grants like SELECT (colA, colB, ...).
 
-    MySQL changes columns order like below:
+    MariaDB changes columns order like below:
     ---------------------------------------
-    mysql> GRANT SELECT (testColA, testColB), INSERT ON `testDb`.`testTable` TO 'testUser'@'localhost';
+    mariadb> GRANT SELECT (testColA, testColB), INSERT ON `testDb`.`testTable` TO 'testUser'@'localhost';
     Query OK, 0 rows affected (0.04 sec)
 
-    mysql> flush privileges;
+    mariadb> flush privileges;
     Query OK, 0 rows affected (0.00 sec)
 
-    mysql> SHOW GRANTS FOR testUser@localhost;
+    mariadb> SHOW GRANTS FOR testUser@localhost;
     +---------------------------------------------------------------------------------------------+
     | Grants for testUser@localhost                                                               |
     +---------------------------------------------------------------------------------------------+
@@ -828,7 +828,7 @@ def privileges_unpack(priv, mode, column_case_sensitive, ensure_usage=True):
      mydb.*:INSERT,UPDATE/anotherdb.*:SELECT/yetanother.*:ALL
 
     The privilege USAGE stands for no privileges, so we add that in on *.* if it's
-    not specified in the string, as MySQL will always provide this by default.
+    not specified in the string, as MariaDB will always provide this by default.
     """
     if mode == 'ANSI':
         quote = '"'
@@ -877,7 +877,7 @@ def privileges_unpack(priv, mode, column_case_sensitive, ensure_usage=True):
 
 
 def privileges_revoke(cursor, user, host, db_table, priv, grant_option, role=False):
-    # Escape '%' since mysql db.execute() uses a format string
+    # Escape '%' since mariadb db.execute() uses a format string
     db_table = db_table.replace('%', '%%')
     if grant_option:
         query = ["REVOKE GRANT OPTION ON %s" % db_table]
@@ -979,7 +979,7 @@ def get_resource_limits(cursor, user, host):
     cursor.execute(query, (user, host))
     res = cursor.fetchone()
 
-    # Mysql_info use a DictCursor so we must convert back to a list
+    # mariadb_info use a DictCursor so we must convert back to a list
     # otherwise we get KeyError 0
     if isinstance(res, dict):
         res = list(res.values())
@@ -996,7 +996,7 @@ def get_resource_limits(cursor, user, host):
 
     cursor.execute("SELECT VERSION()")
     srv_type = cursor.fetchone()
-    # Mysql_info use a DictCursor so we must convert back to a list
+    # mariadb_info use a DictCursor so we must convert back to a list
     # otherwise we get KeyError 0
     if isinstance(srv_type, dict):
         srv_type = list(srv_type.values())
@@ -1007,7 +1007,7 @@ def get_resource_limits(cursor, user, host):
         cursor.execute(query, (user, host))
         res_max_statement_time = cursor.fetchone()
 
-        # Mysql_info use a DictCursor so we must convert back to a list
+        # mariadb_info use a DictCursor so we must convert back to a list
         # otherwise we get KeyError 0
         if isinstance(res_max_statement_time, dict):
             res_max_statement_time = list(res_max_statement_time.values())
@@ -1157,7 +1157,7 @@ def is_password_expired(cursor, user, host):
 
 
 def get_attribute_support(cursor):
-    """Checks if the MySQL server supports user attributes.
+    """Checks if the MariaDB server supports user attributes.
 
     Args:
         cursor (cursor): DB driver cursor object.
@@ -1188,7 +1188,7 @@ def attributes_get(cursor, user, host):
     cursor.execute("SELECT attribute FROM INFORMATION_SCHEMA.USER_ATTRIBUTES WHERE user = %s AND host = %s", (user, host))
 
     r = cursor.fetchone()
-    # convert JSON string stored in row into a dict - mysql enforces that user_attributes entires are in JSON format
+    # convert JSON string stored in row into a dict - MariaDB enforces that user_attributes entires are in JSON format
     j = json.loads(r[0]) if r and r[0] else None
 
     # if the attributes dict is empty, return None instead

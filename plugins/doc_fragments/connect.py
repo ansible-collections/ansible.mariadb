@@ -9,7 +9,7 @@ __metaclass__ = type
 
 class ModuleDocFragment(object):
 
-    # Standard mysql documentation fragment
+    # Common documentation fragment for connection shared accross modules
     DOCUMENTATION = r'''
 options:
   login_user:
@@ -29,7 +29,7 @@ options:
     default: localhost
   login_port:
     description:
-      - Port of the MySQL server. Requires I(login_host) be defined as other than localhost if login_port is used.
+      - Port of the MariaDB server. Requires I(login_host) be defined as other than localhost if login_port is used.
     type: int
     default: 3306
   login_unix_socket:
@@ -39,14 +39,14 @@ options:
     type: str
   connect_timeout:
     description:
-      - The connection timeout when connecting to the MySQL server.
+      - The connection timeout when connecting to the MariaDB server.
     type: int
     default: 30
   config_file:
     description:
       - Specify a config file from which user and password are to be read.
       - The default config file, C(~/.my.cnf), if it exists, will be read, even if I(config_file) is not specified.
-      - The default config file, C(~/.my.cnf), if it exists, must contain a C([client]) section as a MySQL connector requirement.
+      - The default config file, C(~/.my.cnf), if it exists, must contain a C([client]) section as a MariaDB connector requirement.
       - To prevent the default config file from being read, set I(config_file) to be an empty string.
     type: path
     default: '~/.my.cnf'
@@ -68,7 +68,7 @@ options:
     aliases: [ ssl_key ]
   check_hostname:
     description:
-      - Whether to validate the server host name when an SSL connection is required. Corresponds to MySQL CLIs C(--ssl) switch.
+      - Whether to validate the server host name when an SSL connection is required. Corresponds to MariaDB CLIs C(--ssl) switch.
       - Setting this to C(false) disables hostname verification. Use with caution.
       - Requires pymysql >= 0.7.11.
     type: bool
@@ -89,7 +89,7 @@ notes:
      U(https://docs.ansible.com/ansible/latest/reference_appendices/interpreter_discovery.html).
    - Both C(login_password) and C(login_user) are required when you are
      passing credentials. If none are present, the module will attempt to read
-     the credentials from C(~/.my.cnf), and finally fall back to using the MySQL
+     the credentials from C(~/.my.cnf), and finally fall back to using the MariaDB
      default login of 'root' with no password.
    - If there are problems with local connections, using I(login_unix_socket=/path/to/mysqld/socket)
      instead of I(login_host=localhost) might help. As an example, the default MariaDB installation of version 10.4

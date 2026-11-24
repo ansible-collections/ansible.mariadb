@@ -4,20 +4,20 @@
 # Needs for further tests:
 - name: Stop slave
   mariadb_replication:
-    login_host: '{{ mysql_host }}'
+    login_host: '{{ mariadb_host }}'
     login_port: "{{ replica_db.port }}"
     mode: stopslave
 
 - name: Reset slave all
   mariadb_replication:
-    login_host: '{{ mysql_host }}'
+    login_host: '{{ mariadb_host }}'
     login_port: "{{ replica_db.port }}"
     mode: resetslaveall
 
 # Get master log pos:
 - name: Get master status
   mariadb_replication:
-    login_host: '{{ mysql_host }}'
+    login_host: '{{ mariadb_host }}'
     login_port: "{{ primary_db.port }}"
     mode: getmaster
   register: primary_status
@@ -25,10 +25,10 @@
 # Test changemaster mode:
 - name: Run replication with connection_name
   mariadb_replication:
-    login_host: '{{ mysql_host }}'
+    login_host: '{{ mariadb_host }}'
     login_port: "{{ replica_db.port }}"
     mode: changemaster
-    master_host: '{{ mysql_host }}'
+    master_host: '{{ mariadb_host }}'
     master_port: "{{ primary_db.port }}"
     master_user: "{{ replication_user }}"
     master_password: "{{ replication_pass }}"
@@ -45,7 +45,7 @@
 # Test startslave mode:
 - name: Start slave with connection_name
   mariadb_replication:
-    login_host: '{{ mysql_host }}'
+    login_host: '{{ mariadb_host }}'
     login_port: "{{ replica_db.port }}"
     mode: startslave
     connection_name: "{{ conn_name }}"
@@ -59,7 +59,7 @@
 # Test getslave mode:
 - name: Get standby statu with connection_name
   mariadb_replication:
-    login_host: '{{ mysql_host }}'
+    login_host: '{{ mariadb_host }}'
     login_port: "{{ replica_db.port }}"
     mode: getslave
     connection_name: "{{ conn_name }}"
@@ -68,7 +68,7 @@
 - assert:
     that:
     - slave_status.Is_Slave == true
-    - slave_status.Master_Host == ''{{ mysql_host }}''
+    - slave_status.Master_Host == ''{{ mariadb_host }}''
     - slave_status.Exec_Master_Log_Pos == primary_status.Position
     - slave_status.Master_Port == {{ primary_db.port }}
     - slave_status.Last_IO_Errno == 0
@@ -78,7 +78,7 @@
 # Test stopslave mode:
 - name: Stop slave with connection_name
   mariadb_replication:
-    login_host: '{{ mysql_host }}'
+    login_host: '{{ mariadb_host }}'
     login_port: "{{ replica_db.port }}"
     mode: stopslave
     connection_name: "{{ conn_name }}"
@@ -92,7 +92,7 @@
 # Test reset
 - name: Reset slave with connection_name
   mariadb_replication:
-    login_host: '{{ mysql_host }}'
+    login_host: '{{ mariadb_host }}'
     login_port: "{{ replica_db.port }}"
     mode: resetslave
     connection_name: "{{ conn_name }}"
@@ -106,7 +106,7 @@
 # Test reset all
 - name: Reset slave all with connection_name
   mariadb_replication:
-    login_host: '{{ mysql_host }}'
+    login_host: '{{ mariadb_host }}'
     login_port: "{{ replica_db.port }}"
     mode: resetslaveall
     connection_name: "{{ conn_name }}"

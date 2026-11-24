@@ -16,7 +16,6 @@ short_description: Manage MariaDB replication filters
 description:
   - This module only supports MariaDB; all MySQL-related options will be removed in the next releases. Use the C(ansible.mysql) collection for MySQL automation.
   - Manage replica-side replication filters declaratively.
-  - MySQL uses C(CHANGE REPLICATION FILTER).
   - MariaDB uses C(SET GLOBAL replicate_*) variables.
   - Changes are runtime only and are not persisted across restart by this module.
   - Persist filter settings separately through server configuration if they must survive a restart.
@@ -80,7 +79,7 @@ options:
     type: str
 
 notes:
-  - Compatible with MariaDB or MySQL.
+  - Compatible with MariaDB.
   - At least one replication filter option must be provided.
   - Unspecified filters are left unchanged.
 
@@ -95,20 +94,20 @@ extends_documentation_fragment:
 '''
 
 EXAMPLES = r'''
-- name: Ignore one database on a MySQL replica
+- name: Ignore one database on a MariaDB replica
   ansible.mariadb.mariadb_replication_filter:
     login_unix_socket: /run/mysqld/mysqld.sock
     replicate_ignore_db:
       - audit
 
-- name: Replicate selected tables on a MySQL replica
+- name: Replicate selected tables on a MariaDB replica
   ansible.mariadb.mariadb_replication_filter:
     login_unix_socket: /run/mysqld/mysqld.sock
     replicate_do_table:
       - app.orders
       - reporting.summary
 
-- name: Set wildcard filters on a MySQL replica
+- name: Set wildcard filters on a MariaDB replica
   ansible.mariadb.mariadb_replication_filter:
     login_unix_socket: /run/mysqld/mysqld.sock
     replicate_wild_do_table:
@@ -118,7 +117,7 @@ EXAMPLES = r'''
       - archive.old_%
       - tmp.%
 
-- name: Set multiple MySQL filters in one task
+- name: Set multiple MariaDB filters in one task
   ansible.mariadb.mariadb_replication_filter:
     login_unix_socket: /run/mysqld/mysqld.sock
     replicate_do_db:

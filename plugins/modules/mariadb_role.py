@@ -17,7 +17,7 @@ description:
    - This module only supports MariaDB; all MySQL-related options will be removed in the next releases.
      Use the C(ansible.mysql) collection for MySQL automation.
    - Adds, removes, or updates a MariaDB role.
-   - Roles are supported since MySQL 8.0.0 and MariaDB 10.0.5.
+   - Roles are supported MariaDB 10.0.5.
 
 version_added: '2.2.0'
 
@@ -36,11 +36,11 @@ options:
 
   priv:
     description:
-      - "MySQL privileges string in the format: C(db.table:priv1,priv2)."
+      - "MariaDB privileges string in the format: C(db.table:priv1,priv2)."
       - "You can specify multiple privileges by separating each one using
         a forward slash: C(db.table:priv/db.table:priv)."
-      - The format is based on MySQL C(GRANT) statement.
-      - Database and table names can be quoted, MySQL-style.
+      - The format is based on MariaDB C(GRANT) statement.
+      - Database and table names can be quoted, MariaDB-style.
       - If column privileges are used, the C(priv1,priv2) part must be
         exactly as returned by a C(SHOW GRANT) statement. If not followed,
         the module will always report changes. It includes grouping columns
@@ -111,7 +111,7 @@ options:
 
   check_implicit_admin:
     description:
-      - Check if mysql allows login as root/nopassword before trying supplied credentials.
+      - Check if MariaDB allows login as root/nopassword before trying supplied credentials.
       - If success, passed I(login_user)/I(login_password) will be ignored.
     type: bool
     default: false
@@ -128,7 +128,7 @@ options:
       - The default is C(true).
       - When C(true), the module will not uppercase the field in the privileges.
       - When C(false), the field names will be upper-cased. This was the default before this
-        feature was introduced but since MySQL/MariaDB is case sensitive you should set this
+        feature was introduced but since MariaDB is case sensitive you should set this
         to C(true) in most cases.
       - The default changed from C(false) to C(true) in v4.0.0
     type: bool
@@ -143,7 +143,7 @@ options:
     version_added: '4.1.0'
 
 notes:
-  - Roles are supported since MySQL 8.0.0 and MariaDB 10.0.5.
+  - Roles are supported since MariaDB 10.0.5.
   - Pay attention that the module runs C(SET DEFAULT ROLE ALL TO)
     all the I(members) passed by default when the state has changed.
     If you want to avoid this behavior, set I(set_default_role_all) to C(no).
@@ -156,9 +156,9 @@ attributes:
 
 seealso:
   - module: ansible.mariadb.mariadb_user
-  - name: MySQL role reference
-    description: Complete reference of the MySQL role documentation.
-    link: https://dev.mysql.com/doc/refman/8.0/en/create-role.html
+  - name: MariaDB role reference
+    description: Complete reference of the MariaDB role documentation.
+    link: https://mariadb.com/docs/server/reference/sql-statements/account-management-sql-statements/create-role
 
 author:
   - Andrew Klychkov (@Andersson007)

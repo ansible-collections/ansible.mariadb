@@ -37,7 +37,7 @@ options:
     elements: str
 
 notes:
-  - Compatible with MariaDB or MySQL.
+  - Compatible with MariaDB.
   - The module does not modify server state.
   - The module requires binary logging to be enabled and fails when C(log_bin=OFF).
   - Some mutable binlog settings are dynamic and can be managed with M(ansible.mariadb.mariadb_variables).
