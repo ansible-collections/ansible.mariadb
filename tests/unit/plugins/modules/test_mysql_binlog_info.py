@@ -18,12 +18,13 @@ def test_get_info_returns_requested_subsets_with_normalized_totals():
         "SHOW GLOBAL VARIABLES LIKE 'log_bin'": [
             {'Variable_name': 'log_bin', 'Value': 'ON'}
         ],
-        'SHOW BINARY LOG STATUS': [
-            {'File': 'binlog.000003', 'Position': '456', 'Executed_Gtid_Set': 'uuid:1-9'}
+        'SHOW BINLOG STATUS': [
+            {'File': 'binlog.000003', 'Position': '456', 'Binlog_Do_DB': '', 'Binlog_Ignore_DB': ''}
         ],
+        'SELECT @@global.gtid_binlog_pos AS gtid_binlog_pos': [],
         'SHOW BINARY LOGS': [
-            {'Log_name': 'binlog.000001', 'File_size': '123', 'Encrypted': 'No'},
-            {'Log_name': 'binlog.000002', 'File_size': '456', 'Encrypted': 'Yes'},
+            {'Log_name': 'binlog.000001', 'File_size': '123'},
+            {'Log_name': 'binlog.000002', 'File_size': '456'},
         ],
     }
 
@@ -34,7 +35,7 @@ def test_get_info_returns_requested_subsets_with_normalized_totals():
 
     cursor.execute.side_effect = execute_side_effect
 
-    info = MySQL_Binlog_Info(MagicMock(), cursor, 'mysql', '8.4.9')
+    info = MySQL_Binlog_Info(MagicMock(), cursor, 'mariadb', '11.8.7')
 
     result = info.get_info(['current', 'logs', 'totals'])
 
@@ -42,11 +43,11 @@ def test_get_info_returns_requested_subsets_with_normalized_totals():
         'current': {
             'file': 'binlog.000003',
             'position': 456,
-            'executed_gtid_set': 'uuid:1-9',
+            'executed_gtid_set': None,
         },
         'logs': [
-            {'name': 'binlog.000001', 'size': 123, 'encrypted': 'No'},
-            {'name': 'binlog.000002', 'size': 456, 'encrypted': 'Yes'},
+            {'name': 'binlog.000001', 'size': 123, 'encrypted': None},
+            {'name': 'binlog.000002', 'size': 456, 'encrypted': None},
         ],
         'totals': {
             'count': 2,
@@ -66,7 +67,7 @@ def test_get_info_settings_returns_only_binlog_related_variables():
             {'Variable_name': 'binlog_format', 'Value': 'ROW'},
             {'Variable_name': 'max_binlog_size', 'Value': '1048576'},
             {'Variable_name': 'sync_binlog', 'Value': '1'},
-            {'Variable_name': 'version', 'Value': '8.4.9'},
+            {'Variable_name': 'version', 'Value': '11.8.7'},
         ],
     }
 
@@ -75,7 +76,7 @@ def test_get_info_settings_returns_only_binlog_related_variables():
 
     cursor.execute.side_effect = execute_side_effect
 
-    info = MySQL_Binlog_Info(MagicMock(), cursor, 'mysql', '8.4.9')
+    info = MySQL_Binlog_Info(MagicMock(), cursor, 'mariadb', '11.8.7')
 
     result = info.get_info(['settings'])
 
@@ -129,11 +130,12 @@ def test_get_info_exclusion_filter_omits_requested_subset():
         "SHOW GLOBAL VARIABLES LIKE 'log_bin'": [
             {'Variable_name': 'log_bin', 'Value': 'ON'}
         ],
-        'SHOW BINARY LOG STATUS': [
-            {'File': 'binlog.000003', 'Position': '456', 'Executed_Gtid_Set': 'uuid:1-9'}
+        'SHOW BINLOG STATUS': [
+            {'File': 'binlog.000003', 'Position': '456'}
         ],
+        'SELECT @@global.gtid_binlog_pos AS gtid_binlog_pos': [],
         'SHOW BINARY LOGS': [
-            {'Log_name': 'binlog.000001', 'File_size': '123', 'Encrypted': 'No'},
+            {'Log_name': 'binlog.000001', 'File_size': '123'},
         ],
     }
 
@@ -144,7 +146,7 @@ def test_get_info_exclusion_filter_omits_requested_subset():
 
     cursor.execute.side_effect = execute_side_effect
 
-    info = MySQL_Binlog_Info(MagicMock(), cursor, 'mysql', '8.4.9')
+    info = MySQL_Binlog_Info(MagicMock(), cursor, 'mariadb', '11.8.7')
 
     result = info.get_info(['!settings'])
 
@@ -152,10 +154,10 @@ def test_get_info_exclusion_filter_omits_requested_subset():
         'current': {
             'file': 'binlog.000003',
             'position': 456,
-            'executed_gtid_set': 'uuid:1-9',
+            'executed_gtid_set': None,
         },
         'logs': [
-            {'name': 'binlog.000001', 'size': 123, 'encrypted': 'No'},
+            {'name': 'binlog.000001', 'size': 123, 'encrypted': None},
         ],
         'totals': {
             'count': 1,
@@ -173,7 +175,7 @@ def test_get_info_fails_when_binary_logging_is_disabled():
     module = MagicMock()
     module.fail_json.side_effect = RuntimeError
 
-    info = MySQL_Binlog_Info(module, cursor, 'mysql', '8.4.9')
+    info = MySQL_Binlog_Info(module, cursor, 'mariadb', '11.8.7')
 
     with pytest.raises(RuntimeError):
         info.get_info(['settings'])

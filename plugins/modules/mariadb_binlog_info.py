@@ -154,7 +154,7 @@ class MySQL_Binlog_Info(object):
         self.module = module
         self.cursor = cursor
         self.server_implementation = server_implementation
-        self.command_resolver = CommandResolver(server_implementation, server_version)
+        self.command_resolver = CommandResolver(server_version)
         self.info = {
             'current': {},
             'logs': [],

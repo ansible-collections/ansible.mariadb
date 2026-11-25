@@ -568,7 +568,7 @@ def main():
             module.fail_json(msg="unable to find %s. Exception message: %s" % (config_file, to_native(e)))
 
     server_version = get_server_version(cursor)
-    command_resolver = CommandResolver('mariadb', server_version)
+    command_resolver = CommandResolver(server_version)
     cursor.execute("SELECT VERSION()")
     from ansible_collections.ansible.mariadb.plugins.module_utils.replication import uses_replica_terminology
 
