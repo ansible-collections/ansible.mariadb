@@ -30,7 +30,7 @@ options:
       C(getreplica) (SHOW REPLICA STATUS),
       C(startreplica) (START REPLICA),
       C(stopreplica) (STOP REPLICA),
-      C(resetprimary) (RESET MASTER) - supported since ansible.mysql 0.1.0,
+      C(resetprimary) (RESET MASTER),
       C(resetreplica) (RESET REPLICA),
       C(resetreplicaall) (RESET REPLICA ALL).
     type: str
