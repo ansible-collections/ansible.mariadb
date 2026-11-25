@@ -148,14 +148,14 @@ options:
     description:
       - User's plugin auth_string (``CREATE USER user IDENTIFIED WITH plugin BY plugin_auth_string``).
       - If I(plugin) is ``pam`` (MariaDB) or ``auth_pam`` (MySQL) an optional I(plugin_auth_string) can be used to choose a specific PAM service.
-      - You need to define a I(salt) to have idempotence on password change with ``caching_sha2_password`` and ``sha256_password`` plugins.
+      - You need to define a I(salt) to have idempotence on password change with the ``caching_sha2_password`` plugin.
     type: str
     version_added: '0.1.0'
   salt:
     description:
       - Salt used to generate password hash from I(plugin_auth_string).
       - Salt length must be 20 characters.
-      - Salt only support ``caching_sha2_password`` or ``sha256_password`` authentication I(plugin).
+      - Salt is only supported with the ``caching_sha2_password`` authentication I(plugin).
     type: str
     version_added: '3.10.0'
   resource_limits:
@@ -555,8 +555,8 @@ def main():
             module.fail_json(msg="salt requires plugin_auth_string")
         if len(salt) != 20:
             module.fail_json(msg="salt must be 20 characters long")
-        if plugin not in ['caching_sha2_password', 'sha256_password']:
-            module.fail_json(msg="salt requires caching_sha2_password or sha256_password plugin")
+        if plugin != 'caching_sha2_password':
+            module.fail_json(msg="salt requires caching_sha2_password plugin")
 
     cursor = None
     try:

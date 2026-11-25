@@ -329,27 +329,25 @@ from ansible_collections.ansible.mariadb.plugins.module_utils.connect import (
     common_argument_spec
 )
 from ansible_collections.ansible.mariadb.plugins.module_utils.user import (
+    _privileges_mod,
     convert_priv_dict_to_str,
-    get_user_implementation,
     get_mode,
-    user_mod,
     privileges_grant,
     privileges_unpack,
 )
 from ansible.module_utils.common.text.converters import to_native
 
 
-def normalize_users(module, users, is_mariadb=False):
+def normalize_users(module, users):
     """Normalize passed user names.
 
     Example of transformation:
-    ['user0'] => [('user0', '')] / ['user0'] => [('user0', '%')]
+    ['user0'] => [('user0', '')]
     ['user0@host0'] => [('user0', 'host0')]
 
     Args:
         module (AnsibleModule): Object of the AnsibleModule class.
         users (list): List of user names.
-        is_mariadb (bool): Flag indicating we are working with MariaDB
 
     Returns:
         list: List of tuples like [('user0', ''), ('user0', 'host0')].
@@ -364,10 +362,7 @@ def normalize_users(module, users, is_mariadb=False):
                 module.fail_json(msg="Member's name cannot be empty.")
 
             if len(tmp) == 1:
-                if not is_mariadb:
-                    normalized_users.append((tmp[0], '%'))
-                else:
-                    normalized_users.append((tmp[0], ''))
+                normalized_users.append((tmp[0], ''))
 
             elif len(tmp) == 2:
                 normalized_users.append((tmp[0], tmp[1]))
@@ -391,8 +386,6 @@ class DbServer():
     Attributes:
         module (AnsibleModule): Object of the AnsibleModule class.
         cursor (cursor): Cursor object of a database Python connector.
-        role_impl (library): Corresponding library depending
-            on a server type (MariaDB or MySQL)
         mariadb (bool): True if MariaDB, False otherwise.
         roles_supported (bool): True if roles are supported, False otherwise.
         users (set): Set of users existing in a DB in the form (username, hostname).
@@ -400,41 +393,7 @@ class DbServer():
     def __init__(self, module, cursor):
         self.module = module
         self.cursor = cursor
-        self.role_impl = self.get_implementation()
-        self.mariadb = self.role_impl.is_mariadb()
-        self.roles_supported = self.role_impl.supports_roles(self.cursor)
         self.users = set(self.__get_users())
-
-    def is_mariadb(self):
-        """Get info whether a DB server is a MariaDB instance.
-
-        Returns:
-            self.mariadb: Attribute value.
-        """
-        return self.mariadb
-
-    def supports_roles(self):
-        """Get info whether a DB server supports roles.
-
-        Returns:
-            self.roles_supported: Attribute value.
-        """
-        return self.roles_supported
-
-    def get_implementation(self):
-        """Get a current server implementation depending on its type.
-
-        Returns:
-            library: Depending on a server type (MySQL or MariaDB).
-        """
-        self.cursor.execute("SELECT VERSION()")
-
-        if 'mariadb' in self.cursor.fetchone()[0].lower():
-            import ansible_collections.ansible.mariadb.plugins.module_utils.implementations.mariadb.role as role_impl
-        else:
-            import ansible_collections.ansible.mariadb.plugins.module_utils.implementations.mysql.role as role_impl
-
-        return role_impl
 
     def check_users_in_db(self, users):
         """Check if users exist in a database.
@@ -617,119 +576,6 @@ class MariaDBQueryBuilder():
             return 'CREATE ROLE %s WITH ADMIN %s', (self.name, admin[0])
 
 
-class MySQLRoleImpl():
-    """Class to work with MySQL role implementation.
-
-    Args:
-        module (AnsibleModule): Object of the AnsibleModule class.
-        cursor (cursor): Cursor object of a database Python connector.
-        name (str): Role name.
-        host (str): Role host.
-
-    Attributes:
-        module (AnsibleModule): Object of the AnsibleModule class.
-        cursor (cursor): Cursor object of a database Python connector.
-        name (str): Role name.
-        host (str): Role host.
-    """
-    def __init__(self, module, cursor, name, host):
-        self.module = module
-        self.cursor = cursor
-        self.name = name
-        self.host = host
-
-    def set_default_role_all(self, user):
-        """Run 'SET DEFAULT ROLE ALL TO' a user.
-
-        Args:
-            user (tuple): User / role to run the command against in the form (username, hostname).
-        """
-        if user[1]:
-            self.cursor.execute('SET DEFAULT ROLE ALL TO %s@%s', (user[0], user[1]))
-        else:
-            self.cursor.execute('SET DEFAULT ROLE ALL TO %s', (user[0],))
-
-    def get_admin(self):
-        """Get a current admin of a role.
-
-        Not supported by MySQL, so ignored here.
-        """
-        pass
-
-    def set_admin(self, admin):
-        """Set an admin of a role.
-
-        Not supported by MySQL, so ignored here.
-
-        TODO: Implement the feature if this gets supported.
-
-        Args:
-            admin (tuple): Admin user of the role in the form (username, hostname).
-        """
-        pass
-
-
-class MariaDBRoleImpl():
-    """Class to work with MariaDB role implementation.
-
-    Args:
-        module (AnsibleModule): Object of the AnsibleModule class.
-        cursor (cursor): Cursor object of a database Python connector.
-        name (str): Role name.
-
-    Attributes:
-        module (AnsibleModule): Object of the AnsibleModule class.
-        cursor (cursor): Cursor object of a database Python connector.
-        name (str): Role name.
-    """
-    def __init__(self, module, cursor, name):
-        self.module = module
-        self.cursor = cursor
-        self.name = name
-
-    def set_default_role_all(self, user):
-        """Run 'SET DEFAULT ROLE ALL TO' a user.
-
-        The command is not supported by MariaDB, ignored.
-
-        Args:
-            user (tuple): User / role to run the command against in the form (username, hostname).
-        """
-        pass
-
-    def get_admin(self):
-        """Get a current admin of a role.
-
-        Returns:
-            tuple: Of the form (username, hostname).
-        """
-        query = ("SELECT User, Host FROM mysql.roles_mapping "
-                 "WHERE Role = %s and Admin_option = 'Y'")
-
-        self.cursor.execute(query, (self.name,))
-        return self.cursor.fetchone()
-
-    def set_admin(self, admin):
-        """Set an admin of a role.
-
-        TODO: Implement changing when ALTER ROLE statement to
-            change role's admin gets supported.
-
-        Args:
-            admin (tuple): Admin user of the role in the form (username, hostname).
-        """
-        admin_user = admin[0]
-        admin_host = admin[1]
-        current_admin = self.get_admin()
-
-        if (admin_user, admin_host) != current_admin:
-            msg = ('The "admin" option value and the current '
-                   'roles admin (%s@%s) don not match. Ignored. '
-                   'To change the admin, you need to drop and create the '
-                   'role again.' % (current_admin[0], current_admin[1]))
-            self.module.warn(msg)
-
-
 class Role():
     """Class to work with MySQL role objects.
 
@@ -754,24 +600,56 @@ class Role():
         self.cursor = cursor
         self.name = name
         self.server = server
-        self.is_mariadb = self.server.is_mariadb()
-
-        if self.is_mariadb:
-            self.q_builder = MariaDBQueryBuilder(self.name)
-            self.role_impl = MariaDBRoleImpl(self.module, self.cursor, self.name)
-            self.full_name = '`%s`' % self.name
-            self.host = ''
-        else:
-            self.host = '%'
-            self.q_builder = MySQLQueryBuilder(self.name, self.host)
-            self.role_impl = MySQLRoleImpl(self.module, self.cursor, self.name, self.host)
-            self.full_name = '`%s`@`%s`' % (self.name, self.host)
-
+        self.q_builder = MariaDBQueryBuilder(self.name)
+        self.full_name = '`%s`' % self.name
+        self.host = ''
         self.exists = self.__role_exists()
         self.members = set()
 
         if self.exists:
             self.members = self.__get_members()
+
+    def __set_default_role_all(self, user):
+        """Run 'SET DEFAULT ROLE ALL TO' a user.
+
+        The command is not supported by MariaDB, ignored.
+
+        Args:
+            user (tuple): User / role to run the command against in the form (username, hostname).
+        """
+        pass
+
+    def __get_admin(self):
+        """Get a current admin of a role.
+
+        Returns:
+            tuple: Of the form (username, hostname).
+        """
+        query = ("SELECT User, Host FROM mysql.roles_mapping "
+                 "WHERE Role = %s and Admin_option = 'Y'")
+
+        self.cursor.execute(query, (self.name,))
+        return self.cursor.fetchone()
+
+    def __set_admin(self, admin):
+        """Set an admin of a role.
+
+        TODO: Implement changing when ALTER ROLE statement to
+            change role's admin gets supported.
+
+        Args:
+            admin (tuple): Admin user of the role in the form (username, hostname).
+        """
+        admin_user = admin[0]
+        admin_host = admin[1]
+        current_admin = self.__get_admin()
+
+        if (admin_user, admin_host) != current_admin:
+            msg = ('The "admin" option value and the current '
+                   'roles admin (%s@%s) don not match. Ignored. '
+                   'To change the admin, you need to drop and create the '
+                   'role again.' % (current_admin[0], current_admin[1]))
+            self.module.warn(msg)
 
     def __role_exists(self):
         """Check if a role exists.
@@ -809,8 +687,7 @@ class Role():
         if privs:
             for db_table, priv in privs.items():
                 privileges_grant(self.cursor, self.name, self.host,
-                                 db_table, priv, tls_requires=None,
-                                 maria_role=self.is_mariadb)
+                                 db_table, priv, tls_requires=None, role=True)
 
         return True
 
@@ -858,7 +735,7 @@ class Role():
                 self.cursor.execute(*self.q_builder.role_grant(user))
 
                 if set_default_role_all:
-                    self.role_impl.set_default_role_all(user)
+                    self.__set_default_role_all(user)
 
                 changed = True
 
@@ -949,16 +826,13 @@ class Role():
                                                       set_default_role_all=set_default_role_all)
 
         if privs:
-            result = user_mod(cursor=self.cursor, user=self.name, host=self.host,
-                              host_all=None, password=None, encrypted=None, plugin=None,
-                              plugin_auth_string=None, plugin_hash_string=None, salt=None,
-                              new_priv=privs, append_privs=append_privs, subtract_privs=subtract_privs,
-                              attributes=None, tls_requires=None, module=self.module, password_expire=None,
-                              password_expire_interval=None, role=True, maria_role=self.is_mariadb)
-            changed = result['changed']
+            changed = _privileges_mod(
+                cursor=self.cursor, user=self.name, host=self.host, new_priv=privs,
+                append_privs=append_privs, subtract_privs=subtract_privs,
+                tls_requires=None, check_mode=self.module.check_mode, role=True)[0]
 
         if admin:
-            self.role_impl.set_admin(admin)
+            self.__set_admin(admin)
 
         changed = changed or members_changed
 
@@ -970,10 +844,7 @@ class Role():
         Returns:
             set: Members.
         """
-        if self.is_mariadb:
-            self.cursor.execute('select user, host from mysql.roles_mapping where role = %s', (self.name,))
-        else:
-            self.cursor.execute('select TO_USER as user, TO_HOST as host from mysql.role_edges where FROM_USER = %s', (self.name,))
+        self.cursor.execute('select user, host from mysql.roles_mapping where role = %s', (self.name,))
         return set(self.cursor.fetchall())
 
 
@@ -1073,8 +944,6 @@ def main():
     # Set defaults
     changed = False
 
-    impl = get_user_implementation(cursor)
-
     if priv is not None:
         try:
             mode = get_mode(cursor)
@@ -1088,21 +957,12 @@ def main():
 
     server = DbServer(module, cursor)
 
-    # Check if the server supports roles
-    if not server.supports_roles():
-        msg = ('Roles are not supported by the server. '
-               'Minimal versions are MySQL 8.0.0 or MariaDB 10.0.5.')
-        module.fail_json(msg=msg)
-
     if admin:
-        if not server.is_mariadb():
-            module.fail_json(msg='The "admin" option can be used only with MariaDB.')
-
         admin = normalize_users(module, [admin])[0]
         server.check_users_in_db([admin])
 
     if members:
-        members = normalize_users(module, members, server.is_mariadb())
+        members = normalize_users(module, members)
         if members_must_exist:
             server.check_users_in_db(members)
         else:
