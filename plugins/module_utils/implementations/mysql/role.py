@@ -6,7 +6,7 @@ from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
 from ansible_collections.ansible.mariadb.plugins.module_utils.version import LooseVersion
-from ansible_collections.ansible.mariadb.plugins.module_utils.mysql import get_server_version
+from ansible_collections.ansible.mariadb.plugins.module_utils.connect import get_server_version
 
 
 def supports_roles(cursor):

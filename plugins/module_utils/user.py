@@ -15,9 +15,8 @@ import string
 import json
 import re
 
-from ansible_collections.ansible.mariadb.plugins.module_utils.mysql import (
-    mysql_driver,
-    get_server_implementation,
+from ansible_collections.ansible.mariadb.plugins.module_utils.connect import (
+    driver,
 )
 from ansible_collections.ansible.mariadb.plugins.module_utils.implementations.mysql.hash import (
     mysql_sha256_password_hash,
@@ -374,7 +373,7 @@ def user_mod(cursor, user, host, host_all, password, encrypted,
                                 try:
                                     cursor.execute("ALTER USER %s@%s IDENTIFIED WITH mysql_native_password AS %s", (user, host, encrypted_password))
                                     msg = "Password updated (new style)"
-                                except (mysql_driver.Error) as e:
+                                except (driver.Error) as e:
                                     # https://stackoverflow.com/questions/51600000/authentication-string-of-root-user-on-mysql
                                     # Replacing empty root password with new authentication mechanisms fails with error 1396
                                     if e.args[0] == 1396:
@@ -955,7 +954,7 @@ def privileges_grant(cursor, user, host, db_table, priv, tls_requires, maria_rol
 
     try:
         cursor.execute(query, params)
-    except (mysql_driver.ProgrammingError, mysql_driver.OperationalError, mysql_driver.InternalError) as e:
+    except (driver.ProgrammingError, driver.OperationalError, driver.InternalError) as e:
         raise InvalidPrivsError("Error granting privileges, invalid priv string: %s , params: %s, query: %s ,"
                                 " exception: %s." % (priv_string, str(params), query, str(e)))
 
@@ -1188,7 +1187,7 @@ def get_attribute_support(cursor):
         # information_schema.tables does not hold the tables within information_schema itself
         cursor.execute("SELECT attribute FROM INFORMATION_SCHEMA.USER_ATTRIBUTES LIMIT 0")
         cursor.fetchone()
-    except mysql_driver.Error:
+    except driver.Error:
         return False
 
     return True
@@ -1216,10 +1215,5 @@ def attributes_get(cursor, user, host):
 
 
 def get_user_implementation(cursor):
-    db_engine = get_server_implementation(cursor)
-    if db_engine == 'mariadb':
-        from ansible_collections.ansible.mariadb.plugins.module_utils.implementations.mariadb import user as mariauser
-        return mariauser
-    else:
-        from ansible_collections.ansible.mariadb.plugins.module_utils.implementations.mysql import user as mysqluser
-        return mysqluser
+    from ansible_collections.ansible.mariadb.plugins.module_utils.implementations.mariadb import user as mariauser
+    return mariauser

@@ -204,7 +204,7 @@ attributes:
     details:
       - The module is not idempotent when O(state=import) or when O(state=dump).
 extends_documentation_fragment:
-- ansible.mariadb.mysql
+- ansible.mariadb.connect
 '''
 
 EXAMPLES = r'''
@@ -351,12 +351,11 @@ import traceback
 import shlex
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.ansible.mariadb.plugins.module_utils.mysql import (
-    mysql_connect,
-    mysql_driver,
-    mysql_driver_fail_msg,
-    mysql_common_argument_spec,
-    get_server_implementation,
+from ansible_collections.ansible.mariadb.plugins.module_utils.connect import (
+    connect,
+    driver,
+    driver_fail_msg,
+    common_argument_spec,
     get_server_version,
 )
 from ansible_collections.ansible.mariadb.plugins.module_utils.version import LooseVersion
@@ -398,7 +397,7 @@ def db_dump(module, host, user, password, db_name, target, all_databases, port,
             check_implicit_admin=False, pipefail=False):
 
     cmd_str = 'mysqldump'
-    if server_implementation == 'mariadb' and LooseVersion(server_version) >= LooseVersion("10.4.6"):
+    if LooseVersion(server_version) >= LooseVersion("10.4.6"):
         cmd_str = 'mariadb-dump'
     try:
         cmd = [module.get_bin_path(cmd_str, True)]
@@ -458,11 +457,7 @@ def db_dump(module, host, user, password, db_name, target, all_databases, port,
     if hex_blob:
         cmd.append("--hex-blob")
     if master_data:
-        if (server_implementation == 'mysql' and
-                LooseVersion(server_version) >= LooseVersion("8.2.0")):
-            cmd.append("--source-data=%s" % master_data)
-        else:
-            cmd.append("--master-data=%s" % master_data)
+        cmd.append("--master-data=%s" % master_data)
     if dump_extra_args is not None:
         cmd.append(dump_extra_args)
 
@@ -506,11 +501,8 @@ def db_import(module, host, user, password, db_name, target, all_databases, port
     if not os.path.exists(target):
         return module.fail_json(msg="target %s does not exist on the host" % target)
 
-    cmd_str = 'mysql'
-    if server_implementation == 'mariadb' and LooseVersion(server_version) >= LooseVersion("10.4.6"):
-        cmd_str = 'mariadb'
     try:
-        cmd = [module.get_bin_path(cmd_str, True)]
+        cmd = [module.get_bin_path('mariadb', True)]
     except Exception as e:
         return 1, "", "Error determining mysql/mariadb command: %s" % str(e)
 
@@ -629,7 +621,7 @@ def db_create(cursor, db, encoding, collation):
 
 
 def main():
-    argument_spec = mysql_common_argument_spec()
+    argument_spec = common_argument_spec()
     argument_spec.update(
         name=dict(type='list', elements='str', required=True, aliases=['db']),
         encoding=dict(type='str', default=''),
@@ -659,8 +651,8 @@ def main():
         supports_check_mode=True,
     )
 
-    if mysql_driver is None:
-        module.fail_json(msg=mysql_driver_fail_msg)
+    if driver is None:
+        module.fail_json(msg=driver_fail_msg)
 
     db = module.params["name"]
     if not db:
@@ -727,17 +719,17 @@ def main():
         cursor = None
         if check_implicit_admin:
             try:
-                cursor, db_conn = mysql_connect(module, 'root', '', config_file, ssl_cert, ssl_key, ssl_ca,
-                                                connect_timeout=connect_timeout, check_hostname=check_hostname,
-                                                config_overrides_defaults=config_overrides_defaults)
+                cursor, db_conn = connect(module, 'root', '', config_file, ssl_cert, ssl_key, ssl_ca,
+                                                  connect_timeout=connect_timeout, check_hostname=check_hostname,
+                                                  config_overrides_defaults=config_overrides_defaults)
             except Exception as e:
                 check_implicit_admin = False
                 pass
 
         if not cursor:
-            cursor, db_conn = mysql_connect(module, login_user, login_password, config_file, ssl_cert, ssl_key, ssl_ca,
-                                            connect_timeout=connect_timeout, config_overrides_defaults=config_overrides_defaults,
-                                            check_hostname=check_hostname)
+            cursor, db_conn = connect(module, login_user, login_password, config_file, ssl_cert, ssl_key, ssl_ca,
+                                      connect_timeout=connect_timeout, config_overrides_defaults=config_overrides_defaults,
+                                      check_hostname=check_hostname)
     except Exception as e:
         if os.path.exists(config_file):
             module.fail_json(msg="unable to connect to database, check login_user and login_password are correct or %s has the credentials. "
@@ -748,7 +740,7 @@ def main():
     if state in ['absent', 'present'] and not sql_log_bin:
         cursor.execute("SET SQL_LOG_BIN=0;")
 
-    server_implementation = get_server_implementation(cursor)
+    server_implementation = 'mariadb'
     server_version = get_server_version(cursor)
 
     changed = False
@@ -791,7 +783,7 @@ def main():
             module.exit_json(changed=True, db=db_name, db_list=db)
         rc, stdout, stderr = db_dump(module, login_host, login_user,
                                      login_password, db, target, all_databases,
-                                     login_port, config_file, server_implementation, server_version,
+                                     login_port, config_file, 'mariadb', server_version,
                                      socket, ssl_cert, ssl_key,
                                      ssl_ca, single_transaction, quick, ignore_tables,
                                      hex_blob, encoding, force, master_data, skip_lock_tables,

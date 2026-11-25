@@ -111,7 +111,7 @@ seealso:
     link: https://mariadb.com/docs/server/reference/plugins/password-validation-plugins/simple-password-check-plugin
 
 extends_documentation_fragment:
-  - ansible.mariadb.mysql
+  - ansible.mariadb.connect
 '''
 
 EXAMPLES = r'''
@@ -152,15 +152,12 @@ settings:
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.common.text.converters import to_native
 
-from ansible_collections.ansible.mariadb.plugins.module_utils._version import LooseVersion
 from ansible_collections.ansible.mariadb.plugins.module_utils.database import mysql_quote_identifier
-from ansible_collections.ansible.mariadb.plugins.module_utils.mysql import (
-    get_server_implementation,
-    get_server_version,
-    mysql_common_argument_spec,
-    mysql_connect,
-    mysql_driver,
-    mysql_driver_fail_msg,
+from ansible_collections.ansible.mariadb.plugins.module_utils.connect import (
+    common_argument_spec,
+    connect,
+    driver,
+    driver_fail_msg,
 )
 
 
@@ -290,16 +287,15 @@ class MySQLPasswordPolicy(object):
         return dict(changed=changed, queries=queries, settings=effective_settings)
 
     def validate_supported_settings(self, desired_settings, mode):
-        if self.server_implementation == 'mariadb':
-            if mode == 'persist':
-                self.module.fail_json(msg='mode=persist is supported only on MySQL.', changed=False)
+        if mode == 'persist':
+            self.module.fail_json(msg='mode=persist is supported only on MySQL.', changed=False)
 
-            for option_name in MYSQL_ONLY_OPTIONS:
-                if desired_settings.get(option_name) is not None:
-                    self.module.fail_json(
-                        msg='Parameter "%s" is supported only on MySQL.' % option_name,
-                        changed=False,
-                    )
+        for option_name in MYSQL_ONLY_OPTIONS:
+            if desired_settings.get(option_name) is not None:
+                self.module.fail_json(
+                    msg='Parameter "%s" is supported only on MySQL.' % option_name,
+                    changed=False,
+                )
 
     def read_setting(self, setting_name):
         variable_name = SETTING_VARIABLES[self.server_implementation][setting_name]
@@ -334,7 +330,7 @@ class MySQLPasswordPolicy(object):
 
 
 def main():
-    argument_spec = mysql_common_argument_spec()
+    argument_spec = common_argument_spec()
     argument_spec.update(
         policy=dict(type='str', choices=['low', 'medium', 'strong']),
         length=dict(type='int'),
@@ -364,11 +360,11 @@ def main():
         supports_check_mode=True,
     )
 
-    if mysql_driver is None:
-        module.fail_json(msg=mysql_driver_fail_msg)
+    if driver is None:
+        module.fail_json(msg=driver_fail_msg)
 
     try:
-        cursor, _db_conn = mysql_connect(
+        cursor, _db_conn = connect(
             module,
             module.params['login_user'],
             module.params['login_password'],
@@ -387,12 +383,6 @@ def main():
                 "Exception message: %s" % (module.params['config_file'], to_native(exc))
         )
 
-    server_implementation = get_server_implementation(cursor)
-    if server_implementation == 'mysql':
-        server_version = get_server_version(cursor).split('-', 1)[0]
-        if module.params['mode'] == 'persist' and LooseVersion(server_version) < LooseVersion('8.0'):
-            module.fail_json(msg='mode=persist requires MySQL 8.0 or later.', changed=False)
-
     desired_settings = {
         'policy': module.params['policy'],
         'length': module.params['length'],
@@ -405,7 +395,7 @@ def main():
         'reuse_interval': module.params['reuse_interval'],
     }
 
-    password_policy = MySQLPasswordPolicy(module, cursor, server_implementation)
+    password_policy = MySQLPasswordPolicy(module, cursor, 'mariadb')
     module.exit_json(
         **password_policy.configure(
             desired_settings,

@@ -71,7 +71,7 @@ author:
 - Laurent Indermühle (@laurent-indermuehle)
 
 extends_documentation_fragment:
-- ansible.mariadb.mysql
+- ansible.mariadb.connect
 '''
 
 EXAMPLES = r'''
@@ -310,14 +310,13 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ansible.mariadb.plugins.module_utils.command_resolver import (
     CommandResolver
 )
-from ansible_collections.ansible.mariadb.plugins.module_utils.mysql import (
-    mysql_connect,
-    mysql_common_argument_spec,
-    mysql_driver,
-    mysql_driver_fail_msg,
+from ansible_collections.ansible.mariadb.plugins.module_utils.connect import (
+    connect,
+    common_argument_spec,
+    driver,
+    driver_fail_msg,
     get_connector_name,
     get_connector_version,
-    get_server_implementation,
     get_server_version,
 )
 
@@ -737,7 +736,7 @@ class MySQL_Info(object):
 
 
 def main():
-    argument_spec = mysql_common_argument_spec()
+    argument_spec = common_argument_spec()
     argument_spec.update(
         login_db=dict(type='str'),
         filter=dict(type='list', elements='str'),
@@ -769,24 +768,24 @@ def main():
     if exclude_fields:
         exclude_fields = set([f.strip() for f in exclude_fields])
 
-    if mysql_driver is None:
-        module.fail_json(msg=mysql_driver_fail_msg)
+    if driver is None:
+        module.fail_json(msg=driver_fail_msg)
 
-    connector_name = get_connector_name(mysql_driver)
-    connector_version = get_connector_version(mysql_driver)
+    connector_name = get_connector_name(driver)
+    connector_version = get_connector_version(driver)
 
     try:
-        cursor, db_conn = mysql_connect(module, login_user, login_password,
-                                        config_file, ssl_cert, ssl_key, ssl_ca, db,
-                                        check_hostname=check_hostname,
-                                        connect_timeout=connect_timeout, cursor_class='DictCursor')
+        cursor, db_conn = connect(module, login_user, login_password,
+                                  config_file, ssl_cert, ssl_key, ssl_ca, db,
+                                  check_hostname=check_hostname,
+                                  connect_timeout=connect_timeout, cursor_class='DictCursor')
     except Exception as e:
         msg = ('unable to connect to database using %s %s, check login_user '
                'and login_password are correct or %s has the credentials. '
                'Exception message: %s' % (connector_name, connector_version, config_file, to_native(e)))
         module.fail_json(msg)
 
-    server_implementation = get_server_implementation(cursor)
+    server_implementation = 'mariadb'  # TODO remove in stacked PR #44
     server_version = get_server_version(cursor)
     user_implementation = get_user_implementation(cursor)
 
@@ -796,7 +795,7 @@ def main():
     mysql = MySQL_Info(module, cursor, server_implementation, server_version, user_implementation)
 
     module.exit_json(changed=False,
-                     server_engine='MariaDB' if server_implementation == 'mariadb' else 'MySQL',
+                     server_engine='MariaDB',
                      connector_name=connector_name,
                      connector_version=connector_version,
                      **mysql.get_info(filter_, exclude_fields, return_empty_dbs))
