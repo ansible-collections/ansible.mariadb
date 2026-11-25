@@ -94,7 +94,8 @@ options:
     - When setting it to C(yes), the connection attempt only succeeds
       if an encrypted connection can be established.
     - For details, refer to
-      L(MariaDB secure replication traffic documentation,https://mariadb.com/docs/server/security/encryption/data-in-transit-encryption/replication-with-secure-connections#securing-replication-traffic).
+      L(MariaDB secure replication traffic documentation,
+      https://mariadb.com/docs/server/security/encryption/data-in-transit-encryption/replication-with-secure-connections#securing-replication-traffic).
     - The default is C(false).
     type: bool
     aliases: [master_ssl]
@@ -102,28 +103,32 @@ options:
     description:
     - Same as the C(MASTER_SSL_CA) MariaDB variable.
     - For details, refer to
-      L(MariaDB secure replication traffic documentation,https://mariadb.com/docs/server/security/encryption/data-in-transit-encryption/replication-with-secure-connections#securing-replication-traffic).
+      L(MariaDB secure replication traffic documentation,
+      https://mariadb.com/docs/server/security/encryption/data-in-transit-encryption/replication-with-secure-connections#securing-replication-traffic).
     type: str
     aliases: [master_ssl_ca]
   primary_ssl_capath:
     description:
     - Same as the C(MASTER_SSL_CAPATH) MariaDB variable.
     - For details, refer to
-      L(MariaDB secure replication traffic documentation,https://mariadb.com/docs/server/security/encryption/data-in-transit-encryption/replication-with-secure-connections#securing-replication-traffic).
+      L(MariaDB secure replication traffic documentation,
+      https://mariadb.com/docs/server/security/encryption/data-in-transit-encryption/replication-with-secure-connections#securing-replication-traffic).
     type: str
     aliases: [master_ssl_capath]
   primary_ssl_cert:
     description:
     - Same as the C(MASTER_SSL_CERT) MariaDB variable.
     - For details, refer to
-      L(MariaDB secure replication traffic documentation,https://mariadb.com/docs/server/security/encryption/data-in-transit-encryption/replication-with-secure-connections#securing-replication-traffic).
+      L(MariaDB secure replication traffic documentation,
+      https://mariadb.com/docs/server/security/encryption/data-in-transit-encryption/replication-with-secure-connections#securing-replication-traffic).
     type: str
     aliases: [master_ssl_cert]
   primary_ssl_key:
     description:
     - Same as the C(MASTER_SSL_KEY) MariaDB variable.
     - For details, refer to
-      L(MariaDB secure replication traffic documentation,https://mariadb.com/docs/server/security/encryption/data-in-transit-encryption/replication-with-secure-connections#securing-replication-traffic).
+      L(MariaDB secure replication traffic documentation,
+      https://mariadb.com/docs/server/security/encryption/data-in-transit-encryption/replication-with-secure-connections#securing-replication-traffic).
     type: str
     aliases: [master_ssl_key]
   primary_ssl_cipher:
@@ -131,7 +136,8 @@ options:
     - Same as the C(MASTER_SSL_CIPHER) MariaDB variable.
     - Specifies a colon-separated list of one or more ciphers permitted by the replica for the replication connection.
     - For details, refer to
-      L(MariaDB secure replication traffic documentation,https://mariadb.com/docs/server/security/encryption/data-in-transit-encryption/replication-with-secure-connections#securing-replication-traffic).
+      L(MariaDB secure replication traffic documentation,
+      https://mariadb.com/docs/server/security/encryption/data-in-transit-encryption/replication-with-secure-connections#securing-replication-traffic).
     type: str
     aliases: [master_ssl_cipher]
   primary_ssl_verify_server_cert:
