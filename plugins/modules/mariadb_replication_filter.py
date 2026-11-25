@@ -195,7 +195,7 @@ filters:
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.common.text.converters import to_native
 
-from ansible_collections.ansible.mariadb.plugins.module_utils.database import check_input, mysql_quote_identifier
+from ansible_collections.ansible.mariadb.plugins.module_utils.database import check_input, quote_identifier
 from ansible_collections.ansible.mariadb.plugins.module_utils.connect import (
     get_server_version,
     common_argument_spec,
@@ -316,7 +316,7 @@ def build_mysql_filter_query(filter_name, value_kind, values, channel=''):
 
 def build_mariadb_set_query(variable_name, values):
     value = ','.join(normalize_filter_values(values))
-    identifier = mysql_quote_identifier(variable_name, 'vars')
+    identifier = quote_identifier(variable_name, 'vars')
     query = 'SET GLOBAL %s = %%s' % identifier
 
     return {
@@ -360,7 +360,7 @@ def _build_mysql_filter_values(value_kind, values):
     if value_kind == 'pattern':
         return ','.join(_quote_sql_string(value) for value in normalized)
 
-    return ','.join(mysql_quote_identifier(value, value_kind) for value in normalized)
+    return ','.join(quote_identifier(value, value_kind) for value in normalized)
 
 
 def _quote_sql_string(value):

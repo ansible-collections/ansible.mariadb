@@ -132,7 +132,7 @@ settings:
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.common.text.converters import to_native
 
-from ansible_collections.ansible.mariadb.plugins.module_utils.database import mysql_quote_identifier
+from ansible_collections.ansible.mariadb.plugins.module_utils.database import quote_identifier
 from ansible_collections.ansible.mariadb.plugins.module_utils.connect import (
     common_argument_spec,
     connect,
@@ -159,17 +159,17 @@ def typedvalue(value):
     return value
 
 
-def get_variable(cursor, mysqlvar):
-    cursor.execute("SHOW GLOBAL VARIABLES WHERE Variable_name = %s", (mysqlvar,))
-    mysqlvar_val = cursor.fetchall()
-    if len(mysqlvar_val) == 1:
-        return mysqlvar_val[0][1]
+def get_variable(cursor, var):
+    cursor.execute("SHOW GLOBAL VARIABLES WHERE Variable_name = %s", (var,))
+    var_val = cursor.fetchall()
+    if len(var_val) == 1:
+        return var_val[0][1]
     else:
         return None
 
 
-def set_variable(cursor, mysqlvar, value, executed_queries):
-    query = "SET GLOBAL %s = " % mysql_quote_identifier(mysqlvar, 'vars')
+def set_variable(cursor, var, value, executed_queries):
+    query = "SET GLOBAL %s = " % quote_identifier(var, 'vars')
     try:
         cursor.execute(query + "%s", (value,))
         executed_queries.append(query + "%s" % value)
