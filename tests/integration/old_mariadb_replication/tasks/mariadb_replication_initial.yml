@@ -3,7 +3,7 @@
 
 # Preparation:
 - name: Create user for replication
-  shell: "echo \"GRANT REPLICATION SLAVE ON *.* TO '{{ replication_user }}'@'localhost' IDENTIFIED BY '{{ replication_pass }}'; FLUSH PRIVILEGES;\" | mysql -P {{ primary_db.port }} -h '{{ mariadb_host }}'"
+  shell: "echo \"GRANT REPLICATION SLAVE ON *.* TO '{{ replication_user }}'@'localhost' IDENTIFIED BY '{{ replication_pass }}'; FLUSH PRIVILEGES;\" | mariadb -P {{ primary_db.port }} -h '{{ mariadb_host }}'"
 
 - name: Create test database
   mariadb_db:
