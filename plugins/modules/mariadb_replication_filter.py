@@ -233,7 +233,7 @@ def normalize_filter_variables(variables):
 
 
 def plan_filter_changes(desired_filters, current_filters, query_builder):
-    planned_filters = dict((name, list(values)) for name, values in current_filters.items())
+    planned_filters = {name: list(values) for name, values in current_filters.items()}
     queries = []
 
     for param, desired_values in desired_filters.items():
@@ -266,7 +266,7 @@ def build_filter_query(param, values):
 
 
 def _empty_filters():
-    return dict((name, []) for name in FILTER_VALUE_KINDS)
+    return {name: [] for name in FILTER_VALUE_KINDS}
 
 
 def _split_filter_rule(value):
@@ -308,7 +308,7 @@ def get_filter_values(module, cursor, server_version, connection_name=''):
                 'replicate_wild_do_table': row.get('Replicate_Wild_Do_Table', ''),
                 'replicate_wild_ignore_table': row.get('Replicate_Wild_Ignore_Table', ''),
             }
-        return dict((param, '') for param in FILTER_VALUE_KINDS)
+        return {param: '' for param in FILTER_VALUE_KINDS}
 
     variables = {}
     for param in FILTER_VALUE_KINDS:
@@ -394,9 +394,9 @@ def validate_filters(module, desired_filters):
 def main():
     argument_spec = common_argument_spec()
     for name in FILTER_VALUE_KINDS:
-        argument_spec[name] = dict(type='list', elements='str')
+        argument_spec[name] = {'type': 'list', 'elements': 'str'}
 
-    argument_spec['connection_name'] = dict(type='str')
+    argument_spec['connection_name'] = {'type': 'str'}
 
     module = AnsibleModule(
         argument_spec=argument_spec,
@@ -406,7 +406,7 @@ def main():
     if driver is None:
         module.fail_json(msg=driver_fail_msg)
 
-    desired_filters = dict((name, module.params[name]) for name in FILTER_VALUE_KINDS)
+    desired_filters = {name: module.params[name] for name in FILTER_VALUE_KINDS}
     if not any(values is not None for values in desired_filters.values()):
         module.fail_json(msg='at least one replication filter option must be provided')
 
@@ -433,8 +433,8 @@ def main():
             connect_timeout=connect_timeout,
             check_hostname=check_hostname,
         )
-    except Exception as e:
-        module.fail_json(
+    except Exception as e:  # noqa: BLE001 - Report all connection setup failures through Ansible.
+        return module.fail_json(
             msg=(
                 "unable to connect to database, check login_user and "
                 f"login_password are correct or {config_file} has the credentials. "
