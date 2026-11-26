@@ -200,31 +200,13 @@ from ansible_collections.ansible.mariadb.plugins.module_utils.connect import (
 from ansible_collections.ansible.mariadb.plugins.module_utils.version import LooseVersion
 
 
-FILTER_DEFINITIONS = {
-    'replicate_do_db': {
-        'mariadb_name': 'replicate_do_db',
-        'value_kind': 'database',
-    },
-    'replicate_ignore_db': {
-        'mariadb_name': 'replicate_ignore_db',
-        'value_kind': 'database',
-    },
-    'replicate_do_table': {
-        'mariadb_name': 'replicate_do_table',
-        'value_kind': 'table',
-    },
-    'replicate_ignore_table': {
-        'mariadb_name': 'replicate_ignore_table',
-        'value_kind': 'table',
-    },
-    'replicate_wild_do_table': {
-        'mariadb_name': 'replicate_wild_do_table',
-        'value_kind': 'pattern',
-    },
-    'replicate_wild_ignore_table': {
-        'mariadb_name': 'replicate_wild_ignore_table',
-        'value_kind': 'pattern',
-    },
+FILTER_VALUE_KINDS = {
+    'replicate_do_db': 'database',
+    'replicate_ignore_db': 'database',
+    'replicate_do_table': 'table',
+    'replicate_ignore_table': 'table',
+    'replicate_wild_do_table': 'pattern',
+    'replicate_wild_ignore_table': 'pattern',
 }
 
 
@@ -240,11 +222,11 @@ def normalize_filter_values(values):
     return sorted(set(normalized))
 
 
-def normalize_mariadb_filter_values(variables):
+def normalize_filter_variables(variables):
     filters = _empty_filters()
 
-    for param, definition in FILTER_DEFINITIONS.items():
-        raw_value = variables.get(definition['mariadb_name'], '')
+    for param in FILTER_VALUE_KINDS:
+        raw_value = variables.get(param, '')
         filters[param] = normalize_filter_values(_split_filter_rule(raw_value))
 
     return filters
@@ -271,9 +253,9 @@ def plan_filter_changes(desired_filters, current_filters, query_builder):
     }
 
 
-def build_mariadb_set_query(variable_name, values):
+def build_filter_query(param, values):
     value = ','.join(normalize_filter_values(values))
-    identifier = quote_identifier(variable_name, 'vars')
+    identifier = quote_identifier(param, 'vars')
     query = 'SET GLOBAL %s = %%s' % identifier
 
     return {
@@ -283,13 +265,8 @@ def build_mariadb_set_query(variable_name, values):
     }
 
 
-def build_mariadb_query_from_param(param, values):
-    definition = FILTER_DEFINITIONS[param]
-    return build_mariadb_set_query(definition['mariadb_name'], values)
-
-
 def _empty_filters():
-    return dict((name, []) for name in FILTER_DEFINITIONS)
+    return dict((name, []) for name in FILTER_VALUE_KINDS)
 
 
 def _split_filter_rule(value):
@@ -312,7 +289,7 @@ def supports_connection_name(server_version):
     return LooseVersion(server_version) >= LooseVersion('10.0.1')
 
 
-def get_mariadb_filter_values(module, cursor, server_version, connection_name=''):
+def get_filter_values(module, cursor, server_version, connection_name=''):
     if connection_name and not supports_connection_name(server_version):
         module.fail_json(msg='connection_name requires MariaDB 10.0.1 or newer')
 
@@ -330,14 +307,13 @@ def get_mariadb_filter_values(module, cursor, server_version, connection_name=''
                 'replicate_wild_do_table': row.get('Replicate_Wild_Do_Table', ''),
                 'replicate_wild_ignore_table': row.get('Replicate_Wild_Ignore_Table', ''),
             }
-        return dict((param, '') for param in FILTER_DEFINITIONS)
+        return dict((param, '') for param in FILTER_VALUE_KINDS)
 
     variables = {}
-    for definition in FILTER_DEFINITIONS.values():
-        variable_name = definition['mariadb_name']
-        cursor.execute('SELECT @@GLOBAL.%s AS Value' % variable_name)
+    for param in FILTER_VALUE_KINDS:
+        cursor.execute('SELECT @@GLOBAL.%s AS Value' % param)
         rows = cursor.fetchall()
-        variables[variable_name] = _extract_variable_value(rows)
+        variables[param] = _extract_variable_value(rows)
 
     return variables
 
@@ -356,77 +332,67 @@ def _extract_variable_value(rows):
     return row[1]
 
 
-class MySQLReplicationFilter(object):
-    def __init__(self, module, cursor, server_version):
-        self.module = module
-        self.cursor = cursor
-        self.server_version = server_version
+def apply_filters(module, cursor, server_version, desired_filters, connection_name=''):
+    validate_filters(module, desired_filters)
+    check_input(module, connection_name)
 
-    def apply(self, desired_filters, connection_name=''):
-        self.validate_filters(desired_filters)
-        self.validate_target(connection_name)
+    planned = plan_filter_changes(
+        desired_filters,
+        normalize_filter_variables(get_filter_values(
+            module,
+            cursor,
+            server_version,
+            connection_name=connection_name,
+        )),
+        build_filter_query,
+    )
 
-        planned = plan_filter_changes(
-            desired_filters,
-            normalize_mariadb_filter_values(get_mariadb_filter_values(
-                self.module,
-                self.cursor,
-                self.server_version,
-                connection_name=connection_name,
-            )),
-            build_mariadb_query_from_param,
-        )
+    if not module.check_mode:
+        execute_queries(cursor, planned['queries'], connection_name=connection_name)
 
-        if not self.module.check_mode:
-            self.execute_queries(planned['queries'], connection_name=connection_name)
+    return {
+        'changed': planned['changed'],
+        'queries': [query['display'] for query in planned['queries']],
+        'filters': planned['filters'],
+    }
 
-        return {
-            'changed': planned['changed'],
-            'queries': [query['display'] for query in planned['queries']],
-            'filters': planned['filters'],
-        }
 
-    def execute_queries(self, queries, connection_name=''):
+def execute_queries(cursor, queries, connection_name=''):
+    if connection_name:
+        cursor.execute('SET @@default_master_connection = %s', (connection_name,))
+        cursor.fetchall()
+
+    try:
+        for query in queries:
+            cursor.execute(query['sql'], query['params'])
+            cursor.fetchall()
+    finally:
         if connection_name:
-            self.cursor.execute('SET @@default_master_connection = %s', (connection_name,))
-            self.cursor.fetchall()
+            cursor.execute('SET @@default_master_connection = %s', ('',))
+            cursor.fetchall()
 
-        try:
-            for query in queries:
-                if query['params']:
-                    self.cursor.execute(query['sql'], query['params'])
-                else:
-                    self.cursor.execute(query['sql'])
-                self.cursor.fetchall()
-        finally:
-            if connection_name:
-                self.cursor.execute('SET @@default_master_connection = %s', ('',))
-                self.cursor.fetchall()
 
-    def validate_filters(self, desired_filters):
-        for param, values in desired_filters.items():
-            if values is None:
-                continue
-            check_input(self.module, values)
-            values_with_commas = [value for value in values if ',' in value]
-            if values_with_commas:
-                self.module.fail_json(
-                    msg='replication filter values cannot contain commas: %s' % ', '.join(values_with_commas)
+def validate_filters(module, desired_filters):
+    for param, values in desired_filters.items():
+        if values is None:
+            continue
+        check_input(module, values)
+        values_with_commas = [value for value in values if ',' in value]
+        if values_with_commas:
+            module.fail_json(
+                msg='replication filter values cannot contain commas: %s' % ', '.join(values_with_commas)
+            )
+        if FILTER_VALUE_KINDS[param] in ('table', 'pattern'):
+            invalid_values = [value for value in values if not _uses_database_table_syntax(value)]
+            if invalid_values:
+                module.fail_json(
+                    msg='%s values must use database.table syntax: %s' % (param, ', '.join(invalid_values))
                 )
-            if FILTER_DEFINITIONS[param]['value_kind'] in ('table', 'pattern'):
-                invalid_values = [value for value in values if not _uses_database_table_syntax(value)]
-                if invalid_values:
-                    self.module.fail_json(
-                        msg='%s values must use database.table syntax: %s' % (param, ', '.join(invalid_values))
-                    )
-
-    def validate_target(self, connection_name):
-        check_input(self.module, connection_name)
 
 
 def main():
     argument_spec = common_argument_spec()
-    for name in FILTER_DEFINITIONS:
+    for name in FILTER_VALUE_KINDS:
         argument_spec[name] = dict(type='list', elements='str')
 
     argument_spec['connection_name'] = dict(type='str')
@@ -439,7 +405,7 @@ def main():
     if driver is None:
         module.fail_json(msg=driver_fail_msg)
 
-    desired_filters = dict((name, module.params[name]) for name in FILTER_DEFINITIONS)
+    desired_filters = dict((name, module.params[name]) for name in FILTER_VALUE_KINDS)
     if not any(values is not None for values in desired_filters.values()):
         module.fail_json(msg='at least one replication filter option must be provided')
 
@@ -475,15 +441,12 @@ def main():
             )
         )
 
-    executor = MySQLReplicationFilter(
-        module,
-        cursor,
-        get_server_version(cursor),
-    )
-
     try:
         module.exit_json(
-            **executor.apply(
+            **apply_filters(
+                module,
+                cursor,
+                get_server_version(cursor),
                 desired_filters,
                 connection_name=module.params['connection_name'],
             )

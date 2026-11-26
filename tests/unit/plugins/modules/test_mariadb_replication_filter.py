@@ -25,17 +25,16 @@ try:
 except ModuleNotFoundError as exc:
     if exc.name != MARIADB_REPLICATION_FILTER_MODULE:
         raise
-    MySQLReplicationFilter = None
     _IMPORT_ERROR = (
-        "mysql_replication_filter module not yet implemented - create "
+        "mariadb_replication_filter module not yet implemented - create "
         "plugins/modules/mariadb_replication_filter.py first. Original error: %s" % exc
     )
 else:
-    build_mariadb_set_query = mariadb_replication_filter_module.build_mariadb_set_query
-    get_mariadb_filter_values = mariadb_replication_filter_module.get_mariadb_filter_values
-    MySQLReplicationFilter = mariadb_replication_filter_module.MySQLReplicationFilter
+    apply_filters = mariadb_replication_filter_module.apply_filters
+    build_filter_query = mariadb_replication_filter_module.build_filter_query
+    get_filter_values = mariadb_replication_filter_module.get_filter_values
     normalize_filter_values = mariadb_replication_filter_module.normalize_filter_values
-    normalize_mariadb_filter_values = mariadb_replication_filter_module.normalize_mariadb_filter_values
+    normalize_filter_variables = mariadb_replication_filter_module.normalize_filter_variables
     plan_filter_changes = mariadb_replication_filter_module.plan_filter_changes
     supports_connection_name = mariadb_replication_filter_module.supports_connection_name
     _IMPORT_ERROR = None
@@ -216,7 +215,7 @@ def test_normalize_filter_values_orders_and_deduplicates_items():
     ]
 
 
-def test_normalize_mariadb_filter_values_maps_csv_rules():
+def test_normalize_filter_variables_maps_csv_rules():
     _require_module()
 
     variables = {
@@ -228,7 +227,7 @@ def test_normalize_mariadb_filter_values_maps_csv_rules():
         'replicate_wild_ignore_table': '',
     }
 
-    assert normalize_mariadb_filter_values(variables) == {
+    assert normalize_filter_variables(variables) == {
         'replicate_do_db': ['app', 'reporting'],
         'replicate_ignore_db': [],
         'replicate_do_table': ['app.orders', 'reporting.summary'],
@@ -301,16 +300,16 @@ def test_plan_filter_changes_treats_order_only_difference_as_idempotent():
     assert planned['queries'] == []
 
 
-def test_build_mariadb_set_query_uses_csv_values_and_clear():
+def test_build_filter_query_uses_csv_values_and_clear():
     _require_module()
 
-    assert build_mariadb_set_query('replicate_do_db', ['reporting', 'analytics']) == {
+    assert build_filter_query('replicate_do_db', ['reporting', 'analytics']) == {
         'sql': "SET GLOBAL `replicate_do_db` = %s",
         'params': ('analytics,reporting',),
         'display': "SET GLOBAL `replicate_do_db` = 'analytics,reporting'",
     }
 
-    assert build_mariadb_set_query('replicate_do_db', []) == {
+    assert build_filter_query('replicate_do_db', []) == {
         'sql': "SET GLOBAL `replicate_do_db` = %s",
         'params': ('',),
         'display': "SET GLOBAL `replicate_do_db` = ''",
@@ -324,7 +323,7 @@ def test_supports_connection_name_checks_version_threshold():
     assert supports_connection_name('10.0.1-MariaDB') is True
 
 
-def test_get_mariadb_filter_values_uses_connection_status_context():
+def test_get_filter_values_uses_connection_status_context():
     _require_module()
 
     cursor = CursorStub([[
@@ -338,7 +337,7 @@ def test_get_mariadb_filter_values_uses_connection_status_context():
         }
     ]])
 
-    assert get_mariadb_filter_values(
+    assert get_filter_values(
         ModuleStub(),
         cursor,
         '10.11.0-MariaDB',
@@ -356,7 +355,7 @@ def test_get_mariadb_filter_values_uses_connection_status_context():
     ]
 
 
-def test_get_mariadb_filter_values_uses_legacy_slave_status_context():
+def test_get_filter_values_uses_legacy_slave_status_context():
     _require_module()
 
     cursor = CursorStub([[
@@ -370,7 +369,7 @@ def test_get_mariadb_filter_values_uses_legacy_slave_status_context():
         }
     ]])
 
-    assert get_mariadb_filter_values(
+    assert get_filter_values(
         ModuleStub(),
         cursor,
         '10.0.1-MariaDB',
@@ -388,7 +387,7 @@ def test_get_mariadb_filter_values_uses_legacy_slave_status_context():
     ]
 
 
-def test_get_mariadb_filter_values_reads_global_variables_without_connection_name():
+def test_get_filter_values_reads_global_variables_without_connection_name():
     _require_module()
 
     cursor = CursorStub([
@@ -400,7 +399,7 @@ def test_get_mariadb_filter_values_reads_global_variables_without_connection_nam
         [('',)],
     ])
 
-    assert get_mariadb_filter_values(ModuleStub(), cursor, '10.11.0-MariaDB') == {
+    assert get_filter_values(ModuleStub(), cursor, '10.11.0-MariaDB') == {
         'replicate_do_db': 'app,reporting',
         'replicate_ignore_db': '',
         'replicate_do_table': 'app.orders',
@@ -418,22 +417,23 @@ def test_get_mariadb_filter_values_reads_global_variables_without_connection_nam
     ]
 
 
-def test_get_mariadb_filter_values_rejects_connection_name_on_old_versions():
+def test_get_filter_values_rejects_connection_name_on_old_versions():
     _require_module()
 
     with pytest.raises(RuntimeError) as exc_info:
-        get_mariadb_filter_values(ModuleStub(), CursorStub(), '10.0.0-MariaDB', connection_name='analytics')
+        get_filter_values(ModuleStub(), CursorStub(), '10.0.0-MariaDB', connection_name='analytics')
 
     assert str(exc_info.value) == 'connection_name requires MariaDB 10.0.1 or newer'
 
 
-def test_apply_mariadb_executes_change_query_in_real_mode():
+def test_apply_filters_executes_change_query_in_real_mode():
     _require_module()
 
     cursor = FakeCursor()
 
-    manager = MySQLReplicationFilter(ModuleStub(check_mode=False), cursor, '10.11.0-MariaDB')
-    result = manager.apply({'replicate_do_db': ['app']})
+    result = apply_filters(
+        ModuleStub(check_mode=False), cursor, '10.11.0-MariaDB', {'replicate_do_db': ['app']}
+    )
 
     assert result == {
         'changed': True,
@@ -461,13 +461,14 @@ def test_apply_mariadb_executes_change_query_in_real_mode():
     assert cursor.variables['replicate_do_db'] == 'app'
 
 
-def test_apply_mariadb_returns_unchanged_when_filter_matches_different_order():
+def test_apply_filters_returns_unchanged_when_filter_matches_different_order():
     _require_module()
 
     cursor = FakeCursor(variables={'replicate_ignore_db': 'analytics,reporting'})
 
-    manager = MySQLReplicationFilter(ModuleStub(check_mode=False), cursor, '10.11.0-MariaDB')
-    result = manager.apply({'replicate_ignore_db': ['reporting', 'analytics']})
+    result = apply_filters(
+        ModuleStub(check_mode=False), cursor, '10.11.0-MariaDB', {'replicate_ignore_db': ['reporting', 'analytics']}
+    )
 
     assert result['changed'] is False
     assert result['queries'] == []
@@ -484,10 +485,10 @@ def test_apply_mariadb_returns_unchanged_when_filter_matches_different_order():
 def test_apply_rejects_filter_values_containing_commas():
     _require_module()
 
-    manager = MySQLReplicationFilter(ModuleStub(check_mode=False), FakeCursor(), '10.11.0-MariaDB')
-
     with pytest.raises(RuntimeError) as exc_info:
-        manager.apply({'replicate_do_db': ['bad,name']})
+        apply_filters(
+            ModuleStub(check_mode=False), FakeCursor(), '10.11.0-MariaDB', {'replicate_do_db': ['bad,name']}
+        )
 
     assert str(exc_info.value) == 'replication filter values cannot contain commas: bad,name'
 
@@ -495,10 +496,10 @@ def test_apply_rejects_filter_values_containing_commas():
 def test_apply_rejects_invalid_table_filter_value():
     _require_module()
 
-    manager = MySQLReplicationFilter(ModuleStub(check_mode=False), FakeCursor(), '10.11.0-MariaDB')
-
     with pytest.raises(RuntimeError) as exc_info:
-        manager.apply({'replicate_do_table': ['missing_separator']})
+        apply_filters(
+            ModuleStub(check_mode=False), FakeCursor(), '10.11.0-MariaDB', {'replicate_do_table': ['missing_separator']}
+        )
 
     assert str(exc_info.value) == 'replicate_do_table values must use database.table syntax: missing_separator'
 
@@ -507,15 +508,13 @@ def test_apply_rejects_invalid_table_filter_value():
 def test_apply_rejects_invalid_wildcard_filter_value(param):
     _require_module()
 
-    manager = MySQLReplicationFilter(ModuleStub(check_mode=False), FakeCursor(), '10.11.0-MariaDB')
-
     with pytest.raises(RuntimeError) as exc_info:
-        manager.apply({param: ['missing_separator']})
+        apply_filters(ModuleStub(check_mode=False), FakeCursor(), '10.11.0-MariaDB', {param: ['missing_separator']})
 
     assert str(exc_info.value) == '%s values must use database.table syntax: missing_separator' % param
 
 
-def test_apply_mariadb_check_mode_predicts_changes_without_writes():
+def test_apply_filters_check_mode_predicts_changes_without_writes():
     _require_module()
 
     cursor = FakeCursor(
@@ -532,8 +531,8 @@ def test_apply_mariadb_check_mode_predicts_changes_without_writes():
         },
     )
 
-    manager = MySQLReplicationFilter(ModuleStub(check_mode=True), cursor, '10.11.0-MariaDB')
-    result = manager.apply(
+    result = apply_filters(
+        ModuleStub(check_mode=True), cursor, '10.11.0-MariaDB',
         {'replicate_do_db': ['reporting', 'app']},
         connection_name='analytics',
     )
@@ -558,7 +557,7 @@ def test_apply_mariadb_check_mode_predicts_changes_without_writes():
     assert cursor.connection_variables['analytics']['replicate_do_db'] == 'archive'
 
 
-def test_apply_mariadb_executes_queries_with_connection_context():
+def test_apply_filters_executes_queries_with_connection_context():
     _require_module()
 
     cursor = FakeCursor(
@@ -575,8 +574,8 @@ def test_apply_mariadb_executes_queries_with_connection_context():
         },
     )
 
-    manager = MySQLReplicationFilter(ModuleStub(check_mode=False), cursor, '10.11.0-MariaDB')
-    result = manager.apply(
+    result = apply_filters(
+        ModuleStub(check_mode=False), cursor, '10.11.0-MariaDB',
         {'replicate_ignore_db': ['archive', 'analytics']},
         connection_name='analytics',
     )
