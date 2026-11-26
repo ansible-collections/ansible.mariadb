@@ -32,13 +32,10 @@ except ModuleNotFoundError as exc:
     )
 else:
     build_mariadb_set_query = mariadb_replication_filter_module.build_mariadb_set_query
-    build_mysql_filter_query = mariadb_replication_filter_module.build_mysql_filter_query
     get_mariadb_filter_values = mariadb_replication_filter_module.get_mariadb_filter_values
-    get_mysql_filter_rows = mariadb_replication_filter_module.get_mysql_filter_rows
     MySQLReplicationFilter = mariadb_replication_filter_module.MySQLReplicationFilter
     normalize_filter_values = mariadb_replication_filter_module.normalize_filter_values
     normalize_mariadb_filter_values = mariadb_replication_filter_module.normalize_mariadb_filter_values
-    normalize_mysql_filter_rows = mariadb_replication_filter_module.normalize_mysql_filter_rows
     plan_filter_changes = mariadb_replication_filter_module.plan_filter_changes
     supports_connection_name = mariadb_replication_filter_module.supports_connection_name
     _IMPORT_ERROR = None
@@ -98,10 +95,8 @@ def _require_module():
 
 
 class FakeCursor(object):
-    def __init__(self, version='10.4.0-mariadb', global_rows=None, channel_rows=None, variables=None, connection_variables=None):
+    def __init__(self, version='10.4.0-mariadb', variables=None, connection_variables=None):
         self.version = version
-        self.global_rows = list(global_rows or [])
-        self.channel_rows = dict(channel_rows or {})
         self.variables = dict(variables or {})
         self.connection_variables = dict(connection_variables or {})
         self.default_master_connection = ''
@@ -113,21 +108,6 @@ class FakeCursor(object):
 
         if query == 'SELECT VERSION() AS version':
             self._rows = [{'version': self.version}]
-            return
-
-        if query == 'SELECT FILTER_NAME, FILTER_RULE FROM performance_schema.replication_applier_global_filters':
-            self._rows = list(self.global_rows)
-            return
-
-        if query == (
-            'SELECT CHANNEL_NAME, FILTER_NAME, FILTER_RULE '
-            'FROM performance_schema.replication_applier_filters WHERE CHANNEL_NAME = %s'
-        ):
-            self._rows = list(self.channel_rows.get(params[0], []))
-            return
-
-        if query.startswith('CHANGE REPLICATION FILTER '):
-            self._rows = []
             return
 
         if query == 'SHOW GLOBAL VARIABLES WHERE Variable_name = %s':
@@ -236,34 +216,6 @@ def test_normalize_filter_values_orders_and_deduplicates_items():
     ]
 
 
-def test_normalize_mariadb_filter_rows_maps_filter_names_and_empty_rules():
-    _require_module()
-
-    rows = [
-        {
-            'FILTER_NAME': 'REPLICATE_IGNORE_DB',
-            'FILTER_RULE': 'reporting,analytics',
-        },
-        {
-            'FILTER_NAME': 'REPLICATE_DO_TABLE',
-            'FILTER_RULE': 'app.orders,reporting.summary',
-        },
-        {
-            'FILTER_NAME': 'REPLICATE_WILD_IGNORE_TABLE',
-            'FILTER_RULE': '',
-        },
-    ]
-
-    assert normalize_mysql_filter_rows(rows) == {
-        'replicate_do_db': [],
-        'replicate_ignore_db': ['analytics', 'reporting'],
-        'replicate_do_table': ['app.orders', 'reporting.summary'],
-        'replicate_ignore_table': [],
-        'replicate_wild_do_table': [],
-        'replicate_wild_ignore_table': [],
-    }
-
-
 def test_normalize_mariadb_filter_values_maps_csv_rules():
     _require_module()
 
@@ -349,47 +301,6 @@ def test_plan_filter_changes_treats_order_only_difference_as_idempotent():
     assert planned['queries'] == []
 
 
-def test_build_mariadb_filter_query_quotes_identifier_values_and_channel():
-    _require_module()
-
-    assert build_mysql_filter_query(
-        'REPLICATE_IGNORE_DB',
-        'database',
-        ['reporting', 'analytics'],
-        channel=r'analytics\channel',
-    ) == {
-        'sql': (
-            "CHANGE REPLICATION FILTER REPLICATE_IGNORE_DB = (`analytics`,`reporting`) "
-            r"FOR CHANNEL 'analytics\\channel'"
-        ),
-        'params': (),
-        'display': (
-            "CHANGE REPLICATION FILTER REPLICATE_IGNORE_DB = (`analytics`,`reporting`) "
-            r"FOR CHANNEL 'analytics\\channel'"
-        ),
-    }
-
-
-def test_build_mariadb_filter_query_quotes_wildcard_values_and_clears_empty_lists():
-    _require_module()
-
-    assert build_mysql_filter_query(
-        'REPLICATE_WILD_IGNORE_TABLE',
-        'pattern',
-        ['reporting.sales_%', r'tmp.\_%'],
-    ) == {
-        'sql': r"CHANGE REPLICATION FILTER REPLICATE_WILD_IGNORE_TABLE = ('reporting.sales_%','tmp.\\_%')",
-        'params': (),
-        'display': r"CHANGE REPLICATION FILTER REPLICATE_WILD_IGNORE_TABLE = ('reporting.sales_%','tmp.\\_%')",
-    }
-
-    assert build_mysql_filter_query('REPLICATE_DO_DB', 'database', []) == {
-        'sql': "CHANGE REPLICATION FILTER REPLICATE_DO_DB = ()",
-        'params': (),
-        'display': "CHANGE REPLICATION FILTER REPLICATE_DO_DB = ()",
-    }
-
-
 def test_build_mariadb_set_query_uses_csv_values_and_clear():
     _require_module()
 
@@ -404,33 +315,6 @@ def test_build_mariadb_set_query_uses_csv_values_and_clear():
         'params': ('',),
         'display': "SET GLOBAL `replicate_do_db` = ''",
     }
-
-
-def test_get_mariadb_filter_rows_uses_channel_table():
-    _require_module()
-
-    cursor = CursorStub([[
-        {
-            'CHANNEL_NAME': 'analytics',
-            'FILTER_NAME': 'REPLICATE_DO_DB',
-            'FILTER_RULE': 'reporting,app',
-        }
-    ]])
-
-    assert get_mysql_filter_rows(cursor, channel='analytics') == [
-        {
-            'CHANNEL_NAME': 'analytics',
-            'FILTER_NAME': 'REPLICATE_DO_DB',
-            'FILTER_RULE': 'reporting,app',
-        }
-    ]
-    assert cursor.executed == [
-        (
-            'SELECT CHANNEL_NAME, FILTER_NAME, FILTER_RULE '
-            'FROM performance_schema.replication_applier_filters WHERE CHANNEL_NAME = %s',
-            ('analytics',),
-        )
-    ]
 
 
 def test_supports_connection_name_checks_version_threshold():
@@ -543,63 +427,18 @@ def test_get_mariadb_filter_values_rejects_connection_name_on_old_versions():
     assert str(exc_info.value) == 'connection_name requires MariaDB 10.0.1 or newer'
 
 
-def test_apply_mariadb_check_mode_predicts_channel_query_without_writes():
-    _require_module()
-
-    cursor = FakeCursor(channel_rows={
-        'analytics-channel': [
-            {
-                'CHANNEL_NAME': 'analytics-channel',
-                'FILTER_NAME': 'REPLICATE_IGNORE_DB',
-                'FILTER_RULE': 'archive',
-            }
-        ]
-    })
-
-    manager = MySQLReplicationFilter(ModuleStub(check_mode=True), cursor, 'mysql', '8.4.0')
-    result = manager.apply(
-        {'replicate_ignore_db': ['reporting', 'analytics']},
-        channel='analytics-channel',
-    )
-
-    assert result == {
-        'changed': True,
-        'queries': [
-            (
-                "CHANGE REPLICATION FILTER REPLICATE_IGNORE_DB = (`analytics`,`reporting`) "
-                "FOR CHANNEL 'analytics-channel'"
-            )
-        ],
-        'filters': {
-            'replicate_do_db': [],
-            'replicate_ignore_db': ['analytics', 'reporting'],
-            'replicate_do_table': [],
-            'replicate_ignore_table': [],
-            'replicate_wild_do_table': [],
-            'replicate_wild_ignore_table': [],
-        },
-    }
-    assert cursor.executed == [
-        (
-            'SELECT CHANNEL_NAME, FILTER_NAME, FILTER_RULE '
-            'FROM performance_schema.replication_applier_filters WHERE CHANNEL_NAME = %s',
-            ('analytics-channel',),
-        )
-    ]
-
-
 def test_apply_mariadb_executes_change_query_in_real_mode():
     _require_module()
 
-    cursor = FakeCursor(global_rows=[])
+    cursor = FakeCursor()
 
-    manager = MySQLReplicationFilter(ModuleStub(check_mode=False), cursor, 'mysql', '8.4.0')
+    manager = MySQLReplicationFilter(ModuleStub(check_mode=False), cursor, '10.11.0-MariaDB')
     result = manager.apply({'replicate_do_db': ['app']})
 
     assert result == {
         'changed': True,
         'queries': [
-            "CHANGE REPLICATION FILTER REPLICATE_DO_DB = (`app`)",
+            "SET GLOBAL `replicate_do_db` = 'app'",
         ],
         'filters': {
             'replicate_do_db': ['app'],
@@ -611,46 +450,41 @@ def test_apply_mariadb_executes_change_query_in_real_mode():
         },
     }
     assert cursor.executed == [
-        ('SELECT FILTER_NAME, FILTER_RULE FROM performance_schema.replication_applier_global_filters', None),
-        ('CHANGE REPLICATION FILTER REPLICATE_DO_DB = (`app`)', None),
+        ('SELECT @@GLOBAL.replicate_do_db AS Value', None),
+        ('SELECT @@GLOBAL.replicate_ignore_db AS Value', None),
+        ('SELECT @@GLOBAL.replicate_do_table AS Value', None),
+        ('SELECT @@GLOBAL.replicate_ignore_table AS Value', None),
+        ('SELECT @@GLOBAL.replicate_wild_do_table AS Value', None),
+        ('SELECT @@GLOBAL.replicate_wild_ignore_table AS Value', None),
+        ('SET GLOBAL `replicate_do_db` = %s', ('app',)),
     ]
+    assert cursor.variables['replicate_do_db'] == 'app'
 
 
 def test_apply_mariadb_returns_unchanged_when_filter_matches_different_order():
     _require_module()
 
-    cursor = FakeCursor(global_rows=[
-        {
-            'FILTER_NAME': 'REPLICATE_IGNORE_DB',
-            'FILTER_RULE': 'analytics,reporting',
-        }
-    ])
+    cursor = FakeCursor(variables={'replicate_ignore_db': 'analytics,reporting'})
 
-    manager = MySQLReplicationFilter(ModuleStub(check_mode=False), cursor, 'mysql', '8.4.0')
+    manager = MySQLReplicationFilter(ModuleStub(check_mode=False), cursor, '10.11.0-MariaDB')
     result = manager.apply({'replicate_ignore_db': ['reporting', 'analytics']})
 
     assert result['changed'] is False
     assert result['queries'] == []
     assert cursor.executed == [
-        ('SELECT FILTER_NAME, FILTER_RULE FROM performance_schema.replication_applier_global_filters', None),
+        ('SELECT @@GLOBAL.replicate_do_db AS Value', None),
+        ('SELECT @@GLOBAL.replicate_ignore_db AS Value', None),
+        ('SELECT @@GLOBAL.replicate_do_table AS Value', None),
+        ('SELECT @@GLOBAL.replicate_ignore_table AS Value', None),
+        ('SELECT @@GLOBAL.replicate_wild_do_table AS Value', None),
+        ('SELECT @@GLOBAL.replicate_wild_ignore_table AS Value', None),
     ]
-
-
-def test_apply_mariadb_rejects_connection_name():
-    _require_module()
-
-    manager = MySQLReplicationFilter(ModuleStub(check_mode=False), FakeCursor(), 'mysql', '8.4.0')
-
-    with pytest.raises(RuntimeError) as exc_info:
-        manager.apply({'replicate_do_db': ['app']}, connection_name='analytics')
-
-    assert str(exc_info.value) == 'connection_name is supported only for MariaDB'
 
 
 def test_apply_rejects_filter_values_containing_commas():
     _require_module()
 
-    manager = MySQLReplicationFilter(ModuleStub(check_mode=False), FakeCursor(), 'mysql', '8.4.0')
+    manager = MySQLReplicationFilter(ModuleStub(check_mode=False), FakeCursor(), '10.11.0-MariaDB')
 
     with pytest.raises(RuntimeError) as exc_info:
         manager.apply({'replicate_do_db': ['bad,name']})
@@ -661,7 +495,7 @@ def test_apply_rejects_filter_values_containing_commas():
 def test_apply_rejects_invalid_table_filter_value():
     _require_module()
 
-    manager = MySQLReplicationFilter(ModuleStub(check_mode=False), FakeCursor(), 'mysql', '8.4.0')
+    manager = MySQLReplicationFilter(ModuleStub(check_mode=False), FakeCursor(), '10.11.0-MariaDB')
 
     with pytest.raises(RuntimeError) as exc_info:
         manager.apply({'replicate_do_table': ['missing_separator']})
@@ -673,7 +507,7 @@ def test_apply_rejects_invalid_table_filter_value():
 def test_apply_rejects_invalid_wildcard_filter_value(param):
     _require_module()
 
-    manager = MySQLReplicationFilter(ModuleStub(check_mode=False), FakeCursor(), 'mysql', '8.4.0')
+    manager = MySQLReplicationFilter(ModuleStub(check_mode=False), FakeCursor(), '10.11.0-MariaDB')
 
     with pytest.raises(RuntimeError) as exc_info:
         manager.apply({param: ['missing_separator']})
@@ -698,7 +532,7 @@ def test_apply_mariadb_check_mode_predicts_changes_without_writes():
         },
     )
 
-    manager = MySQLReplicationFilter(ModuleStub(check_mode=True), cursor, 'mariadb', '10.11.0-MariaDB')
+    manager = MySQLReplicationFilter(ModuleStub(check_mode=True), cursor, '10.11.0-MariaDB')
     result = manager.apply(
         {'replicate_do_db': ['reporting', 'app']},
         connection_name='analytics',
@@ -741,7 +575,7 @@ def test_apply_mariadb_executes_queries_with_connection_context():
         },
     )
 
-    manager = MySQLReplicationFilter(ModuleStub(check_mode=False), cursor, 'mariadb', '10.11.0-MariaDB')
+    manager = MySQLReplicationFilter(ModuleStub(check_mode=False), cursor, '10.11.0-MariaDB')
     result = manager.apply(
         {'replicate_ignore_db': ['archive', 'analytics']},
         connection_name='analytics',
@@ -768,17 +602,6 @@ def test_apply_mariadb_executes_queries_with_connection_context():
         ('SET GLOBAL `replicate_ignore_db` = %s', ('analytics,archive',)),
         ('SET @@default_master_connection = %s', ('',)),
     ]
-
-
-def test_apply_mariadb_rejects_channel():
-    _require_module()
-
-    manager = MySQLReplicationFilter(ModuleStub(check_mode=False), FakeCursor(version='10.11.0-MariaDB'), 'mariadb', '10.11.0-MariaDB')
-
-    with pytest.raises(RuntimeError) as exc_info:
-        manager.apply({'replicate_do_db': ['app']}, channel='analytics')
-
-    assert str(exc_info.value) == 'channel is supported only for MySQL'
 
 
 def test_main_requires_at_least_one_filter_before_connect(monkeypatch):
