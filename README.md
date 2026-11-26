@@ -72,7 +72,7 @@ Every voice is important and every idea is valuable. If you have something on yo
   - mariadb_db — Add or remove MariaDB databases from a remote host
   - mariadb_binlog_info — Gather MariaDB binary log information
   - mariadb_info — Gather information about MariaDB servers
-  - mariadb_password_policy — Manage MariaDB password policy settings
+
   - mariadb_perf_schema — Manage MariaDB Performance Schema setup tables
   - mariadb_query — Run MariaDB queries
   - mariadb_replication — Manage MariaDB replication

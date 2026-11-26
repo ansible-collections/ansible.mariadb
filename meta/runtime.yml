@@ -5,7 +5,6 @@ action_groups:
     - mariadb_db
     - mariadb_binlog_info
     - mariadb_info
-    - mariadb_password_policy
     - mariadb_perf_schema
     - mariadb_query
     - mariadb_replication

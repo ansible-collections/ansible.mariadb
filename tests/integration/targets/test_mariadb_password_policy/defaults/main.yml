@@ -1,5 +1,0 @@
----
-mariadb_user: root
-mariadb_password: msandbox
-mariadb_host: '{{ gateway_addr }}'
-mariadb_primary_port: 3307
