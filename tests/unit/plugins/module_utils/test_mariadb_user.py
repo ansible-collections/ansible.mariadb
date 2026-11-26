@@ -260,3 +260,35 @@ def test_privileges_revoke_uses_account_syntax(role, expected_query, expected_pa
         call(expected_query, expected_params),
         call('FLUSH PRIVILEGES'),
     ]
+
+
+@pytest.mark.parametrize(
+    'grants,role,expected',
+    [
+        (
+            [
+                "GRANT USAGE ON *.* TO `role2`",
+                "GRANT SELECT ON `db`.* TO `role2`",
+                "GRANT `role1` TO `role2`",
+            ],
+            True,
+            {'*.*': ['USAGE'], '`db`.*': ['SELECT']},
+
+        ),
+        (
+            [
+                "GRANT USAGE ON *.* TO `role1`@`localhost`",
+                "GRANT `admin`@`%` TO `user1`@`localhost`",
+                "SET DEFAULT ROLE `admin`@`%` FOR `user1`@`localhost`",
+            ],
+            False,
+            {'*.*': ['USAGE']},
+
+        )
+    ]
+)
+def test_privileges_get_ignores_granted_roles(grants, role, expected):
+    """Tests that privileges_get skips roles granted to users and roles."""
+    cursor = MagicMock()
+    cursor.fetchall.return_value = [(g,) for g in grants]
+    assert privileges_get(cursor, 'role2', 'localhost', role=role) == expected
