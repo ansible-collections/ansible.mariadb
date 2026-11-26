@@ -676,6 +676,8 @@ def privileges_get(cursor, user, host, role=False):
             # or
             # SET DEFAULT ROLE `admin`@`%` FOR `user1`@`localhost`
             # which will result None as res value.
+            # The same applies to roles granted to a role, for example
+            # GRANT `role1` TO `role2`
             # As we use the mariadb_role module to manipulate roles
             # we just ignore such privs below:
             res = re.match(

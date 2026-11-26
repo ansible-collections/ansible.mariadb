@@ -73,22 +73,4 @@ It is not necessary but if you want you can also add unit tests to a suitable fi
 
 It will make your and other people's life a bit easier if you run the tests locally and fix all failures before pushing. If you're unable to run the tests locally, please create your PR as a **draft** to avoid reviewers being added automatically.
 
-If you are new here, read the [Quick-start development guide](https://docs.ansible.com/projects/ansible/devel/community/create_pr_quick_start.html) first.
-
-We assume you [prepared your local environment](https://docs.ansible.com/projects/ansible/devel/community/create_pr_quick_start.html#prepare-your-environment) as described in the guide before running the following commands. Otherwise, the command will fail.
-
-### Sanity tests
-
-``` console
-$ ansible-test sanity path/to/changed_file.py --docker -v
-```
-
-### Integration tests
-
-See the [TESTING.md](https://github.com/ansible-collections/ansible.mariadb/blob/main/TESTING.md) file to learn how to run integration tests against different server/connector versions.
-
-### Unit tests
-
-``` console
-$ ansible-test units tests/unit/plugins/unit_test_file.py --docker
-```
+See the [TESTING.md](https://github.com/ansible-collections/ansible.mariadb/blob/main/TESTING.md) file to learn how to run integration, unit and santiy tests against different server/connector versions.
