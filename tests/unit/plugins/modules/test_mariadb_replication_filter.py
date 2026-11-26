@@ -27,7 +27,7 @@ except ModuleNotFoundError as exc:
         raise
     _IMPORT_ERROR = (
         "mariadb_replication_filter module not yet implemented - create "
-        "plugins/modules/mariadb_replication_filter.py first. Original error: %s" % exc
+        f"plugins/modules/mariadb_replication_filter.py first. Original error: {exc}"
     )
 else:
     apply_filters = mariadb_replication_filter_module.apply_filters
@@ -158,7 +158,7 @@ class FakeCursor(object):
             self._rows = []
             return
 
-        raise AssertionError('Unexpected query: %s (params=%s)' % (query, params))
+        raise AssertionError(f'Unexpected query: {query} (params={params})')
 
     def fetchone(self):
         return self._rows[0] if self._rows else None
@@ -258,7 +258,7 @@ def test_plan_filter_changes_updates_only_requested_filters():
         lambda param, values: {
             'sql': param,
             'params': tuple(values),
-            'display': '%s=%s' % (param, ','.join(values)),
+            'display': f"{param}={','.join(values)}",
         },
     )
 
@@ -511,7 +511,7 @@ def test_apply_rejects_invalid_wildcard_filter_value(param):
     with pytest.raises(RuntimeError) as exc_info:
         apply_filters(ModuleStub(check_mode=False), FakeCursor(), '10.11.0-MariaDB', {param: ['missing_separator']})
 
-    assert str(exc_info.value) == '%s values must use database.table syntax: missing_separator' % param
+    assert str(exc_info.value) == f'{param} values must use database.table syntax: missing_separator'
 
 
 def test_apply_filters_check_mode_predicts_changes_without_writes():

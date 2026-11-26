@@ -256,12 +256,12 @@ def plan_filter_changes(desired_filters, current_filters, query_builder):
 def build_filter_query(param, values):
     value = ','.join(normalize_filter_values(values))
     identifier = quote_identifier(param, 'vars')
-    query = 'SET GLOBAL %s = %%s' % identifier
+    query = f'SET GLOBAL {identifier} = %s'
 
     return {
         'sql': query,
         'params': (value,),
-        'display': 'SET GLOBAL %s = %s' % (identifier, _quote_sql_string(value)),
+        'display': f'SET GLOBAL {identifier} = {_quote_sql_string(value)}',
     }
 
 
@@ -277,7 +277,8 @@ def _split_filter_rule(value):
 
 
 def _quote_sql_string(value):
-    return "'%s'" % value.replace('\\', '\\\\').replace("'", "''")
+    escaped_value = value.replace('\\', '\\\\').replace("'", "''")
+    return f"'{escaped_value}'"
 
 
 def _uses_database_table_syntax(value):
@@ -295,7 +296,7 @@ def get_filter_values(module, cursor, server_version, connection_name=''):
 
     if connection_name:
         replica_term = 'REPLICA' if LooseVersion(server_version) >= LooseVersion('10.5.1') else 'SLAVE'
-        cursor.execute('SHOW %s %s STATUS' % (replica_term, _quote_sql_string(connection_name)))
+        cursor.execute(f'SHOW {replica_term} {_quote_sql_string(connection_name)} STATUS')
         rows = cursor.fetchall()
         if rows:
             row = rows[0]
@@ -311,7 +312,7 @@ def get_filter_values(module, cursor, server_version, connection_name=''):
 
     variables = {}
     for param in FILTER_VALUE_KINDS:
-        cursor.execute('SELECT @@GLOBAL.%s AS Value' % param)
+        cursor.execute(f'SELECT @@GLOBAL.{param} AS Value')
         rows = cursor.fetchall()
         variables[param] = _extract_variable_value(rows)
 
@@ -380,13 +381,13 @@ def validate_filters(module, desired_filters):
         values_with_commas = [value for value in values if ',' in value]
         if values_with_commas:
             module.fail_json(
-                msg='replication filter values cannot contain commas: %s' % ', '.join(values_with_commas)
+                msg=f"replication filter values cannot contain commas: {', '.join(values_with_commas)}"
             )
         if FILTER_VALUE_KINDS[param] in ('table', 'pattern'):
             invalid_values = [value for value in values if not _uses_database_table_syntax(value)]
             if invalid_values:
                 module.fail_json(
-                    msg='%s values must use database.table syntax: %s' % (param, ', '.join(invalid_values))
+                    msg=f"{param} values must use database.table syntax: {', '.join(invalid_values)}"
                 )
 
 
@@ -436,8 +437,8 @@ def main():
         module.fail_json(
             msg=(
                 "unable to connect to database, check login_user and "
-                "login_password are correct or %s has the credentials. "
-                "Exception message: %s" % (config_file, to_native(e))
+                f"login_password are correct or {config_file} has the credentials. "
+                f"Exception message: {to_native(e)}"
             )
         )
 
@@ -452,7 +453,7 @@ def main():
             )
         )
     except ValueError as e:
-        module.fail_json(msg='invalid replication filter request: %s' % to_native(e))
+        module.fail_json(msg=f'invalid replication filter request: {to_native(e)}')
 
 
 if __name__ == '__main__':
