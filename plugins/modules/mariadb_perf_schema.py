@@ -141,7 +141,7 @@ options:
         default: present
 
 notes:
-  - Compatible with MariaDB or MySQL when the requested Performance Schema sections are available on the server.
+  - Compatible with MariaDB when the requested Performance Schema sections are available on the server.
   - The module requires Performance Schema to be enabled and the requested setup table columns to exist.
   - Changes are runtime only and are not persisted across restart by this module.
 
@@ -153,9 +153,6 @@ attributes:
 
 seealso:
   - module: ansible.mariadb.mariadb_query
-  - name: MySQL Performance Schema reference
-    description: Oracle MySQL Performance Schema documentation.
-    link: https://dev.mysql.com/doc/en/performance-schema.html
   - name: MariaDB Performance Schema overview
     description: MariaDB Performance Schema documentation.
     link: https://mariadb.com/docs/server/reference/system-tables/performance-schema/performance-schema-overview

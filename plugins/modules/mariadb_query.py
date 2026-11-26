@@ -65,7 +65,7 @@ attributes:
 seealso:
 - module: ansible.mariadb.mariadb_db
 notes:
-- Compatible with MariaDB or MySQL.
+- Compatible with MariaDB.
 author:
 - Andrew Klychkov (@Andersson007)
 extends_documentation_fragment:
@@ -272,7 +272,7 @@ def main():
                     execution_time_ms.append(exec_time_ms)
                 except driver.Warning:
                     # When something is run with IF NOT EXISTS
-                    # and there's "already exists" MySQL warning,
+                    # and there's "already exists" in MariaDB warning,
                     # set the flag as True.
                     # PyMySQL < 0.10.0 throws the warning, mysqlclient
                     # and PyMySQL 0.10.0+ does NOT.

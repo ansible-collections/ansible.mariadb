@@ -39,8 +39,7 @@ options:
     - C(persist_only) persists C(value) to the mysqld-auto.cnf option file in the data directory
       but without setting the global variable runtime value
       (the value will be changed after the next service restart).
-    - Supported by MySQL 8.0 or later.
-    - For more information see U(https://dev.mysql.com/doc/refman/8.0/en/set-variable.html).
+    - For more information see U(https://mariadb.com/docs/server/ha-and-performance/mariadb-memory-allocation#how-to-set-variables).
     type: str
     choices: ['global', 'persist', 'persist_only']
     default: global
@@ -57,12 +56,12 @@ attributes:
 
 seealso:
 - module: ansible.mariadb.mariadb_info
-- name: MySQL SET command reference
-  description: Complete reference of the MySQL SET command documentation.
-  link: https://dev.mysql.com/doc/refman/8.0/en/set-statement.html
+- name: MariaDB SET command reference
+  description: Complete reference of the MariaDB SET server system variables
+  link: https://mariadb.com/docs/server/server-management/variables-and-modes/server-system-variables
 
 notes:
-   - Compatible with MariaDB or MySQL.
+   - Compatible with MariaDB.
 
 extends_documentation_fragment:
 - ansible.mariadb.connect
@@ -83,7 +82,7 @@ EXAMPLES = r'''
     mode: persist
 
 - name: Set a boolean using ON/OFF notation
-  mysql_variables:
+  mariadb_variables:
     variable: log_slow_replica_statements
     value: "ON"  # Make sure it's quoted
 '''
@@ -102,20 +101,20 @@ import warnings
 from re import match
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.ansible.mariadb.plugins.module_utils.database import SQLParseError, mysql_quote_identifier
+from ansible_collections.ansible.mariadb.plugins.module_utils.database import SQLParseError, quote_identifier
 from ansible_collections.ansible.mariadb.plugins.module_utils.connect import connect, driver, driver_fail_msg, common_argument_spec
 from ansible.module_utils.common.text.converters import to_native
 
 executed_queries = []
 
 
-def check_mysqld_auto(module, cursor, mysqlvar):
+def check_mysqld_auto(module, cursor, var):
     """Check variable's value in mysqld-auto.cnf."""
     query = ("SELECT VARIABLE_VALUE "
              "FROM performance_schema.persisted_variables "
              "WHERE VARIABLE_NAME = %s")
     try:
-        cursor.execute(query, (mysqlvar,))
+        cursor.execute(query, (var,))
         res = cursor.fetchone()
     except Exception as e:
         if "Table 'performance_schema.persisted_variables' doesn't exist" in str(e):
@@ -153,17 +152,17 @@ def typedvalue(value):
     return value
 
 
-def getvariable(cursor, mysqlvar):
-    cursor.execute("SHOW VARIABLES WHERE Variable_name = %s", (mysqlvar,))
-    mysqlvar_val = cursor.fetchall()
-    if len(mysqlvar_val) == 1:
-        return mysqlvar_val[0][1]
+def getvariable(cursor, var):
+    cursor.execute("SHOW VARIABLES WHERE Variable_name = %s", (var,))
+    var_val = cursor.fetchall()
+    if len(var_val) == 1:
+        return var_val[0][1]
     else:
         return None
 
 
-def setvariable(cursor, mysqlvar, value, mode='global'):
-    """ Set a global mysql variable to a given value
+def setvariable(cursor, var, value, mode='global'):
+    """ Set a global variable to a given value
 
     The DB driver will handle quoting of the given value based on its
     type, thus numeric strings like '3.0' or '8' are illegal, they
@@ -171,11 +170,11 @@ def setvariable(cursor, mysqlvar, value, mode='global'):
 
     """
     if mode == 'persist':
-        query = "SET PERSIST %s = " % mysql_quote_identifier(mysqlvar, 'vars')
+        query = "SET PERSIST %s = " % quote_identifier(var, 'vars')
     elif mode == 'global':
-        query = "SET GLOBAL %s = " % mysql_quote_identifier(mysqlvar, 'vars')
+        query = "SET GLOBAL %s = " % quote_identifier(var, 'vars')
     elif mode == 'persist_only':
-        query = "SET PERSIST_ONLY %s = " % mysql_quote_identifier(mysqlvar, 'vars')
+        query = "SET PERSIST_ONLY %s = " % quote_identifier(var, 'vars')
 
     try:
         cursor.execute(query + "%s", (value,))
@@ -221,14 +220,14 @@ def main():
     config_file = module.params['config_file']
     db = 'mysql'
 
-    mysqlvar = module.params["variable"]
+    var = module.params["variable"]
     value = module.params["value"]
     mode = module.params["mode"]
 
-    if mysqlvar is None:
+    if var is None:
         module.fail_json(msg="Cannot run without variable to operate with")
-    if match('^[0-9A-Za-z_.]+$', mysqlvar) is None:
-        module.fail_json(msg="invalid variable name \"%s\"" % mysqlvar)
+    if match('^[0-9A-Za-z_.]+$', var) is None:
+        module.fail_json(msg="invalid variable name \"%s\"" % var)
     if driver is None:
         module.fail_json(msg=driver_fail_msg)
     else:
@@ -245,28 +244,28 @@ def main():
         else:
             module.fail_json(msg="unable to find %s. Exception message: %s" % (config_file, to_native(e)))
 
-    mysqlvar_val = None
+    var_val = None
     var_in_mysqld_auto_cnf = None
 
-    mysqlvar_val = getvariable(cursor, mysqlvar)
-    if mysqlvar_val is None:
-        module.fail_json(msg="Variable not available \"%s\"" % mysqlvar, changed=False)
+    var_val = getvariable(cursor, var)
+    if var_val is None:
+        module.fail_json(msg="Variable not available \"%s\"" % var, changed=False)
 
     if value is None:
-        module.exit_json(msg=mysqlvar_val)
+        module.exit_json(msg=var_val)
 
     if mode in ('persist', 'persist_only'):
-        var_in_mysqld_auto_cnf = check_mysqld_auto(module, cursor, mysqlvar)
+        var_in_mysqld_auto_cnf = check_mysqld_auto(module, cursor, var)
 
         if mode == 'persist_only':
             if var_in_mysqld_auto_cnf is None:
-                mysqlvar_val = False
+                var_val = False
             else:
-                mysqlvar_val = var_in_mysqld_auto_cnf
+                var_val = var_in_mysqld_auto_cnf
 
     # Type values before using them
     value_wanted = typedvalue(value)
-    value_actual = typedvalue(mysqlvar_val)
+    value_actual = typedvalue(var_val)
     if value_actual in ('ON', 'OFF') and value_wanted not in ('ON', 'OFF'):
         value_wanted = convert_bool_setting_value_wanted(value_wanted)
 
@@ -287,7 +286,7 @@ def main():
                              "with requested value.", changed=False)
 
     try:
-        result = setvariable(cursor, mysqlvar, value_wanted, mode)
+        result = setvariable(cursor, var, value_wanted, mode)
     except SQLParseError as e:
         result = to_native(e)
 

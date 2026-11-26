@@ -18,7 +18,7 @@
 # along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
 
 # ============================================================
-# Assert mysql variable name and value from mysql database
+# Assert MariaDB variable name and value from mysql database
 #
 - name: Assert output message changed value
   assert:

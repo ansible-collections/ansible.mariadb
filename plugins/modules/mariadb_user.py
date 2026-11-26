@@ -26,21 +26,17 @@ options:
     description:
       - Set the user's password. Only for C(mysql_native_password) authentication.
         For other authentication plugins see the combination of I(plugin), I(plugin_hash_string), I(plugin_auth_string).
-      - On MySQL 9.7.0+, C(mysql_native_password) was removed. The password is still accepted and applied
-        via C(IDENTIFIED BY), letting the server use C(caching_sha2_password) instead.
       - Because C(caching_sha2_password) uses a random salt, the password hash cannot be compared.
-        As a result, I(update_password=always) will always report C(changed) on MySQL 9.7.0+.
+        As a result, I(update_password=always) will always report C(changed).
     type: str
   encrypted:
     description:
       - Indicate that the 'password' field is a C(mysql_native_password) hash.
-      - Not supported on MySQL 9.7.0+ because the C(mysql_native_password) plugin has been removed.
-        The module will fail if this option is used on MySQL 9.7.0+.
     type: bool
     default: false
   host:
     description:
-      - The 'host' part of the MySQL username.
+      - The 'host' part of the MariaDB username.
     type: str
     default: localhost
   host_all:
@@ -52,12 +48,12 @@ options:
     default: false
   priv:
     description:
-      - "MySQL privileges string in the format: C(db.table:priv1,priv2)."
+      - "MariaDB privileges string in the format: C(db.table:priv1,priv2)."
       - Additionally, there must be no spaces between the table and the privilege as this will yield a non-idempotent check mode.
       - "Multiple privileges can be specified by separating each one using
         a forward slash: C(db.table1:priv/db.table2:priv)."
-      - The format is based on MySQL C(GRANT) statement.
-      - Database and table names can be quoted, MySQL-style.
+      - The format is based on MariaDB C(GRANT) statement.
+      - Database and table names can be quoted, MariaDB-style.
       - If column privileges are used, the C(priv1,priv2) part must be
         exactly as returned by a C(SHOW GRANT) statement. If not followed,
         the module will always report changes. It includes grouping columns
@@ -100,13 +96,11 @@ options:
   force_context:
     description:
       - Sets the С(mysql) system database as context for the executed statements (it will be used
-        as a database to connect to). Useful if you use binlog / replication filters in MySQL as
+        as a database to connect to). Useful if you use binlog / replication filters in MariaDB as
         per default the statements can not be caught by a binlog / replication filter, they require
         a database to be set to work, otherwise the replication can break down.
-      - See U(https://dev.mysql.com/doc/refman/8.0/en/replication-options-binary-log.html#option_mysqld_binlog-ignore-db)
+      - See U(https://mariadb.com/docs/server/ha-and-performance/standard-replication/replication-filters)
         for a description on how binlog filters work (filtering on the primary).
-      - See U(https://dev.mysql.com/doc/refman/8.0/en/replication-options-replica.html#option_mysqld_replicate-ignore-db)
-        for a description on how replication filters work (filtering on the replica).
     type: bool
     default: false
     version_added: '3.1.0'
@@ -147,7 +141,7 @@ options:
   plugin_auth_string:
     description:
       - User's plugin auth_string (``CREATE USER user IDENTIFIED WITH plugin BY plugin_auth_string``).
-      - If I(plugin) is ``pam`` (MariaDB) or ``auth_pam`` (MySQL) an optional I(plugin_auth_string) can be used to choose a specific PAM service.
+      - If I(plugin) is ``pam`` an optional I(plugin_auth_string) can be used to choose a specific PAM service.
       - You need to define a I(salt) to have idempotence on password change with the ``caching_sha2_password`` plugin.
     type: str
     version_added: '0.1.0'
@@ -160,7 +154,7 @@ options:
     version_added: '3.10.0'
   resource_limits:
     description:
-      - Limit the user for certain server resources. Provided since MySQL 5.6 / MariaDB 10.2.
+      - Limit the user for certain server resources. Provided since MariaDB 10.2.
       - "Available options are C(MAX_QUERIES_PER_HOUR: num), C(MAX_UPDATES_PER_HOUR: num),
         C(MAX_CONNECTIONS_PER_HOUR: num), C(MAX_USER_CONNECTIONS: num), C(MAX_STATEMENT_TIME: num) (supported only for MariaDB since collection version 3.7.0)."
       - Used when I(state=present), ignored otherwise.
@@ -216,8 +210,8 @@ options:
     version_added: '3.9.0'
 
 notes:
-   - Compatible with MySQL or MariaDB.
-   - "MySQL server installs with default I(login_user) of C(root) and no password.
+   - Compatible with MariaDB.
+   - "MariaDB server installs with default I(login_user) of C(root) and no password.
      To secure this user as part of an idempotent playbook, you must create at least two tasks:
      1) change the root user's password, without providing any I(login_user)/I(login_password) details,
      2) drop a C(~/.my.cnf) file containing the new root credentials.
@@ -234,12 +228,12 @@ attributes:
 
 seealso:
 - module: ansible.mariadb.mariadb_info
-- name: MySQL access control and account management reference
-  description: Complete reference of the MySQL access control and account management documentation.
-  link: https://dev.mysql.com/doc/refman/8.0/en/access-control.html
-- name: MySQL provided privileges reference
-  description: Complete reference of the MySQL provided privileges documentation.
-  link: https://dev.mysql.com/doc/refman/8.0/en/privileges-provided.html
+- name: MariaDB access control and account management reference
+  description: Complete reference of the MariaDB access control and account management documentation.
+  link: https://mariadb.com/docs/server/security/user-account-management
+- name: MariaDB provided privileges reference
+  description: Complete reference of the MariaDB provided privileges documentation.
+  link: https://mariadb.com/docs/server/reference/sql-statements/account-management-sql-statements/grant#global-privileges
 
 author:
 - Jonathan Mainguy (@Jmainguy)
@@ -303,7 +297,7 @@ EXAMPLES = r'''
       'db1.*': 'ALL,GRANT'
       'db2.*': 'ALL,GRANT'
 
-# Use 'PROCEDURE' instead of 'FUNCTION' to apply GRANTs for a MySQL procedure instead.
+# Use 'PROCEDURE' instead of 'FUNCTION' to apply GRANTs for a MariaDB procedure instead.
 - name: Grant a user the right to execute a function
   ansible.mariadb.mariadb_user:
     name: readonly
@@ -348,7 +342,7 @@ EXAMPLES = r'''
 # check_implicit_admin example
 - name: >
     Ensure no user named 'sally'@'localhost' exists, also passing in the auth credentials.
-    If mysql allows root/nopassword login, try it without the credentials first.
+    If MariaDB allows root/nopassword login, try it without the credentials first.
     If it's not allowed, pass the credentials
   ansible.mariadb.mariadb_user:
     check_implicit_admin: true

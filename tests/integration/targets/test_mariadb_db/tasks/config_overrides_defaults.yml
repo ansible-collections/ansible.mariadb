@@ -91,8 +91,8 @@
     - result.msg is not search(pattern2)
     - result.msg is not search(pattern3)
   vars:
-    pattern1: Can't connect to MySQL server on '{{ fake_host }}'
-    pattern2: Unknown MySQL server host '{{ fake_host }}'
+    pattern1: Can't connect to MariaDB server on '{{ fake_host }}'
+    pattern2: Unknown MariaDB server host '{{ fake_host }}'
     pattern3: Unknown server host '{{ fake_host }}'
 
 - name: Config overrides | Clean up test database

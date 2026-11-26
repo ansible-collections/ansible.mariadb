@@ -30,12 +30,12 @@ except ImportError:
     except ImportError:
         driver = None
 
-driver_fail_msg = ('A MySQL module is required: for Python 2.7 either PyMySQL, or '
+driver_fail_msg = ('A MariaDB module is required: for Python 2.7 either PyMySQL, or '
                    'MySQL-python, or for Python 3.X mysqlclient or PyMySQL. '
                    'Consider setting ansible_python_interpreter to use '
                    'the intended Python version.')
 
-from ansible_collections.ansible.mariadb.plugins.module_utils.database import mysql_quote_identifier
+from ansible_collections.ansible.mariadb.plugins.module_utils.database import quote_identifier
 
 
 def get_connector_name(connector):
@@ -209,7 +209,7 @@ def get_server_version(cursor):
 def set_session_vars(module, cursor, session_vars):
     """Set session vars."""
     for var, value in session_vars.items():
-        query = "SET SESSION %s = " % mysql_quote_identifier(var, 'vars')
+        query = "SET SESSION %s = " % quote_identifier(var, 'vars')
         try:
             cursor.execute(query + "%s", (value,))
         except Exception as e:

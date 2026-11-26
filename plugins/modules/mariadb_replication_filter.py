@@ -16,7 +16,6 @@ short_description: Manage MariaDB replication filters
 description:
   - This module only supports MariaDB; all MySQL-related options will be removed in the next releases. Use the C(ansible.mysql) collection for MySQL automation.
   - Manage replica-side replication filters declaratively.
-  - MySQL uses C(CHANGE REPLICATION FILTER).
   - MariaDB uses C(SET GLOBAL replicate_*) variables.
   - Changes are runtime only and are not persisted across restart by this module.
   - Persist filter settings separately through server configuration if they must survive a restart.
@@ -80,7 +79,7 @@ options:
     type: str
 
 notes:
-  - Compatible with MariaDB or MySQL.
+  - Compatible with MariaDB.
   - At least one replication filter option must be provided.
   - Unspecified filters are left unchanged.
 
@@ -95,20 +94,20 @@ extends_documentation_fragment:
 '''
 
 EXAMPLES = r'''
-- name: Ignore one database on a MySQL replica
+- name: Ignore one database on a MariaDB replica
   ansible.mariadb.mariadb_replication_filter:
     login_unix_socket: /run/mysqld/mysqld.sock
     replicate_ignore_db:
       - audit
 
-- name: Replicate selected tables on a MySQL replica
+- name: Replicate selected tables on a MariaDB replica
   ansible.mariadb.mariadb_replication_filter:
     login_unix_socket: /run/mysqld/mysqld.sock
     replicate_do_table:
       - app.orders
       - reporting.summary
 
-- name: Set wildcard filters on a MySQL replica
+- name: Set wildcard filters on a MariaDB replica
   ansible.mariadb.mariadb_replication_filter:
     login_unix_socket: /run/mysqld/mysqld.sock
     replicate_wild_do_table:
@@ -118,7 +117,7 @@ EXAMPLES = r'''
       - archive.old_%
       - tmp.%
 
-- name: Set multiple MySQL filters in one task
+- name: Set multiple MariaDB filters in one task
   ansible.mariadb.mariadb_replication_filter:
     login_unix_socket: /run/mysqld/mysqld.sock
     replicate_do_db:
@@ -196,7 +195,7 @@ filters:
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.common.text.converters import to_native
 
-from ansible_collections.ansible.mariadb.plugins.module_utils.database import check_input, mysql_quote_identifier
+from ansible_collections.ansible.mariadb.plugins.module_utils.database import check_input, quote_identifier
 from ansible_collections.ansible.mariadb.plugins.module_utils.connect import (
     get_server_version,
     common_argument_spec,
@@ -317,7 +316,7 @@ def build_mysql_filter_query(filter_name, value_kind, values, channel=''):
 
 def build_mariadb_set_query(variable_name, values):
     value = ','.join(normalize_filter_values(values))
-    identifier = mysql_quote_identifier(variable_name, 'vars')
+    identifier = quote_identifier(variable_name, 'vars')
     query = 'SET GLOBAL %s = %%s' % identifier
 
     return {
@@ -361,7 +360,7 @@ def _build_mysql_filter_values(value_kind, values):
     if value_kind == 'pattern':
         return ','.join(_quote_sql_string(value) for value in normalized)
 
-    return ','.join(mysql_quote_identifier(value, value_kind) for value in normalized)
+    return ','.join(quote_identifier(value, value_kind) for value in normalized)
 
 
 def _quote_sql_string(value):

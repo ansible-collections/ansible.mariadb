@@ -11,8 +11,6 @@ from ..utils import dummy_cursor_class
 @pytest.mark.parametrize(
     'cursor_return_version,cursor_return_type',
     [
-        ('5.7.0-mysql', 'dict'),
-        ('8.0.0-mysql', 'list'),
         ('10.5.0-mariadb', 'dict'),
         ('10.5.1-mariadb', 'list'),
     ]

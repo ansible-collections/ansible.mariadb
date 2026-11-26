@@ -11,7 +11,7 @@
 # Auxiliary step:
 - name: Get master status
   mariadb_replication:
-    login_host: '{{ mysql_host }}'
+    login_host: '{{ mariadb_host }}'
     login_port: "{{ primary_db.port }}"
     mode: getmaster
   register: primary_status
@@ -19,10 +19,10 @@
 # Set master_use_gtid disabled:
 - name: Run replication
   mariadb_replication:
-    login_host: '{{ mysql_host }}'
+    login_host: '{{ mariadb_host }}'
     login_port: "{{ replica_db.port }}"
     mode: changemaster
-    master_host: '{{ mysql_host }}'
+    master_host: '{{ mariadb_host }}'
     master_port: "{{ primary_db.port }}"
     master_user: "{{ replication_user }}"
     master_password: "{{ replication_pass }}"
@@ -38,13 +38,13 @@
 # Start standby for further tests:
 - name: Start standby
   mariadb_replication:
-    login_host: '{{ mysql_host }}'
+    login_host: '{{ mariadb_host }}'
     login_port: "{{ primary_db.port }}"
     mode: startslave
 
 - name: Get standby status
   mariadb_replication:
-    login_host: '{{ mysql_host }}'
+    login_host: '{{ mariadb_host }}'
     login_port: "{{ replica_db.port }}"
     mode: getslave
   register: slave_status
@@ -56,7 +56,7 @@
 # Stop standby for further tests:
 - name: Stop standby
   mariadb_replication:
-    login_host: '{{ mysql_host }}'
+    login_host: '{{ mariadb_host }}'
     login_port: "{{ replica_db.port }}"
     mode: stopslave
 
@@ -67,7 +67,7 @@
 # Auxiliary step:
 - name: Get master status
   mariadb_replication:
-    login_host: '{{ mysql_host }}'
+    login_host: '{{ mariadb_host }}'
     login_port: "{{ primary_db.port }}"
     mode: getmaster
   register: primary_status
@@ -75,10 +75,10 @@
 # Set master_use_gtid current_pos:
 - name: Run replication
   mariadb_replication:
-    login_host: '{{ mysql_host }}'
+    login_host: '{{ mariadb_host }}'
     login_port: "{{ replica_db.port }}"
     mode: changemaster
-    master_host: '{{ mysql_host }}'
+    master_host: '{{ mariadb_host }}'
     master_port: "{{ primary_db.port }}"
     master_user: "{{ replication_user }}"
     master_password: "{{ replication_pass }}"
@@ -94,13 +94,13 @@
 # Start standby for further tests:
 - name: Start standby
   mariadb_replication:
-    login_host: '{{ mysql_host }}'
+    login_host: '{{ mariadb_host }}'
     login_port: "{{ primary_db.port }}"
     mode: startslave
 
 - name: Get standby status
   mariadb_replication:
-    login_host: '{{ mysql_host }}'
+    login_host: '{{ mariadb_host }}'
     login_port: "{{ replica_db.port }}"
     mode: getslave
   register: slave_status
@@ -112,7 +112,7 @@
 # Stop standby for further tests:
 - name: Stop standby
   mariadb_replication:
-    login_host: '{{ mysql_host }}'
+    login_host: '{{ mariadb_host }}'
     login_port: "{{ replica_db.port }}"
     mode: stopslave
 
@@ -123,7 +123,7 @@
 # Auxiliary step:
 - name: Get master status
   mariadb_replication:
-    login_host: '{{ mysql_host }}'
+    login_host: '{{ mariadb_host }}'
     login_port: "{{ primary_db.port }}"
     mode: getmaster
   register: primary_status
@@ -131,10 +131,10 @@
 # Set master_use_gtid slave_pos:
 - name: Run replication
   mariadb_replication:
-    login_host: '{{ mysql_host }}'
+    login_host: '{{ mariadb_host }}'
     login_port: "{{ replica_db.port }}"
     mode: changemaster
-    master_host: '{{ mysql_host }}'
+    master_host: '{{ mariadb_host }}'
     master_port: "{{ primary_db.port }}"
     master_user: "{{ replication_user }}"
     master_password: "{{ replication_pass }}"
@@ -150,13 +150,13 @@
 # Start standby for further tests:
 - name: Start standby
   mariadb_replication:
-    login_host: '{{ mysql_host }}'
+    login_host: '{{ mariadb_host }}'
     login_port: "{{ primary_db.port }}"
     mode: startslave
 
 - name: Get standby status
   mariadb_replication:
-    login_host: '{{ mysql_host }}'
+    login_host: '{{ mariadb_host }}'
     login_port: "{{ replica_db.port }}"
     mode: getslave
   register: slave_status
@@ -168,6 +168,6 @@
 # Stop standby for further tests:
 - name: Stop standby
   mariadb_replication:
-    login_host: '{{ mysql_host }}'
+    login_host: '{{ mariadb_host }}'
     login_port: "{{ replica_db.port }}"
     mode: stopslave

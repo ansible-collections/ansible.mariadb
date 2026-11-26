@@ -31,7 +31,7 @@
     - set_fact:
         set_name: 'version'
 
-    - name: read mysql variables (expect changed=false)
+    - name: read MariaDB variables (expect changed=false)
       mariadb_variables:
         <<: *mariadb_params
         variable: '{{ set_name }}'
@@ -50,13 +50,13 @@
         set_name: 'delay_key_write'
         set_value: 'ON'
 
-    - name: set mysql variable
+    - name: set MariaDB variable
       mariadb_variables:
         <<: *mariadb_params
         variable: '{{ set_name }}'
         value: '{{ set_value }}'
 
-    - name: update mysql variable to same value (expect changed=false)
+    - name: update MariaDB variable to same value (expect changed=false)
       mariadb_variables:
         <<: *mariadb_params
         variable: '{{ set_name }}'
@@ -77,13 +77,13 @@
         set_name: 'wait_timeout'
         set_value: '300'
 
-    - name: set mysql variable to a temp value
+    - name: set MariaDB variable to a temp value
       mariadb_variables:
         <<: *mariadb_params
         variable: '{{ set_name }}'
         value: '200'
 
-    - name: update mysql variable value (expect changed=true)
+    - name: update MariaDB variable value (expect changed=true)
       mariadb_variables:
         <<: *mariadb_params
         variable: '{{ set_name }}'
@@ -110,13 +110,13 @@
         set_name: "wait_timeout"
         set_value: "400"
 
-    - name: set mysql variable to a temp value
+    - name: set MariaDB variable to a temp value
       mariadb_variables:
         <<: *mariadb_params
         variable: '{{ set_name }}'
         value: "200"
 
-    - name: update mysql variable value (expect changed=true)
+    - name: update MariaDB variable value (expect changed=true)
       mariadb_variables:
         <<: *mariadb_params
         variable: '{{ set_name }}'
@@ -137,13 +137,13 @@
         set_name: wait_timeout
         set_value: 500
 
-    - name: set mysql variable to a temp value
+    - name: set MariaDB variable to a temp value
       mariadb_variables:
         <<: *mariadb_params
         variable: '{{ set_name }}'
         value: 200
 
-    - name: update mysql variable value (expect changed=true)
+    - name: update MariaDB variable value (expect changed=true)
       mariadb_variables:
         <<: *mariadb_params
         variable: '{{ set_name }}'
@@ -160,7 +160,7 @@
     # ============================================================
     # Verify mariadb_variable successfully updates a variable using an expression (e.g. 1024*4)
     #
-    - name: set mysql variable value to an expression
+    - name: set MariaDB variable value to an expression
       mariadb_variables:
         <<: *mariadb_params
         variable: max_connect_errors
@@ -176,7 +176,7 @@
     # ============================================================
     # Verify mariadb_variable fails when setting an incorrect value (out of range)
     #
-    - name: Set mysql variable value to a number out of range
+    - name: Set MariaDB variable value to a number out of range
       mariadb_variables:
         <<: *mariadb_params
         variable: max_connect_errors
@@ -194,7 +194,7 @@
     # ============================================================
     # Verify mariadb_variable fails when setting an incorrect value (incorrect type)
     #
-    - name: set mysql variable value to a non-valid value number
+    - name: set MariaDB variable value to a non-valid value number
       mariadb_variables:
         <<: *mariadb_params
         variable: max_connect_errors
@@ -210,7 +210,7 @@
     # ============================================================
     # Verify mariadb_variable fails when setting an unknown variable
     #
-    - name: set a non mysql variable
+    - name: set a non MariaDB variable
       mariadb_variables:
         <<: *mariadb_params
         variable: my_sql_variable
@@ -226,7 +226,7 @@
     # ============================================================
     # Verify mariadb_variable fails when setting a read-only variable
     #
-    - name: set value of a read only mysql variable
+    - name: set value of a read only MariaDB variable
       mariadb_variables:
         <<: *mariadb_params
         variable: character_set_system
@@ -258,14 +258,14 @@
         output: "{{ result }}"
         var_name: "{{ set_name }}"
 
-    - name: set mysql variable to temp value using user login and password (expect changed=true)
+    - name: set MariaDB variable to temp value using user login and password (expect changed=true)
       mariadb_variables:
         <<: *mariadb_params
         variable: '{{ set_name }}'
         value: 20
       register: result
 
-    - name: update mysql variable value using user login and password (expect changed=true)
+    - name: update MariaDB variable value using user login and password (expect changed=true)
       mariadb_variables:
         <<: *mariadb_params
         variable: '{{set_name}}'

@@ -165,7 +165,7 @@
         state: absent
 
     # ============================================================
-    - name: Privs | Update user with a long privileges list (mysql has a special multiline grant output)
+    - name: Privs | Update user with a long privileges list (MariaDB has a special multiline grant output)
       mariadb_user:
         <<: *mariadb_params
         name: '{{ user_name_2 }}'
@@ -188,7 +188,7 @@
         state: present
       register: result
 
-    # FIXME: on mysql >=8 and mariadb >=10.5.2 there's always a change because
+    # FIXME: on mariadb >=10.5.2 there's always a change because
     # the REPLICATION CLIENT privilege was renamed to BINLOG MONITOR
     - name: Privs | Assert that priv did not change
       assert:

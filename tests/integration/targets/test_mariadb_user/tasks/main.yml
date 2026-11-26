@@ -23,7 +23,7 @@
 # along with Ansible.  If not, see <http://www.gnu.org/licenses/>.
 
 # ============================================================
-# create mysql user and verify user is added to mysql database
+# create MariaDB user and verify user is added to mysql database
 #
 
 - vars:
@@ -275,12 +275,12 @@
     - import_tasks: issue-64560.yaml
       tags:
         - issue-64560
-    
+
     - name: Test ANSI_QUOTES
       ansible.builtin.import_tasks:
         file: issue-671.yaml
       tags:
-        - issue-671  
+        - issue-671
 
     # Test that mariadb_user still works with force_context enabled (database set to "mysql")
     # (https://github.com/ansible-collections/ansible.mysql/issues/265)
@@ -291,15 +291,15 @@
 
     - include_tasks: test_revoke_only_grant.yml
 
-    - name: Mysql_user - test column case sensitive
+    - name: Mariadb_user - test column case sensitive
       ansible.builtin.import_tasks:
         file: test_column_case_sensitive.yml
 
-    - name: Mysql_user - test update_password
+    - name: Mariadb_user - test update_password
       ansible.builtin.import_tasks:
         file: test_update_password.yml
 
-    - name: Mysql_user - test user_locking
+    - name: Mariadb_user - test user_locking
       ansible.builtin.import_tasks:
         file: test_user_locking.yml
 

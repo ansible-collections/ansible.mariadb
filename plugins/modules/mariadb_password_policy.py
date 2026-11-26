@@ -152,7 +152,7 @@ settings:
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.common.text.converters import to_native
 
-from ansible_collections.ansible.mariadb.plugins.module_utils.database import mysql_quote_identifier
+from ansible_collections.ansible.mariadb.plugins.module_utils.database import quote_identifier
 from ansible_collections.ansible.mariadb.plugins.module_utils.connect import (
     common_argument_spec,
     connect,
@@ -207,14 +207,14 @@ def normalize_int_value(value):
     return int(value)
 
 
-def get_variable(cursor, mysqlvar):
-    cursor.execute("SHOW GLOBAL VARIABLES WHERE Variable_name = %s", (mysqlvar,))
+def get_variable(cursor, var):
+    cursor.execute("SHOW GLOBAL VARIABLES WHERE Variable_name = %s", (var,))
     rows = cursor.fetchall()
     return rows[0][1] if rows else None
 
 
-def set_variable(cursor, mysqlvar, value, mode):
-    query = "SET %s %s = " % (mode.upper(), mysql_quote_identifier(mysqlvar, 'vars'))
+def set_variable(cursor, var, value, mode):
+    query = "SET %s %s = " % (mode.upper(), quote_identifier(var, 'vars'))
     cursor.execute(query + "%s", (value,))
 
 
@@ -326,7 +326,7 @@ class MySQLPasswordPolicy(object):
 
     @staticmethod
     def format_set_query(variable_name, value, mode):
-        return "SET %s %s = %s" % (mode.upper(), mysql_quote_identifier(variable_name, 'vars'), value)
+        return "SET %s %s = %s" % (mode.upper(), quote_identifier(variable_name, 'vars'), value)
 
 
 def main():

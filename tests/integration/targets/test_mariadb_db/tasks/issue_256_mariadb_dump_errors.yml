@@ -61,7 +61,7 @@
           - dump_db2 is changed
           - dump_db2_gz is changed
 
-    # Now db2.v1 targets an inexistant table so mysqldump will fail
+    # Now db2.v1 targets an inexistant table so mariadb-dump will fail
     - name: Dumps errors | Drop t1
       ansible.mariadb.mariadb_query:
         query:
