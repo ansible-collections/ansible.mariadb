@@ -70,7 +70,7 @@
     name: '{{ db_latin1_name }}'
     state: absent
 
-- name: Encoding | Importing the latin1 mysql script
+- name: Encoding | Importing the latin1 sql script
   mariadb_db:
     login_user: '{{ mariadb_user }}'
     login_password: '{{ mariadb_password }}'

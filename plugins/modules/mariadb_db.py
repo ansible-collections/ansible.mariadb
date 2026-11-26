@@ -21,7 +21,7 @@ options:
     - Name of the database to add or remove.
     - I(name=all) may only be provided if I(state) is C(dump) or C(import).
     - List of databases is provided with I(state=dump), I(state=present) and I(state=absent).
-    - If I(name=all) it works like --all-databases option for mysqldump (Added in 2.0).
+    - If I(name=all) it works like --all-databases option for mariadb-dump (Added in 2.0).
     required: true
     type: list
     elements: str
@@ -35,7 +35,7 @@ options:
   collation:
     description:
     - Collation mode (sorting). This only applies to new table/databases and
-      does not update existing ones, this is a limitation of MySQL.
+      does not update existing ones, this is a limitation of MariaDB.
     type: str
     default: ''
   encoding:
@@ -101,7 +101,7 @@ options:
     version_added: '0.1.0'
   dump_extra_args:
     description:
-      - Provide additional arguments for mysqldump.
+      - Provide additional arguments for mariadb-dump.
         Used when I(state=dump) only, ignored otherwise.
     type: str
     version_added: '0.1.0'
@@ -129,7 +129,7 @@ options:
       - Read only passed I(config_file).
       - When I(state) is C(dump) or C(import),
         by default the module passes I(config_file) parameter
-        using C(--defaults-extra-file) command-line argument to C(mysql/mysqldump) utilities
+        using C(--defaults-extra-file) command-line argument to C(mariadb/mariadb-dump) utilities
         under the hood that read named option file in addition to usual option files.
       - If this behavior is undesirable, use C(yes) to read only named option file.
     type: bool
@@ -137,7 +137,7 @@ options:
     version_added: '0.1.0'
   check_implicit_admin:
     description:
-      - Check if mysql allows login as root/nopassword before trying supplied credentials.
+      - Check if MariaDB allows login as root/nopassword before trying supplied credentials.
       - If success, passed I(login_user)/I(login_password) will be ignored.
     type: bool
     default: false
@@ -160,7 +160,7 @@ options:
   pipefail:
     description:
     - Use C(bash) instead of C(sh) and add C(-o pipefail) to catch errors from the
-      mysql_dump command when I(state=dump) and compression is used.
+      mariadb-dump command when I(state=dump) and compression is used.
     type: bool
     default: true
     version_added: '3.4.0'
@@ -175,25 +175,25 @@ seealso:
 - module: ansible.mariadb.mariadb_variables
 - module: ansible.mariadb.mariadb_user
 - module: ansible.mariadb.mariadb_replication
-- name: MySQL command-line client reference
-  description: Complete reference of the MySQL command-line client documentation.
-  link: https://dev.mysql.com/doc/refman/8.0/en/mysql.html
-- name: mysqldump reference
-  description: Complete reference of the ``mysqldump`` client utility documentation.
-  link: https://dev.mysql.com/doc/refman/8.0/en/mysqldump.html
+- name: MariaDB command-line client reference
+  description: Complete reference of the MariaDB command-line client documentation.
+  link: https://mariadb.com/docs/server/clients-and-utilities/mariadb-client/mariadb-command-line-client
+- name: mariadb-dump reference
+  description: Complete reference of the ``mariadb-dump`` client utility documentation.
+  link: https://mariadb.com/docs/server/clients-and-utilities/backup-restore-and-import-clients/mariadb-dump
 - name: CREATE DATABASE reference
   description: Complete reference of the CREATE DATABASE command documentation.
-  link: https://dev.mysql.com/doc/refman/8.0/en/create-database.html
+  link: https://mariadb.com/docs/server/reference/sql-statements/data-definition/create/create-database
 - name: DROP DATABASE reference
   description: Complete reference of the DROP DATABASE command documentation.
-  link: https://dev.mysql.com/doc/refman/8.0/en/drop-database.html
+  link: https://mariadb.com/docs/server/reference/sql-statements/data-definition/drop/drop-database
 author: "Ansible Core Team"
 requirements:
-   - mysql (command line binary)
-   - mysqldump (command line binary)
+   - mariadb (command line binary)
+   - mariadb-dump (command line binary)
 notes:
-   - Compatible with MariaDB or MySQL.
-   - Requires the mysql and mysqldump binaries on the remote host.
+   - Compatible with MariaDB.
+   - Requires the mariadb and mariadb-dump binaries on the remote host.
    - This module is B(not idempotent) when I(state) is C(import),
      and will import the dump file each time if run more than once.
 attributes:
@@ -204,7 +204,7 @@ attributes:
     details:
       - The module is not idempotent when O(state=import) or when O(state=dump).
 extends_documentation_fragment:
-- ansible.mariadb.mysql
+- ansible.mariadb.connect
 '''
 
 EXAMPLES = r'''
@@ -272,7 +272,7 @@ EXAMPLES = r'''
 # Import of sql script with encoding option
 - name: >
     Import dump.sql with specific latin1 encoding,
-    similar to mysql -u <username> --default-character-set=latin1 -p <password> < dump.sql
+    similar to mariadb -u <username> --default-character-set=latin1 -p <password> < dump.sql
   ansible.mariadb.mariadb_db:
     state: import
     name: all
@@ -282,7 +282,7 @@ EXAMPLES = r'''
 # Dump of database with encoding option
 - name: >
     Dump of Databse with specific latin1 encoding,
-    similar to mysqldump -u <username> --default-character-set=latin1 -p <password> <database>
+    similar to mariadb-dump -u <username> --default-character-set=latin1 -p <password> <database>
   ansible.mariadb.mariadb_db:
     state: dump
     name: db_1
@@ -318,7 +318,7 @@ EXAMPLES = r'''
     name: bobdata
     state: present
 
-- name: Dump a database with compression and catch errors from mysqldump with bash pipefail
+- name: Dump a database with compression and catch errors from mariadb-dump with bash pipefail
   ansible.mariadb.mariadb_db:
     state: dump
     name: foo
@@ -351,12 +351,11 @@ import traceback
 import shlex
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.ansible.mariadb.plugins.module_utils.mysql import (
-    mysql_connect,
-    mysql_driver,
-    mysql_driver_fail_msg,
-    mysql_common_argument_spec,
-    get_server_implementation,
+from ansible_collections.ansible.mariadb.plugins.module_utils.connect import (
+    connect,
+    driver,
+    driver_fail_msg,
+    common_argument_spec,
     get_server_version,
 )
 from ansible_collections.ansible.mariadb.plugins.module_utils.version import LooseVersion
@@ -368,7 +367,7 @@ executed_commands = []
 PASSWORD_MASK = '********'
 
 # ===========================================
-# MySQL module specific support methods.
+# MariaDB module specific support methods.
 #
 
 
@@ -398,14 +397,14 @@ def db_dump(module, host, user, password, db_name, target, all_databases, port,
             check_implicit_admin=False, pipefail=False):
 
     cmd_str = 'mysqldump'
-    if server_implementation == 'mariadb' and LooseVersion(server_version) >= LooseVersion("10.4.6"):
+    if LooseVersion(server_version) >= LooseVersion("10.4.6"):
         cmd_str = 'mariadb-dump'
     try:
         cmd = [module.get_bin_path(cmd_str, True)]
     except Exception as e:
         return 1, "", "Error determining dump command: %s" % str(e)
 
-    # If defined, mysqldump demands --defaults-extra-file be the first option
+    # If defined, mariadb-dump demands --defaults-extra-file be the first option
     if config_file:
         if restrict_config_file:
             cmd.append("--defaults-file=%s" % shlex.quote(config_file))
@@ -458,11 +457,7 @@ def db_dump(module, host, user, password, db_name, target, all_databases, port,
     if hex_blob:
         cmd.append("--hex-blob")
     if master_data:
-        if (server_implementation == 'mysql' and
-                LooseVersion(server_version) >= LooseVersion("8.2.0")):
-            cmd.append("--source-data=%s" % master_data)
-        else:
-            cmd.append("--master-data=%s" % master_data)
+        cmd.append("--master-data=%s" % master_data)
     if dump_extra_args is not None:
         cmd.append(dump_extra_args)
 
@@ -506,13 +501,10 @@ def db_import(module, host, user, password, db_name, target, all_databases, port
     if not os.path.exists(target):
         return module.fail_json(msg="target %s does not exist on the host" % target)
 
-    cmd_str = 'mysql'
-    if server_implementation == 'mariadb' and LooseVersion(server_version) >= LooseVersion("10.4.6"):
-        cmd_str = 'mariadb'
     try:
-        cmd = [module.get_bin_path(cmd_str, True)]
+        cmd = [module.get_bin_path('mariadb', True)]
     except Exception as e:
-        return 1, "", "Error determining mysql/mariadb command: %s" % str(e)
+        return 1, "", "Error determining mariadb command: %s" % str(e)
 
     # --defaults-file must go first, or errors out
     if config_file:
@@ -606,7 +598,7 @@ def db_create(cursor, db, encoding, collation):
     query_params = dict(enc=encoding, collate=collation)
     res = 0
     for each_db in db:
-        # Escape '%' since mysql cursor.execute() uses a format string
+        # Escape '%' since mariadb cursor.execute() uses a format string
         query = ['CREATE DATABASE `%s`' % each_db.replace('%', '%%')]
         if encoding:
             query.append("CHARACTER SET %(enc)s")
@@ -629,7 +621,7 @@ def db_create(cursor, db, encoding, collation):
 
 
 def main():
-    argument_spec = mysql_common_argument_spec()
+    argument_spec = common_argument_spec()
     argument_spec.update(
         name=dict(type='list', elements='str', required=True, aliases=['db']),
         encoding=dict(type='str', default=''),
@@ -659,8 +651,8 @@ def main():
         supports_check_mode=True,
     )
 
-    if mysql_driver is None:
-        module.fail_json(msg=mysql_driver_fail_msg)
+    if driver is None:
+        module.fail_json(msg=driver_fail_msg)
 
     db = module.params["name"]
     if not db:
@@ -727,17 +719,17 @@ def main():
         cursor = None
         if check_implicit_admin:
             try:
-                cursor, db_conn = mysql_connect(module, 'root', '', config_file, ssl_cert, ssl_key, ssl_ca,
-                                                connect_timeout=connect_timeout, check_hostname=check_hostname,
-                                                config_overrides_defaults=config_overrides_defaults)
+                cursor, db_conn = connect(module, 'root', '', config_file, ssl_cert, ssl_key, ssl_ca,
+                                                  connect_timeout=connect_timeout, check_hostname=check_hostname,
+                                                  config_overrides_defaults=config_overrides_defaults)
             except Exception as e:
                 check_implicit_admin = False
                 pass
 
         if not cursor:
-            cursor, db_conn = mysql_connect(module, login_user, login_password, config_file, ssl_cert, ssl_key, ssl_ca,
-                                            connect_timeout=connect_timeout, config_overrides_defaults=config_overrides_defaults,
-                                            check_hostname=check_hostname)
+            cursor, db_conn = connect(module, login_user, login_password, config_file, ssl_cert, ssl_key, ssl_ca,
+                                      connect_timeout=connect_timeout, config_overrides_defaults=config_overrides_defaults,
+                                      check_hostname=check_hostname)
     except Exception as e:
         if os.path.exists(config_file):
             module.fail_json(msg="unable to connect to database, check login_user and login_password are correct or %s has the credentials. "
@@ -748,7 +740,7 @@ def main():
     if state in ['absent', 'present'] and not sql_log_bin:
         cursor.execute("SET SQL_LOG_BIN=0;")
 
-    server_implementation = get_server_implementation(cursor)
+    server_implementation = 'mariadb'
     server_version = get_server_version(cursor)
 
     changed = False
@@ -791,7 +783,7 @@ def main():
             module.exit_json(changed=True, db=db_name, db_list=db)
         rc, stdout, stderr = db_dump(module, login_host, login_user,
                                      login_password, db, target, all_databases,
-                                     login_port, config_file, server_implementation, server_version,
+                                     login_port, config_file, 'mariadb', server_version,
                                      socket, ssl_cert, ssl_key,
                                      ssl_ca, single_transaction, quick, ignore_tables,
                                      hex_blob, encoding, force, master_data, skip_lock_tables,

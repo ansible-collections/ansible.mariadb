@@ -48,7 +48,7 @@ options:
     default: false
 
 notes:
-- Compatible with MariaDB or MySQL.
+- Compatible with MariaDB.
 - Calculating the size of a database might be slow, depending on the number and size of tables in it.
   To avoid this, use I(exclude_fields=db_size).
 - filters C(users_info) doesn't support MariaDB roles.
@@ -71,24 +71,24 @@ author:
 - Laurent Indermühle (@laurent-indermuehle)
 
 extends_documentation_fragment:
-- ansible.mariadb.mysql
+- ansible.mariadb.connect
 '''
 
 EXAMPLES = r'''
-# Display info from mysql-hosts group (using creds from ~/.my.cnf to connect):
-# ansible mysql-hosts -m mysql_info
+# Display info from mariadb-hosts group (using creds from ~/.my.cnf to connect):
+# ansible mariadb-hosts -m mariadb_info
 
 # Display only databases and users info:
-# ansible mysql-hosts -m mysql_info -a 'filter=databases,users'
+# ansible mariadb-hosts -m mariadb_info -a 'filter=databases,users'
 
 # Display all users privileges:
-# ansible mysql-hosts -m mysql_info -a 'filter=users_info'
+# ansible mariadb-hosts -m mariadb_info -a 'filter=users_info'
 
 # Display only slave status:
-# ansible standby -m mysql_info -a 'filter=slave_status'
+# ansible standby -m mariadb_info -a 'filter=slave_status'
 
 # Display all info from databases group except settings:
-# ansible databases -m mysql_info -a 'filter=!settings'
+# ansible databases -m mariadb_info -a 'filter=!settings'
 
 # If you encounter the "Please explicitly state intended protocol" error,
 # use the login_unix_socket argument
@@ -97,7 +97,7 @@ EXAMPLES = r'''
     login_user: root
     login_unix_socket: /run/mysqld/mysqld.sock
 
-- name: Get MySQL version with non-default credentials
+- name: Get MariaDB version with non-default credentials
   ansible.mariadb.mariadb_info:
     login_user: mysuperuser
     login_password: mysuperpass
@@ -196,7 +196,7 @@ version:
       type: int
       sample: 60
     suffix:
-      description: Server suffix, for example MySQL, MariaDB, other or none.
+      description: Server suffix, for example MariaDB, other or none.
       returned: if not excluded by filter
       type: str
       sample: "MariaDB"
@@ -310,14 +310,13 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.ansible.mariadb.plugins.module_utils.command_resolver import (
     CommandResolver
 )
-from ansible_collections.ansible.mariadb.plugins.module_utils.mysql import (
-    mysql_connect,
-    mysql_common_argument_spec,
-    mysql_driver,
-    mysql_driver_fail_msg,
+from ansible_collections.ansible.mariadb.plugins.module_utils.connect import (
+    connect,
+    common_argument_spec,
+    driver,
+    driver_fail_msg,
     get_connector_name,
     get_connector_version,
-    get_server_implementation,
     get_server_version,
 )
 
@@ -325,19 +324,19 @@ from ansible_collections.ansible.mariadb.plugins.module_utils.user import (
     privileges_get,
     get_resource_limits,
     get_existing_authentication,
-    get_user_implementation,
+    get_tls_requires,
     user_is_locked,
 )
 from ansible.module_utils.common.text.converters import to_native
 
 
 # ===========================================
-# MySQL module specific support methods.
+# MariaDB module specific support methods.
 #
 
 class MySQL_Info(object):
 
-    """Class for collection MySQL instance information.
+    """Class for collection MariaDB instance information.
 
     Arguments:
         module (AnsibleModule): Object of AnsibleModule class.
@@ -353,13 +352,12 @@ class MySQL_Info(object):
         5. add info about the new subset with an example to RETURN block
     """
 
-    def __init__(self, module, cursor, server_implementation, server_version, user_implementation):
+    def __init__(self, module, cursor, server_implementation, server_version):
         self.module = module
         self.cursor = cursor
         self.server_implementation = server_implementation
         self.server_version = server_version
-        self.user_implementation = user_implementation
-        self.command_resolver = CommandResolver(self.server_implementation, self.server_version)
+        self.command_resolver = CommandResolver(self.server_version)
         self.info = {
             'version': {},
             'databases': {},
@@ -374,7 +372,7 @@ class MySQL_Info(object):
         }
 
     def get_info(self, filter_, exclude_fields, return_empty_dbs):
-        """Get MySQL instance information based on filter_.
+        """Get MariaDB instance information based on filter_.
 
         Arguments:
             filter_ (list): List of collected subsets (e.g., databases, users, etc.),
@@ -584,7 +582,7 @@ class MySQL_Info(object):
         """Get user privileges, passwords, resources_limits, ...
 
         Query the server to get all the users and return a string
-        of privileges that can be used by the mysql_user plugin.
+        of privileges that can be used by the mariadb_user plugin.
         For instance:
 
         "users_info": [
@@ -609,9 +607,8 @@ class MySQL_Info(object):
             user = line['User']
             host = line['Host']
 
-            # MariaDB roles have no host
-            is_role = self.server_implementation == 'mariadb' and not host
-            user_priv = privileges_get(self.cursor, user, host, maria_role=is_role)
+            # MariaDB roles have no host and use role grant syntax.
+            user_priv = privileges_get(self.cursor, user, host, role=not host)
 
             if not user_priv:
                 self.module.warn("No privileges found for %s on host %s" % (user, host))
@@ -620,7 +617,7 @@ class MySQL_Info(object):
             priv_string = list()
             for db_table, priv in user_priv.items():
                 # Proxy privileges are hard to work with because of different quotes or
-                # backticks like ''@'', ''@'%' or even ``@``. In addition, MySQL will
+                # backticks like ''@'', ''@'%' or even ``@``. In addition, MariaDB will
                 # forbid you to grant a proxy privileges through TCP.
                 if set(priv) == {'PROXY', 'GRANT'} or set(priv) == {'PROXY'}:
                     continue
@@ -635,7 +632,7 @@ class MySQL_Info(object):
             resource_limits = get_resource_limits(self.cursor, user, host)
             copy_ressource_limits = dict.copy(resource_limits)
 
-            tls_requires = self.user_implementation.get_tls_requires(
+            tls_requires = get_tls_requires(
                 self.cursor, user, host)
 
             output_dict = {
@@ -668,7 +665,7 @@ class MySQL_Info(object):
                 output_dict['locked'] = user_is_locked(self.cursor, user, host)
 
             # TODO password_option
-            # but both are not supported by mysql_user atm. So no point yet.
+            # but both are not supported by mariadb_user atm. So no point yet.
 
             output.append(output_dict)
 
@@ -737,7 +734,7 @@ class MySQL_Info(object):
 
 
 def main():
-    argument_spec = mysql_common_argument_spec()
+    argument_spec = common_argument_spec()
     argument_spec.update(
         login_db=dict(type='str'),
         filter=dict(type='list', elements='str'),
@@ -769,34 +766,33 @@ def main():
     if exclude_fields:
         exclude_fields = set([f.strip() for f in exclude_fields])
 
-    if mysql_driver is None:
-        module.fail_json(msg=mysql_driver_fail_msg)
+    if driver is None:
+        module.fail_json(msg=driver_fail_msg)
 
-    connector_name = get_connector_name(mysql_driver)
-    connector_version = get_connector_version(mysql_driver)
+    connector_name = get_connector_name(driver)
+    connector_version = get_connector_version(driver)
 
     try:
-        cursor, db_conn = mysql_connect(module, login_user, login_password,
-                                        config_file, ssl_cert, ssl_key, ssl_ca, db,
-                                        check_hostname=check_hostname,
-                                        connect_timeout=connect_timeout, cursor_class='DictCursor')
+        cursor, db_conn = connect(module, login_user, login_password,
+                                  config_file, ssl_cert, ssl_key, ssl_ca, db,
+                                  check_hostname=check_hostname,
+                                  connect_timeout=connect_timeout, cursor_class='DictCursor')
     except Exception as e:
         msg = ('unable to connect to database using %s %s, check login_user '
                'and login_password are correct or %s has the credentials. '
                'Exception message: %s' % (connector_name, connector_version, config_file, to_native(e)))
         module.fail_json(msg)
 
-    server_implementation = get_server_implementation(cursor)
+    server_implementation = 'mariadb'  # TODO remove in stacked PR #44
     server_version = get_server_version(cursor)
-    user_implementation = get_user_implementation(cursor)
 
     ###############################
     # Create object and do main job
 
-    mysql = MySQL_Info(module, cursor, server_implementation, server_version, user_implementation)
+    mysql = MySQL_Info(module, cursor, server_implementation, server_version)
 
     module.exit_json(changed=False,
-                     server_engine='MariaDB' if server_implementation == 'mariadb' else 'MySQL',
+                     server_engine='MariaDB',
                      connector_name=connector_name,
                      connector_version=connector_version,
                      **mysql.get_info(filter_, exclude_fields, return_empty_dbs))

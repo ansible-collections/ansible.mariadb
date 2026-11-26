@@ -5,7 +5,7 @@
 - name: "{{ role_name }} | Requirements | Install Linux packages"
   ansible.builtin.apt:
     name:
-      - bzip2     # To test mysql_db dump compression
+      - bzip2     # To test mariadb_db dump compression
       - mariadb-client
     update_cache: true
     state: present

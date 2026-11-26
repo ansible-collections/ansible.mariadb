@@ -16,7 +16,6 @@ short_description: Manage MariaDB replication filters
 description:
   - This module only supports MariaDB; all MySQL-related options will be removed in the next releases. Use the C(ansible.mysql) collection for MySQL automation.
   - Manage replica-side replication filters declaratively.
-  - MySQL uses C(CHANGE REPLICATION FILTER).
   - MariaDB uses C(SET GLOBAL replicate_*) variables.
   - Changes are runtime only and are not persisted across restart by this module.
   - Persist filter settings separately through server configuration if they must survive a restart.
@@ -80,7 +79,7 @@ options:
     type: str
 
 notes:
-  - Compatible with MariaDB or MySQL.
+  - Compatible with MariaDB.
   - At least one replication filter option must be provided.
   - Unspecified filters are left unchanged.
 
@@ -91,24 +90,24 @@ attributes:
     support: full
 
 extends_documentation_fragment:
-  - ansible.mariadb.mysql
+  - ansible.mariadb.connect
 '''
 
 EXAMPLES = r'''
-- name: Ignore one database on a MySQL replica
+- name: Ignore one database on a MariaDB replica
   ansible.mariadb.mariadb_replication_filter:
     login_unix_socket: /run/mysqld/mysqld.sock
     replicate_ignore_db:
       - audit
 
-- name: Replicate selected tables on a MySQL replica
+- name: Replicate selected tables on a MariaDB replica
   ansible.mariadb.mariadb_replication_filter:
     login_unix_socket: /run/mysqld/mysqld.sock
     replicate_do_table:
       - app.orders
       - reporting.summary
 
-- name: Set wildcard filters on a MySQL replica
+- name: Set wildcard filters on a MariaDB replica
   ansible.mariadb.mariadb_replication_filter:
     login_unix_socket: /run/mysqld/mysqld.sock
     replicate_wild_do_table:
@@ -118,7 +117,7 @@ EXAMPLES = r'''
       - archive.old_%
       - tmp.%
 
-- name: Set multiple MySQL filters in one task
+- name: Set multiple MariaDB filters in one task
   ansible.mariadb.mariadb_replication_filter:
     login_unix_socket: /run/mysqld/mysqld.sock
     replicate_do_db:
@@ -196,14 +195,13 @@ filters:
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.common.text.converters import to_native
 
-from ansible_collections.ansible.mariadb.plugins.module_utils.database import check_input, mysql_quote_identifier
-from ansible_collections.ansible.mariadb.plugins.module_utils.mysql import (
-    get_server_implementation,
+from ansible_collections.ansible.mariadb.plugins.module_utils.database import check_input, quote_identifier
+from ansible_collections.ansible.mariadb.plugins.module_utils.connect import (
     get_server_version,
-    mysql_common_argument_spec,
-    mysql_connect,
-    mysql_driver,
-    mysql_driver_fail_msg,
+    common_argument_spec,
+    connect,
+    driver,
+    driver_fail_msg,
 )
 from ansible_collections.ansible.mariadb.plugins.module_utils.version import LooseVersion
 
@@ -318,7 +316,7 @@ def build_mysql_filter_query(filter_name, value_kind, values, channel=''):
 
 def build_mariadb_set_query(variable_name, values):
     value = ','.join(normalize_filter_values(values))
-    identifier = mysql_quote_identifier(variable_name, 'vars')
+    identifier = quote_identifier(variable_name, 'vars')
     query = 'SET GLOBAL %s = %%s' % identifier
 
     return {
@@ -362,7 +360,7 @@ def _build_mysql_filter_values(value_kind, values):
     if value_kind == 'pattern':
         return ','.join(_quote_sql_string(value) for value in normalized)
 
-    return ','.join(mysql_quote_identifier(value, value_kind) for value in normalized)
+    return ','.join(quote_identifier(value, value_kind) for value in normalized)
 
 
 def _quote_sql_string(value):
@@ -389,12 +387,12 @@ def get_mysql_filter_rows(cursor, channel=''):
     return cursor.fetchall()
 
 
-def supports_mariadb_connection_name(server_version):
+def supports_connection_name(server_version):
     return LooseVersion(server_version) >= LooseVersion('10.0.1')
 
 
 def get_mariadb_filter_values(module, cursor, server_version, connection_name=''):
-    if connection_name and not supports_mariadb_connection_name(server_version):
+    if connection_name and not supports_connection_name(server_version):
         module.fail_json(msg='connection_name requires MariaDB 10.0.1 or newer')
 
     if connection_name:
@@ -527,7 +525,7 @@ class MySQLReplicationFilter(object):
 
 
 def main():
-    argument_spec = mysql_common_argument_spec()
+    argument_spec = common_argument_spec()
     for name in FILTER_DEFINITIONS:
         argument_spec[name] = dict(type='list', elements='str')
 
@@ -542,8 +540,8 @@ def main():
         supports_check_mode=True,
     )
 
-    if mysql_driver is None:
-        module.fail_json(msg=mysql_driver_fail_msg)
+    if driver is None:
+        module.fail_json(msg=driver_fail_msg)
 
     desired_filters = dict((name, module.params[name]) for name in FILTER_DEFINITIONS)
     if not any(values is not None for values in desired_filters.values()):
@@ -559,7 +557,7 @@ def main():
     config_file = module.params['config_file']
 
     try:
-        cursor, _db_conn = mysql_connect(
+        cursor, _db_conn = connect(
             module,
             login_user,
             login_password,
@@ -584,7 +582,7 @@ def main():
     executor = MySQLReplicationFilter(
         module,
         cursor,
-        get_server_implementation(cursor),
+        'mariadb',
         get_server_version(cursor),
     )
 

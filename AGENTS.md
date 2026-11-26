@@ -22,11 +22,11 @@ For test commands, patterns, and requirements see `.agents/skills/run-tests/SKIL
 - Prioritize code simplicity and readability over flexibility.
 - Favor simple, short, and easily testable functions with no side effects over classes. Use classes only when they naturally fit the problem and help avoid boilerplate code while grouping tightly related functionality.
 - Use `snake_case` for all variable and parameter names.
-- Shared code used by multiple modules belongs in `plugins/module_utils/mysql.py` (DRY principle). Do not duplicate connection or utility logic in individual modules.
-- Do not add connection parameters to individual modules. Extend the `mysql` doc fragment in `plugins/doc_fragments/mysql.py` instead.
+- Shared code used by multiple modules belongs in `plugins/module_utils/connect.py` (DRY principle). Do not duplicate connection or utility logic in individual modules.
+- Do not add connection parameters to individual modules. Extend the `connect` doc fragment in `plugins/doc_fragments/connect.py` instead.
 - All modules must pass sanity, unit, and integration tests before merging.
 - Keep each piece of work focused on solving a single, specific issue or task. Do not mix unrelated changes (e.g., a bugfix and an unrelated refactoring) in the same branch or PR.
-- Use conventional commit message prefixes: `feat:`, `fix:`, `docs:`, `test:`, `refactor:`, `chore:`, `ci:`. Example: `fix: handle empty database list in mysql_info`.
+- Use conventional commit message prefixes: `feat:`, `fix:`, `docs:`, `test:`, `refactor:`, `chore:`, `ci:`. Example: `fix: handle empty database list in mariadb_info`.
 
 ## Development Conventions
 

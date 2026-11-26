@@ -15,7 +15,7 @@
         dest: /tmp/cert.pem
       delegate_to: localhost
 
-    - name: Issue-121 | Drop mysql user if exists
+    - name: Issue-121 | Drop MariaDB user if exists
       mariadb_user:
         <<: *mariadb_params
         name: '{{ item }}'
@@ -63,7 +63,7 @@
           - result is failed
           - result.msg is search('Error granting privileges')
 
-    - name: Issue-121 | Teardown | Drop mysql user
+    - name: Issue-121 | Teardown | Drop MariaDB user
       mariadb_user:
         <<: *mariadb_params
         name: '{{ item }}'

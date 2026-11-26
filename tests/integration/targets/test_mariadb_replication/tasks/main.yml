@@ -15,7 +15,7 @@
 - include_tasks: issue-265.yml
 
 # primary_ssl_verify_server_cert
-# Must run before mysql add channels in mariadb_replication_channel.yml
+# Must run before MariaDB add channels in mariadb_replication_channel.yml
 - import_tasks: issue-689.yml
 
 # Tests of primary_delay parameter:

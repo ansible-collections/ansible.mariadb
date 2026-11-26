@@ -61,7 +61,7 @@ options:
     default: false
 
 notes:
-  - Compatible with MariaDB or MySQL.
+  - Compatible with MariaDB.
   - The module manages global runtime slow-log settings only.
   - The O(flush) action requires the server privilege needed to execute C(FLUSH SLOW LOGS).
 
@@ -80,7 +80,7 @@ seealso:
   - module: ansible.mariadb.mariadb_variables
 
 extends_documentation_fragment:
-  - ansible.mariadb.mysql
+  - ansible.mariadb.connect
 '''
 
 EXAMPLES = r'''
@@ -132,13 +132,12 @@ settings:
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.common.text.converters import to_native
 
-from ansible_collections.ansible.mariadb.plugins.module_utils.database import mysql_quote_identifier
-from ansible_collections.ansible.mariadb.plugins.module_utils.mysql import (
-    get_server_implementation,
-    mysql_common_argument_spec,
-    mysql_connect,
-    mysql_driver,
-    mysql_driver_fail_msg,
+from ansible_collections.ansible.mariadb.plugins.module_utils.database import quote_identifier
+from ansible_collections.ansible.mariadb.plugins.module_utils.connect import (
+    common_argument_spec,
+    connect,
+    driver,
+    driver_fail_msg,
 )
 
 
@@ -160,17 +159,17 @@ def typedvalue(value):
     return value
 
 
-def get_variable(cursor, mysqlvar):
-    cursor.execute("SHOW GLOBAL VARIABLES WHERE Variable_name = %s", (mysqlvar,))
-    mysqlvar_val = cursor.fetchall()
-    if len(mysqlvar_val) == 1:
-        return mysqlvar_val[0][1]
+def get_variable(cursor, var):
+    cursor.execute("SHOW GLOBAL VARIABLES WHERE Variable_name = %s", (var,))
+    var_val = cursor.fetchall()
+    if len(var_val) == 1:
+        return var_val[0][1]
     else:
         return None
 
 
-def set_variable(cursor, mysqlvar, value, executed_queries):
-    query = "SET GLOBAL %s = " % mysql_quote_identifier(mysqlvar, 'vars')
+def set_variable(cursor, var, value, executed_queries):
+    query = "SET GLOBAL %s = " % quote_identifier(var, 'vars')
     try:
         cursor.execute(query + "%s", (value,))
         executed_queries.append(query + "%s" % value)
@@ -327,7 +326,7 @@ class MySQLSlowLog(object):
 
 
 def main():
-    argument_spec = mysql_common_argument_spec()
+    argument_spec = common_argument_spec()
     argument_spec.update(
         enabled=dict(type='bool'),
         long_query_time=dict(type='float'),
@@ -342,8 +341,8 @@ def main():
         supports_check_mode=True,
     )
 
-    if mysql_driver is None:
-        module.fail_json(msg=mysql_driver_fail_msg)
+    if driver is None:
+        module.fail_json(msg=driver_fail_msg)
 
     connect_timeout = module.params['connect_timeout']
     login_user = module.params['login_user']
@@ -355,7 +354,7 @@ def main():
     config_file = module.params['config_file']
 
     try:
-        cursor, _db_conn = mysql_connect(
+        cursor, _db_conn = connect(
             module,
             login_user,
             login_password,
@@ -382,7 +381,7 @@ def main():
         'min_examined_row_limit': module.params['min_examined_row_limit'],
     }
 
-    slow_log = MySQLSlowLog(module, cursor, get_server_implementation(cursor))
+    slow_log = MySQLSlowLog(module, cursor, 'mariadb')
 
     module.exit_json(
         **slow_log.configure(

@@ -7,7 +7,7 @@
       login_port: '{{ mariadb_primary_port }}'
 
   block:
-    - name: Issue-265 | Drop mysql user if exists
+    - name: Issue-265 | Drop MariaDB user if exists
       mariadb_user:
         <<: *mariadb_params
         name: '{{ user_name_1 }}'
@@ -17,7 +17,7 @@
 
     # Tests with force_context: yes
     # Test user creation
-    - name: Issue-265 | Create mysql user {{ user_name_1 }}
+    - name: Issue-265 | Create MariaDB user {{ user_name_1 }}
       mariadb_user:
         <<: *mariadb_params
         name: "{{ user_name_1 }}"
@@ -37,7 +37,7 @@
         user_host: localhost
 
     # Test user removal
-    - name: Issue-265 | remove mysql user {{ user_name_1 }}
+    - name: Issue-265 | remove MariaDB user {{ user_name_1 }}
       mariadb_user:
         <<: *mariadb_params
         name: "{{ user_name_1 }}"
@@ -53,7 +53,7 @@
           - result is changed
 
     # Test blank user removal
-    - name: Issue-265 | Create blank mysql user to be removed later
+    - name: Issue-265 | Create blank MariaDB user to be removed later
       mariadb_user:
         <<: *mariadb_params
         name: ""
@@ -61,7 +61,7 @@
         force_context: yes
         password: 'KJFDY&D*Sfuydsgf'
 
-    - name: Issue-265 | Remove blank mysql user with hosts=all (expect changed)
+    - name: Issue-265 | Remove blank MariaDB user with hosts=all (expect changed)
       mariadb_user:
         <<: *mariadb_params
         name: ""
@@ -75,7 +75,7 @@
         that:
           - result is changed
 
-    - name: Issue-265 | Remove blank mysql user with hosts=all (expect ok)
+    - name: Issue-265 | Remove blank MariaDB user with hosts=all (expect ok)
       mariadb_user:
         <<: *mariadb_params
         name: ""
@@ -95,7 +95,7 @@
 
     # Tests with force_context: no
     # Test user creation
-    - name: Issue-265 | Drop mysql user if exists
+    - name: Issue-265 | Drop MariaDB user if exists
       mariadb_user:
         <<: *mariadb_params
         name: "{{ user_name_1 }}"
@@ -105,7 +105,7 @@
 
     # Tests with force_context: yes
     # Test user creation
-    - name: Issue-265 | Create mysql user {{user_name_1}}
+    - name: Issue-265 | Create MariaDB user {{user_name_1}}
       mariadb_user:
         <<: *mariadb_params
         name: "{{ user_name_1 }}"
@@ -114,7 +114,7 @@
         force_context: yes
       register: result
 
-    - name: Issue-265 | Assert output message mysql user was created
+    - name: Issue-265 | Assert output message MariaDB user was created
       assert:
         that:
           - result is changed
@@ -125,7 +125,7 @@
         user_host: localhost
 
     # Test user removal
-    - name: Issue-265 | Remove mysql user {{ user_name_1 }}
+    - name: Issue-265 | Remove MariaDB user {{ user_name_1 }}
       mariadb_user:
         <<: *mariadb_params
         name: "{{ user_name_1 }}"
@@ -134,13 +134,13 @@
         force_context: no
       register: result
 
-    - name: Issue-265 | Assert output message mysql user was removed
+    - name: Issue-265 | Assert output message MariaDB user was removed
       assert:
         that:
           - result is changed
 
     # Test blank user removal
-    - name: Issue-265 | Create blank mysql user to be removed later
+    - name: Issue-265 | Create blank MariaDB user to be removed later
       mariadb_user:
         <<: *mariadb_params
         name: ""
@@ -148,7 +148,7 @@
         force_context: no
         password: 'KJFDY&D*Sfuydsgf'
 
-    - name: Issue-265 | Remove blank mysql user with hosts=all (expect changed)
+    - name: Issue-265 | Remove blank MariaDB user with hosts=all (expect changed)
       mariadb_user:
         <<: *mariadb_params
         name: ""
@@ -162,7 +162,7 @@
         that:
           - result is changed
 
-    - name: Issue-265 | Remove blank mysql user with hosts=all (expect ok)
+    - name: Issue-265 | Remove blank MariaDB user with hosts=all (expect ok)
       mariadb_user:
         <<: *mariadb_params
         name: ""

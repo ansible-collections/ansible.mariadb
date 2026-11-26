@@ -221,12 +221,12 @@ def test_main_validates_nested_required_fields_before_connect(monkeypatch, modul
     with set_module_args(module_args):
         monkeypatch.setattr(AnsibleModule, 'exit_json', exit_json)
         monkeypatch.setattr(AnsibleModule, 'fail_json', fail_json)
-        monkeypatch.setattr(mariadb_perf_schema, 'mysql_driver', object())
+        monkeypatch.setattr(mariadb_perf_schema, 'driver', object())
 
         def unexpected_connect(*args, **kwargs):
-            raise AssertionError('mysql_connect should not be called')
+            raise AssertionError('connect should not be called')
 
-        monkeypatch.setattr(mariadb_perf_schema, 'mysql_connect', unexpected_connect)
+        monkeypatch.setattr(mariadb_perf_schema, 'connect', unexpected_connect)
 
         with pytest.raises(AnsibleFailJson) as exc:
             mariadb_perf_schema.main()
@@ -245,8 +245,8 @@ def test_main_returns_prefixed_validation_error_for_invalid_perf_schema_request(
     ):
         monkeypatch.setattr(AnsibleModule, 'exit_json', exit_json)
         monkeypatch.setattr(AnsibleModule, 'fail_json', fail_json)
-        monkeypatch.setattr(mariadb_perf_schema, 'mysql_driver', object())
-        monkeypatch.setattr(mariadb_perf_schema, 'mysql_connect', lambda *args, **kwargs: (MagicMock(), MagicMock()))
+        monkeypatch.setattr(mariadb_perf_schema, 'driver', object())
+        monkeypatch.setattr(mariadb_perf_schema, 'connect', lambda *args, **kwargs: (MagicMock(), MagicMock()))
 
         def invalid_request(self, params):
             raise ValueError('bad request')

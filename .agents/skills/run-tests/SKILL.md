@@ -41,8 +41,8 @@ ansible-test sanity plugins/modules/mariadb_db.py --docker -vvv
 Runs unit tests for changed files:
 
 ```bash
-ansible-test units tests/unit/plugins/modules/test_mysql_info.py --docker -vvv
-ansible-test units tests/unit/plugins/module_utils/test_mysql.py --docker -vvv
+ansible-test units tests/unit/plugins/modules/test_mariadb_info.py --docker -vvv
+ansible-test units tests/unit/plugins/module_utils/test_connect.py --docker -vvv
 ```
 ```
 

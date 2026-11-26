@@ -1,5 +1,5 @@
 ---
-mysql_host: "{{ gateway_addr }}"
+mariadb_host: "{{ gateway_addr }}"
 master_port: 3306
 standby_port: 3307
 test_db: test_db

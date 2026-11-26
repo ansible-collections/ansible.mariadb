@@ -118,8 +118,3 @@ def mysql_sha256_password_hash(password, salt):
 
     digest = _sha256_digest(password, salt, iteration)
     return "$A${0:>03}${1}{2}".format(count, salt, digest)
-
-
-def mysql_sha256_password_hash_hex(password, salt):
-    """Return a MySQL compatible caching_sha2_password hash in hex format."""
-    return mysql_sha256_password_hash(password, salt).encode().hex().upper()

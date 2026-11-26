@@ -1,7 +1,7 @@
 # Copyright: (c) 2019, Andrew Klychkov (@Andersson007) <andrew.a.klychkov@gmail.com>
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
-# Initial CI tests of mysql_replication module
+# Initial CI tests of mariadb_replication module
 - import_tasks: mariadb_replication_initial.yml
   when:
     - ansible_facts.distribution == 'CentOS'

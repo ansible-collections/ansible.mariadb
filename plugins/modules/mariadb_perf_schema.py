@@ -141,7 +141,7 @@ options:
         default: present
 
 notes:
-  - Compatible with MariaDB or MySQL when the requested Performance Schema sections are available on the server.
+  - Compatible with MariaDB when the requested Performance Schema sections are available on the server.
   - The module requires Performance Schema to be enabled and the requested setup table columns to exist.
   - Changes are runtime only and are not persisted across restart by this module.
 
@@ -153,15 +153,12 @@ attributes:
 
 seealso:
   - module: ansible.mariadb.mariadb_query
-  - name: MySQL Performance Schema reference
-    description: Oracle MySQL Performance Schema documentation.
-    link: https://dev.mysql.com/doc/en/performance-schema.html
   - name: MariaDB Performance Schema overview
     description: MariaDB Performance Schema documentation.
     link: https://mariadb.com/docs/server/reference/system-tables/performance-schema/performance-schema-overview
 
 extends_documentation_fragment:
-  - ansible.mariadb.mysql
+  - ansible.mariadb.connect
 '''
 
 EXAMPLES = r'''
@@ -266,11 +263,11 @@ objects:
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.common.text.converters import to_native
 
-from ansible_collections.ansible.mariadb.plugins.module_utils.mysql import (
-    mysql_common_argument_spec,
-    mysql_connect,
-    mysql_driver,
-    mysql_driver_fail_msg,
+from ansible_collections.ansible.mariadb.plugins.module_utils.connect import (
+    common_argument_spec,
+    connect,
+    driver,
+    driver_fail_msg,
 )
 from ansible_collections.ansible.mariadb.plugins.module_utils.perf_schema import (
     SECTION_DEFINITIONS,
@@ -322,7 +319,7 @@ class MySQLPerfSchema(object):
 
 
 def main():
-    argument_spec = mysql_common_argument_spec()
+    argument_spec = common_argument_spec()
     argument_spec.update(
         instruments=dict(
             type='list',
@@ -375,11 +372,11 @@ def main():
         supports_check_mode=True,
     )
 
-    if mysql_driver is None:
-        module.fail_json(msg=mysql_driver_fail_msg)
+    if driver is None:
+        module.fail_json(msg=driver_fail_msg)
 
     try:
-        cursor, db_conn = mysql_connect(
+        cursor, db_conn = connect(
             module,
             module.params['login_user'],
             module.params['login_password'],

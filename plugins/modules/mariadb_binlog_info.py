@@ -37,7 +37,7 @@ options:
     elements: str
 
 notes:
-  - Compatible with MariaDB or MySQL.
+  - Compatible with MariaDB.
   - The module does not modify server state.
   - The module requires binary logging to be enabled and fails when C(log_bin=OFF).
   - Some mutable binlog settings are dynamic and can be managed with M(ansible.mariadb.mariadb_variables).
@@ -54,7 +54,7 @@ seealso:
   - module: ansible.mariadb.mariadb_replication
 
 extends_documentation_fragment:
-  - ansible.mariadb.mysql
+  - ansible.mariadb.connect
 '''
 
 EXAMPLES = r'''
@@ -129,13 +129,12 @@ from ansible.module_utils.common.text.converters import to_native
 from ansible_collections.ansible.mariadb.plugins.module_utils.command_resolver import (
     CommandResolver,
 )
-from ansible_collections.ansible.mariadb.plugins.module_utils.mysql import (
-    get_server_implementation,
+from ansible_collections.ansible.mariadb.plugins.module_utils.connect import (
     get_server_version,
-    mysql_common_argument_spec,
-    mysql_connect,
-    mysql_driver,
-    mysql_driver_fail_msg,
+    common_argument_spec,
+    connect,
+    driver,
+    driver_fail_msg,
 )
 
 
@@ -155,7 +154,7 @@ class MySQL_Binlog_Info(object):
         self.module = module
         self.cursor = cursor
         self.server_implementation = server_implementation
-        self.command_resolver = CommandResolver(server_implementation, server_version)
+        self.command_resolver = CommandResolver(server_version)
         self.info = {
             'current': {},
             'logs': [],
@@ -281,7 +280,7 @@ class MySQL_Binlog_Info(object):
 
 
 def main():
-    argument_spec = mysql_common_argument_spec()
+    argument_spec = common_argument_spec()
     argument_spec.update(
         filter=dict(type='list', elements='str'),
     )
@@ -304,11 +303,11 @@ def main():
     if filter_:
         filter_ = [item.strip() for item in filter_]
 
-    if mysql_driver is None:
-        module.fail_json(msg=mysql_driver_fail_msg)
+    if driver is None:
+        module.fail_json(msg=driver_fail_msg)
 
     try:
-        cursor, _db_conn = mysql_connect(
+        cursor, _db_conn = connect(
             module,
             login_user,
             login_password,
@@ -328,10 +327,9 @@ def main():
                 "Exception message: %s" % (config_file, to_native(e))
         )
 
-    server_implementation = get_server_implementation(cursor)
     server_version = get_server_version(cursor)
 
-    mysql = MySQL_Binlog_Info(module, cursor, server_implementation, server_version)
+    mysql = MySQL_Binlog_Info(module, cursor, 'mariadb', server_version)
 
     module.exit_json(changed=False, **mysql.get_info(filter_))
 
