@@ -130,14 +130,17 @@ settings:
 '''
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils.common.text.converters import to_native
-
-from ansible_collections.ansible.mariadb.plugins.module_utils.database import quote_identifier
+from ansible.module_utils.common.text.converters import (
+    to_native,
+)
 from ansible_collections.ansible.mariadb.plugins.module_utils.connect import (
     common_argument_spec,
     connect,
     driver,
     driver_fail_msg,
+)
+from ansible_collections.ansible.mariadb.plugins.module_utils.database import (
+    quote_identifier,
 )
 
 
@@ -169,10 +172,10 @@ def get_variable(cursor, var):
 
 
 def set_variable(cursor, var, value, executed_queries):
-    query = "SET GLOBAL %s = " % quote_identifier(var, 'vars')
+    query = f"SET GLOBAL {quote_identifier(var, 'vars')} = %s"
     try:
-        cursor.execute(query + "%s", (value,))
-        executed_queries.append(query + "%s" % value)
+        cursor.execute(query, (value,))
+        executed_queries.append(format_set_query(var, value))
         cursor.fetchall()
         result = True
     except Exception as e:
@@ -194,146 +197,126 @@ def convert_bool_setting_value_wanted(val):
     return val
 
 
-class MySQLSlowLog(object):
-    VARIABLE_CANDIDATES = {
-        'enabled': {
-            'mysql': ('slow_query_log',),
-            'mariadb': ('log_slow_query', 'slow_query_log'),
-        },
-        'long_query_time': {
-            'mysql': ('long_query_time',),
-            'mariadb': ('log_slow_query_time', 'long_query_time'),
-        },
-        'log_output': {
-            'mysql': ('log_output',),
-            'mariadb': ('log_output',),
-        },
-        'log_queries_not_using_indexes': {
-            'mysql': ('log_queries_not_using_indexes',),
-            'mariadb': ('log_queries_not_using_indexes',),
-        },
-        'min_examined_row_limit': {
-            'mysql': ('min_examined_row_limit',),
-            'mariadb': ('log_slow_min_examined_row_limit', 'min_examined_row_limit'),
-        },
-    }
+VARIABLE_CANDIDATES = {
+    'enabled': ('log_slow_query', 'slow_query_log'),
+    'long_query_time': ('log_slow_query_time', 'long_query_time'),
+    'log_output': ('log_output',),
+    'log_queries_not_using_indexes': ('log_queries_not_using_indexes',),
+    'min_examined_row_limit': ('log_slow_min_examined_row_limit', 'min_examined_row_limit'),
+}
 
-    def __init__(self, module, cursor, server_implementation):
-        self.module = module
-        self.cursor = cursor
-        self.server_implementation = server_implementation
-        self.variable_names = {}
 
-    def configure(self, desired_settings, flush=False, check_mode=False):
-        current_settings = self.get_current_settings()
-        effective_settings = current_settings.copy()
-        planned_changes = []
+def configure_slow_log(module, cursor, desired_settings, flush=False, check_mode=False):
+    current_settings, variable_names = get_current_settings(module, cursor)
+    effective_settings = current_settings.copy()
+    planned_changes = []
 
-        for setting_name, value in desired_settings.items():
-            if value is None:
-                continue
+    for setting_name, value in desired_settings.items():
+        if value is None:
+            continue
 
-            normalized_value = self.normalize_value(setting_name, value)
-            effective_settings[setting_name] = normalized_value
+        normalized_value = normalize_value(module, setting_name, value)
+        effective_settings[setting_name] = normalized_value
 
-            if normalized_value != current_settings[setting_name]:
-                planned_changes.append((setting_name, self.variable_names[setting_name], normalized_value))
+        if normalized_value != current_settings[setting_name]:
+            planned_changes.append((variable_names[setting_name], normalized_value))
+
+    if flush and 'FILE' not in effective_settings['log_output'].split(','):
+        module.fail_json(msg='flush requires FILE log_output')
+
+    changed = bool(planned_changes) or flush
+    queries = []
+
+    if check_mode:
+        for variable_name, value in planned_changes:
+            queries.append(format_set_query(variable_name, value))
 
         if flush:
-            self.validate_flush(effective_settings['log_output'])
-
-        changed = bool(planned_changes) or flush
-        queries = []
-
-        if check_mode:
-            for _setting_name, variable_name, value in planned_changes:
-                queries.append(self.format_set_query(variable_name, value))
-
-            if flush:
-                queries.append('FLUSH SLOW LOGS')
-
-            return dict(changed=changed, queries=queries, settings=effective_settings)
-
-        for _setting_name, variable_name, value in planned_changes:
-            result = set_variable(self.cursor, variable_name, value, queries)
-            if result is not True:
-                self.module.fail_json(msg=result, changed=False)
-
-        if flush:
-            try:
-                self.cursor.execute('FLUSH SLOW LOGS')
-                self.cursor.fetchall()
-            except Exception as e:
-                self.module.fail_json(msg="Cannot execute SQL 'FLUSH SLOW LOGS': %s" % to_native(e))
             queries.append('FLUSH SLOW LOGS')
 
-        return dict(changed=changed, queries=queries, settings=effective_settings)
+        return {'changed': changed, 'queries': queries, 'settings': effective_settings}
 
-    def get_current_settings(self):
-        settings = {}
+    for variable_name, value in planned_changes:
+        result = set_variable(cursor, variable_name, value, queries)
+        if result is not True:
+            module.fail_json(msg=result, changed=False)
 
-        for setting_name in self.VARIABLE_CANDIDATES:
-            variable_name, value = self.read_setting(setting_name)
-            self.variable_names[setting_name] = variable_name
-            settings[setting_name] = self.normalize_value(setting_name, value)
+    if flush:
+        try:
+            cursor.execute('FLUSH SLOW LOGS')
+            cursor.fetchall()
+        except Exception as e:
+            module.fail_json(msg=f"Cannot execute SQL 'FLUSH SLOW LOGS': {to_native(e)}")
+        queries.append('FLUSH SLOW LOGS')
 
-        return settings
+    return {'changed': changed, 'queries': queries, 'settings': effective_settings}
 
-    def read_setting(self, setting_name):
-        for variable_name in self.VARIABLE_CANDIDATES[setting_name][self.server_implementation]:
-            value = get_variable(self.cursor, variable_name)
-            if value is not None:
-                return variable_name, value
 
-        self.module.fail_json(
-            msg='Slow log setting "%s" is not available on this server.' % setting_name,
-            changed=False,
-        )
+def read_setting(module, cursor, setting_name):
+    for variable_name in VARIABLE_CANDIDATES[setting_name]:
+        value = get_variable(cursor, variable_name)
+        if value is not None:
+            return variable_name, value
 
-    def normalize_value(self, setting_name, value):
-        if setting_name in ('enabled', 'log_queries_not_using_indexes'):
-            return convert_bool_setting_value_wanted(value)
-        if setting_name == 'log_output':
-            return self.normalize_log_output(value)
-        return typedvalue(value)
+    return module.fail_json(
+        msg=f'Slow log setting "{setting_name}" is not available on this server.',
+        changed=False,
+    )
 
-    def normalize_log_output(self, value):
-        output_parts = []
-        for part in str(value).split(','):
-            part = part.strip().upper()
-            if part and part not in output_parts:
-                output_parts.append(part)
 
-        allowed_values = ('FILE', 'TABLE', 'NONE')
-        if not output_parts or any(part not in allowed_values for part in output_parts):
-            self.module.fail_json(msg='log_output must be FILE, TABLE, NONE, or FILE,TABLE')
+def get_current_settings(module, cursor):
+    settings = {}
+    variable_names = {}
 
-        if 'NONE' in output_parts and len(output_parts) > 1:
-            self.module.fail_json(msg='log_output cannot combine NONE with other values')
+    for setting_name in VARIABLE_CANDIDATES:
+        variable_name, value = read_setting(module, cursor, setting_name)
+        variable_names[setting_name] = variable_name
+        settings[setting_name] = normalize_value(module, setting_name, value)
 
-        if set(output_parts) == set(['FILE', 'TABLE']):
-            return 'FILE,TABLE'
+    return settings, variable_names
 
-        return output_parts[0]
 
-    def validate_flush(self, log_output):
-        if 'FILE' not in log_output.split(','):
-            self.module.fail_json(msg='flush requires FILE log_output')
+def normalize_value(module, setting_name, value):
+    if setting_name in ('enabled', 'log_queries_not_using_indexes'):
+        return convert_bool_setting_value_wanted(value)
+    if setting_name == 'log_output':
+        return normalize_log_output(module, value)
+    return typedvalue(value)
 
-    @staticmethod
-    def format_set_query(variable_name, value):
-        return "SET GLOBAL `%s` = %s" % (variable_name, value)
+
+def normalize_log_output(module, value):
+    output_parts = []
+    for part in str(value).split(','):
+        part = part.strip().upper()
+        if part and part not in output_parts:
+            output_parts.append(part)
+
+    allowed_values = ('FILE', 'TABLE', 'NONE')
+    if not output_parts or any(part not in allowed_values for part in output_parts):
+        module.fail_json(msg='log_output must be FILE, TABLE, NONE, or FILE,TABLE')
+
+    if 'NONE' in output_parts and len(output_parts) > 1:
+        module.fail_json(msg='log_output cannot combine NONE with other values')
+
+    if set(output_parts) == {'FILE', 'TABLE'}:
+        return 'FILE,TABLE'
+
+    return output_parts[0]
+
+
+def format_set_query(variable_name, value):
+    return f"SET GLOBAL {quote_identifier(variable_name, 'vars')} = {value}"
 
 
 def main():
     argument_spec = common_argument_spec()
     argument_spec.update(
-        enabled=dict(type='bool'),
-        long_query_time=dict(type='float'),
-        log_output=dict(type='str', choices=['FILE', 'TABLE', 'NONE', 'FILE,TABLE', 'TABLE,FILE']),
-        log_queries_not_using_indexes=dict(type='bool'),
-        min_examined_row_limit=dict(type='int'),
-        flush=dict(type='bool', default=False),
+        enabled={'type': 'bool'},
+        long_query_time={'type': 'float'},
+        log_output={'type': 'str', 'choices': ['FILE', 'TABLE', 'NONE', 'FILE,TABLE', 'TABLE,FILE']},
+        log_queries_not_using_indexes={'type': 'bool'},
+        min_examined_row_limit={'type': 'int'},
+        flush={'type': 'bool', 'default': False},
     )
 
     module = AnsibleModule(
@@ -367,10 +350,10 @@ def main():
             check_hostname=check_hostname,
         )
     except Exception as e:
-        module.fail_json(
+        return module.fail_json(
             msg="unable to connect to database, check login_user and "
-                "login_password are correct or %s has the credentials. "
-                "Exception message: %s" % (config_file, to_native(e))
+                f"login_password are correct or {config_file} has the credentials. "
+                f"Exception message: {to_native(e)}"
         )
 
     desired_settings = {
@@ -381,10 +364,10 @@ def main():
         'min_examined_row_limit': module.params['min_examined_row_limit'],
     }
 
-    slow_log = MySQLSlowLog(module, cursor, 'mariadb')
-
     module.exit_json(
-        **slow_log.configure(
+        **configure_slow_log(
+            module,
+            cursor,
             desired_settings,
             flush=module.params['flush'],
             check_mode=module.check_mode,
