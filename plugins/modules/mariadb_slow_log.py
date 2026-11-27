@@ -196,6 +196,7 @@ def convert_bool_setting_value_wanted(val):
 
     return val
 
+
 VARIABLE_CANDIDATES = {
     'enabled': ('log_slow_query', 'slow_query_log'),
     'long_query_time': ('log_slow_query_time', 'long_query_time'),
