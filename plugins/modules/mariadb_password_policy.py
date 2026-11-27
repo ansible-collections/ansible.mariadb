@@ -159,6 +159,11 @@ from ansible_collections.ansible.mariadb.plugins.module_utils.connect import (
     driver,
     driver_fail_msg,
 )
+from ansible_collections.ansible.mariadb.plugins.module_utils.variable import (
+    convert_bool,
+    get_variable,
+    set_variable,
+)
 
 
 SETTING_VARIABLES = {
@@ -207,28 +212,6 @@ def normalize_int_value(value):
     return int(value)
 
 
-def get_variable(cursor, var):
-    cursor.execute("SHOW GLOBAL VARIABLES WHERE Variable_name = %s", (var,))
-    rows = cursor.fetchall()
-    return rows[0][1] if rows else None
-
-
-def set_variable(cursor, var, value, mode):
-    query = "SET %s %s = " % (mode.upper(), quote_identifier(var, 'vars'))
-    cursor.execute(query + "%s", (value,))
-
-
-def normalize_bool_setting_value(value):
-    if isinstance(value, str):
-        value = value.upper()
-
-    if value in ('ON', '1', 1, True):
-        return 'ON'
-    if value in ('OFF', '0', 0, False):
-        return 'OFF'
-    return value
-
-
 def normalize_policy_value(value):
     value = str(value).strip().lower()
     numeric_policy = {
@@ -271,18 +254,18 @@ class MySQLPasswordPolicy(object):
 
         if check_mode:
             for _setting_name, variable_name, query_value in planned_changes:
-                queries.append(self.format_set_query(variable_name, query_value, mode))
+                queries.append(self.format_set_query(variable_name, query_value))
             return dict(changed=changed, queries=queries, settings=effective_settings)
 
         for _setting_name, variable_name, query_value in planned_changes:
             try:
-                set_variable(self.cursor, variable_name, query_value, mode)
+                set_variable(self.cursor, variable_name, query_value)
             except Exception as exc:
                 self.module.fail_json(
                     msg='Failed to set %s: %s' % (variable_name, to_native(exc)),
                     changed=False,
                 )
-            queries.append(self.format_set_query(variable_name, query_value, mode))
+            queries.append(self.format_set_query(variable_name, query_value))
 
         return dict(changed=changed, queries=queries, settings=effective_settings)
 
@@ -312,7 +295,7 @@ class MySQLPasswordPolicy(object):
         if setting_name == 'policy':
             return normalize_policy_value(value)
         if setting_name == 'check_user_name':
-            return normalize_bool_setting_value(value)
+            return convert_bool(value)
         if setting_name in INTEGER_OPTIONS:
             return normalize_int_value(value)
         return value
@@ -321,12 +304,12 @@ class MySQLPasswordPolicy(object):
         if setting_name == 'policy':
             return str(normalized_value).upper()
         if setting_name == 'check_user_name':
-            return normalize_bool_setting_value(normalized_value)
+            return convert_bool(normalized_value)
         return normalized_value
 
     @staticmethod
-    def format_set_query(variable_name, value, mode):
-        return "SET %s %s = %s" % (mode.upper(), quote_identifier(variable_name, 'vars'), value)
+    def format_set_query(variable_name, value):
+        return "SET GLOBAL %s = %s" % (quote_identifier(variable_name, 'vars'), value)
 
 
 def main():

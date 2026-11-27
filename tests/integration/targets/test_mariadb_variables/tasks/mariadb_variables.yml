@@ -427,17 +427,3 @@
       vars:
         output: "{{ result }}"
         msg: 'unable to connect to database'
-
-    # Bugfix of https://github.com/ansible/ansible/issues/54239
-    # - name: set variable containing dot
-    #   mariadb_variables:
-    #     <<: *mariadb_params
-    #     variable: validate_password.policy
-    #     value: LOW
-    #     mode: persist_only
-    #   register: result
-    #
-    # - assert:
-    #     that:
-    #       - result is changed
-    #       - result.queries == ["SET PERSIST_ONLY `validate_password`.`policy` = LOW"]

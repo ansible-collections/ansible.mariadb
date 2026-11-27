@@ -25,9 +25,7 @@ except ImportError:
 from ansible_collections.ansible.mariadb.plugins.modules import mariadb_password_policy
 from ansible_collections.ansible.mariadb.plugins.modules.mariadb_password_policy import (
     MySQLPasswordPolicy,
-    get_variable,
     normalize_int_value,
-    set_variable,
 )
 
 
@@ -125,26 +123,6 @@ def test_normalize_int_value_returns_expected_int(value, expected):
     assert normalize_int_value(value) == expected
 
 
-def test_get_variable_returns_matching_value():
-    cursor = FakeCursor({
-        'simple_password_check_minimal_length': '12',
-    })
-
-    assert get_variable(cursor, 'simple_password_check_minimal_length') == '12'
-
-
-def test_get_variable_returns_none_when_variable_is_missing():
-    assert get_variable(FakeCursor({}), 'simple_password_check_minimal_length') is None
-
-
-def test_set_variable_executes_global_query():
-    cursor = FakeCursor({})
-
-    set_variable(cursor, 'simple_password_check_minimal_length', 12, 'global')
-
-    assert cursor.executed[-1] == ("SET GLOBAL `simple_password_check_minimal_length` = %s", (12,))
-    assert cursor.variables['simple_password_check_minimal_length'] == 12
-
 
 def test_configure_uses_mariadb_simple_password_check_mapping():
     cursor = FakeCursor({
@@ -201,7 +179,7 @@ def test_normalize_value_handles_supported_setting_types():
 
 
 def test_format_set_query_formats_expected_statement():
-    assert MySQLPasswordPolicy.format_set_query('simple_password_check_minimal_length', 12, 'global') == (
+    assert MySQLPasswordPolicy.format_set_query('simple_password_check_minimal_length', 12) == (
         "SET GLOBAL `simple_password_check_minimal_length` = 12"
     )
 

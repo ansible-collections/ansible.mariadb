@@ -132,66 +132,18 @@ settings:
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils.common.text.converters import to_native
 
-from ansible_collections.ansible.mariadb.plugins.module_utils.database import quote_identifier
 from ansible_collections.ansible.mariadb.plugins.module_utils.connect import (
     common_argument_spec,
     connect,
     driver,
     driver_fail_msg,
 )
-
-
-def typedvalue(value):
-    """Convert value to number whenever possible, return the same value otherwise."""
-    if isinstance(value, (bool, int, float)):
-        return value
-
-    try:
-        return int(value)
-    except ValueError:
-        pass
-
-    try:
-        return float(value)
-    except ValueError:
-        pass
-
-    return value
-
-
-def get_variable(cursor, var):
-    cursor.execute("SHOW GLOBAL VARIABLES WHERE Variable_name = %s", (var,))
-    var_val = cursor.fetchall()
-    if len(var_val) == 1:
-        return var_val[0][1]
-    else:
-        return None
-
-
-def set_variable(cursor, var, value, executed_queries):
-    query = "SET GLOBAL %s = " % quote_identifier(var, 'vars')
-    try:
-        cursor.execute(query + "%s", (value,))
-        executed_queries.append(query + "%s" % value)
-        cursor.fetchall()
-        result = True
-    except Exception as e:
-        result = to_native(e)
-
-    return result
-
-
-def convert_bool_setting_value_wanted(val):
-    """Convert 0/1/on/off values to the ON/OFF representation used by the server."""
-    if isinstance(val, str):
-        val = val.upper()
-
-    if val in ('ON', '1', 1, True):
-        val = 'ON'
-    elif val in ('OFF', '0', 0, False):
-        val = 'OFF'
-
-    return val
+from ansible_collections.ansible.mariadb.plugins.module_utils.variable import (
+    convert_bool,
+    get_variable,
+    set_variable,
+    typedvalue,
+)
 
 
 class MySQLSlowLog(object):
@@ -255,9 +207,12 @@ class MySQLSlowLog(object):
             return dict(changed=changed, queries=queries, settings=effective_settings)
 
         for _setting_name, variable_name, value in planned_changes:
-            result = set_variable(self.cursor, variable_name, value, queries)
-            if result is not True:
-                self.module.fail_json(msg=result, changed=False)
+            try:
+                set_variable(self.cursor, variable_name, value)
+                self.cursor.fetchall()
+                queries.append(self.format_set_query(variable_name, value))
+            except Exception as e:
+                self.module.fail_json(msg=to_native(e), changed=False)
 
         if flush:
             try:
@@ -292,7 +247,7 @@ class MySQLSlowLog(object):
 
     def normalize_value(self, setting_name, value):
         if setting_name in ('enabled', 'log_queries_not_using_indexes'):
-            return convert_bool_setting_value_wanted(value)
+            return convert_bool(value)
         if setting_name == 'log_output':
             return self.normalize_log_output(value)
         return typedvalue(value)

@@ -5,7 +5,7 @@ __metaclass__ = type
 
 import pytest
 
-from ansible_collections.ansible.mariadb.plugins.modules.mariadb_slow_log import MySQLSlowLog, typedvalue
+from ansible_collections.ansible.mariadb.plugins.modules.mariadb_slow_log import MySQLSlowLog
 
 
 class FakeCursor(object):
@@ -45,10 +45,6 @@ class ModuleStub(object):
     def fail_json(self, **kwargs):
         raise RuntimeError(kwargs['msg'])
 
-
-def test_typedvalue_raises_type_error_for_none():
-    with pytest.raises(TypeError):
-        typedvalue(None)
 
 
 @pytest.mark.parametrize('value', ['', 'invalid'])

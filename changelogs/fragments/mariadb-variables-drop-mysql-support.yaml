@@ -1,0 +1,2 @@
+removed_features:
+  - mariadb_variables - removed the MySQL-only ``mode`` parameter and its ``persist`` and ``persist_only`` functionality, including ``mysqld-auto.cnf`` handling. Use MariaDB option files to persist global variables.

@@ -14,8 +14,7 @@ module: mariadb_variables
 
 short_description: Manage MariaDB global variables
 description:
-- This module only supports MariaDB; all MySQL-related options will be removed in the next releases. Use the C(ansible.mysql) collection for MySQL automation.
-- Query / Set MariaDB variables.
+- Query and set MariaDB global variables.
 author:
 - Balazs Pocze (@banyek)
 options:
@@ -29,21 +28,6 @@ options:
     - If set, then sets variable value to this.
     - With boolean values, use C(0)|C(1) or quoted C("ON")|C("OFF").
     type: str
-  mode:
-    description:
-    - C(global) assigns C(value) to a global system variable which will be changed at runtime
-      but won't persist across server restarts.
-    - C(persist) assigns C(value) to a global system variable and persists it to
-      the mysqld-auto.cnf option file in the data directory
-      (the variable will survive service restarts).
-    - C(persist_only) persists C(value) to the mysqld-auto.cnf option file in the data directory
-      but without setting the global variable runtime value
-      (the value will be changed after the next service restart).
-    - For more information see U(https://mariadb.com/docs/server/ha-and-performance/mariadb-memory-allocation#how-to-set-variables).
-    type: str
-    choices: ['global', 'persist', 'persist_only']
-    default: global
-    version_added: '0.1.0'
 
 attributes:
   check_mode:
@@ -75,11 +59,10 @@ EXAMPLES = r'''
     variable: sync_binlog
     login_unix_socket: /run/mysqld/mysqld.sock
 
-- name: Set read_only variable to 1 persistently
+- name: Set read_only variable to 1
   ansible.mariadb.mariadb_variables:
     variable: read_only
     value: 1
-    mode: persist
 
 - name: Set a boolean using ON/OFF notation
   mariadb_variables:
@@ -101,102 +84,16 @@ import warnings
 from re import match
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.ansible.mariadb.plugins.module_utils.database import SQLParseError, quote_identifier
 from ansible_collections.ansible.mariadb.plugins.module_utils.connect import connect, driver, driver_fail_msg, common_argument_spec
 from ansible.module_utils.common.text.converters import to_native
+from ansible_collections.ansible.mariadb.plugins.module_utils.variable import (
+    convert_bool,
+    get_variable,
+    set_variable,
+    typedvalue,
+)
 
 executed_queries = []
-
-
-def check_mysqld_auto(module, cursor, var):
-    """Check variable's value in mysqld-auto.cnf."""
-    query = ("SELECT VARIABLE_VALUE "
-             "FROM performance_schema.persisted_variables "
-             "WHERE VARIABLE_NAME = %s")
-    try:
-        cursor.execute(query, (var,))
-        res = cursor.fetchone()
-    except Exception as e:
-        if "Table 'performance_schema.persisted_variables' doesn't exist" in str(e):
-            module.fail_json(msg='Server version must be 8.0 or greater.')
-
-    if res:
-        return res[0]
-    else:
-        return None
-
-
-def typedvalue(value):
-    """
-    Convert value to number whenever possible, return same value
-    otherwise.
-
-    >>> typedvalue('3')
-    3
-    >>> typedvalue('3.0')
-    3.0
-    >>> typedvalue('foobar')
-    'foobar'
-
-    """
-    try:
-        return int(value)
-    except ValueError:
-        pass
-
-    try:
-        return float(value)
-    except ValueError:
-        pass
-
-    return value
-
-
-def getvariable(cursor, var):
-    cursor.execute("SHOW VARIABLES WHERE Variable_name = %s", (var,))
-    var_val = cursor.fetchall()
-    if len(var_val) == 1:
-        return var_val[0][1]
-    else:
-        return None
-
-
-def setvariable(cursor, var, value, mode='global'):
-    """ Set a global variable to a given value
-
-    The DB driver will handle quoting of the given value based on its
-    type, thus numeric strings like '3.0' or '8' are illegal, they
-    should be passed as numeric literals.
-
-    """
-    if mode == 'persist':
-        query = "SET PERSIST %s = " % quote_identifier(var, 'vars')
-    elif mode == 'global':
-        query = "SET GLOBAL %s = " % quote_identifier(var, 'vars')
-    elif mode == 'persist_only':
-        query = "SET PERSIST_ONLY %s = " % quote_identifier(var, 'vars')
-
-    try:
-        cursor.execute(query + "%s", (value,))
-        executed_queries.append(query + "%s" % value)
-        cursor.fetchall()
-        result = True
-    except Exception as e:
-        result = to_native(e)
-
-    return result
-
-
-def convert_bool_setting_value_wanted(val):
-    """Converts passed value from 0,1,on,off to ON/OFF
-       as it's represented in the server.
-    """
-    if val in ('on', 1):
-        val = 'ON'
-    elif val in ('off', 0):
-        val = 'OFF'
-
-    return val
 
 
 def main():
@@ -204,7 +101,6 @@ def main():
     argument_spec.update(
         variable=dict(type='str', required=True),
         value=dict(type='str'),
-        mode=dict(type='str', choices=['global', 'persist', 'persist_only'], default='global'),
     )
 
     module = AnsibleModule(
@@ -222,7 +118,6 @@ def main():
 
     var = module.params["variable"]
     value = module.params["value"]
-    mode = module.params["mode"]
 
     if var is None:
         module.fail_json(msg="Cannot run without variable to operate with")
@@ -244,50 +139,28 @@ def main():
         else:
             module.fail_json(msg="unable to find %s. Exception message: %s" % (config_file, to_native(e)))
 
-    var_val = None
-    var_in_mysqld_auto_cnf = None
-
-    var_val = getvariable(cursor, var)
+    var_val = get_variable(cursor, var)
     if var_val is None:
         module.fail_json(msg="Variable not available \"%s\"" % var, changed=False)
 
     if value is None:
         module.exit_json(msg=var_val)
 
-    if mode in ('persist', 'persist_only'):
-        var_in_mysqld_auto_cnf = check_mysqld_auto(module, cursor, var)
-
-        if mode == 'persist_only':
-            if var_in_mysqld_auto_cnf is None:
-                var_val = False
-            else:
-                var_val = var_in_mysqld_auto_cnf
-
     # Type values before using them
     value_wanted = typedvalue(value)
     value_actual = typedvalue(var_val)
     if value_actual in ('ON', 'OFF') and value_wanted not in ('ON', 'OFF'):
-        value_wanted = convert_bool_setting_value_wanted(value_wanted)
+        value_wanted = convert_bool(value_wanted)
 
-    value_in_auto_cnf = None
-    if var_in_mysqld_auto_cnf is not None:
-        value_in_auto_cnf = typedvalue(var_in_mysqld_auto_cnf)
-
-    if value_wanted == value_actual and mode in ('global', 'persist'):
-        if mode == 'persist' and value_wanted == value_in_auto_cnf:
-            module.exit_json(msg="Variable is already set to requested value globally"
-                                 "and stored into mysqld-auto.cnf file.", changed=False)
-
-        elif mode == 'global':
-            module.exit_json(msg="Variable is already set to requested value.", changed=False)
-
-    if mode == 'persist_only' and value_wanted == value_in_auto_cnf:
-        module.exit_json(msg="Variable is already stored into mysqld-auto.cnf "
-                             "with requested value.", changed=False)
+    if value_wanted == value_actual:
+        module.exit_json(msg="Variable is already set to requested value.", changed=False)
 
     try:
-        result = setvariable(cursor, var, value_wanted, mode)
-    except SQLParseError as e:
+        set_variable(cursor, var, value_wanted)
+        executed_queries.append("SET GLOBAL `%s` = %s" % (var, value_wanted))
+        cursor.fetchall()
+        result = True
+    except Exception as e:
         result = to_native(e)
 
     if result is True:
