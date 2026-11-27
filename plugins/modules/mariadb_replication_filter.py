@@ -14,7 +14,7 @@ module: mariadb_replication_filter
 short_description: Manage MariaDB replication filters
 
 description:
-  - This module only supports MariaDB; all MySQL-related options will be removed in the next releases. Use the C(ansible.mysql) collection for MySQL automation.
+  - This module only supports MariaDB. Use the C(ansible.mysql) collection for MySQL automation.
   - Manage replica-side replication filters declaratively.
   - MariaDB uses C(SET GLOBAL replicate_*) variables.
   - Changes are runtime only and are not persisted across restart by this module.
@@ -66,12 +66,6 @@ options:
       - Provide an empty list to clear the filter.
     type: list
     elements: str
-  channel:
-    description:
-      - This option is scheduled for removal.
-      - MySQL replication channel name.
-      - Supported only for MySQL.
-    type: str
   connection_name:
     description:
       - MariaDB replication connection name.
@@ -145,7 +139,7 @@ queries:
   type: list
   elements: str
   sample:
-    - CHANGE REPLICATION FILTER REPLICATE_DO_DB = (`app`,`reporting`)
+    - SET GLOBAL `replicate_do_db` = 'app,reporting'
 filters:
   description: Effective normalized filter state after execution or prediction.
   returned: always
@@ -206,43 +200,14 @@ from ansible_collections.ansible.mariadb.plugins.module_utils.connect import (
 from ansible_collections.ansible.mariadb.plugins.module_utils.version import LooseVersion
 
 
-FILTER_DEFINITIONS = {
-    'replicate_do_db': {
-        'mysql_name': 'REPLICATE_DO_DB',
-        'mariadb_name': 'replicate_do_db',
-        'value_kind': 'database',
-    },
-    'replicate_ignore_db': {
-        'mysql_name': 'REPLICATE_IGNORE_DB',
-        'mariadb_name': 'replicate_ignore_db',
-        'value_kind': 'database',
-    },
-    'replicate_do_table': {
-        'mysql_name': 'REPLICATE_DO_TABLE',
-        'mariadb_name': 'replicate_do_table',
-        'value_kind': 'table',
-    },
-    'replicate_ignore_table': {
-        'mysql_name': 'REPLICATE_IGNORE_TABLE',
-        'mariadb_name': 'replicate_ignore_table',
-        'value_kind': 'table',
-    },
-    'replicate_wild_do_table': {
-        'mysql_name': 'REPLICATE_WILD_DO_TABLE',
-        'mariadb_name': 'replicate_wild_do_table',
-        'value_kind': 'pattern',
-    },
-    'replicate_wild_ignore_table': {
-        'mysql_name': 'REPLICATE_WILD_IGNORE_TABLE',
-        'mariadb_name': 'replicate_wild_ignore_table',
-        'value_kind': 'pattern',
-    },
+FILTER_VALUE_KINDS = {
+    'replicate_do_db': 'database',
+    'replicate_ignore_db': 'database',
+    'replicate_do_table': 'table',
+    'replicate_ignore_table': 'table',
+    'replicate_wild_do_table': 'pattern',
+    'replicate_wild_ignore_table': 'pattern',
 }
-
-MYSQL_FILTER_NAME_TO_PARAM = dict(
-    (definition['mysql_name'], param)
-    for param, definition in FILTER_DEFINITIONS.items()
-)
 
 
 def normalize_filter_values(values):
@@ -257,30 +222,18 @@ def normalize_filter_values(values):
     return sorted(set(normalized))
 
 
-def normalize_mysql_filter_rows(rows):
+def normalize_filter_variables(variables):
     filters = _empty_filters()
 
-    for row in rows:
-        param = MYSQL_FILTER_NAME_TO_PARAM.get(row['FILTER_NAME'])
-        if not param:
-            continue
-        filters[param] = normalize_filter_values(_split_filter_rule(row.get('FILTER_RULE', '')))
-
-    return filters
-
-
-def normalize_mariadb_filter_values(variables):
-    filters = _empty_filters()
-
-    for param, definition in FILTER_DEFINITIONS.items():
-        raw_value = variables.get(definition['mariadb_name'], '')
+    for param in FILTER_VALUE_KINDS:
+        raw_value = variables.get(param, '')
         filters[param] = normalize_filter_values(_split_filter_rule(raw_value))
 
     return filters
 
 
 def plan_filter_changes(desired_filters, current_filters, query_builder):
-    planned_filters = dict((name, list(values)) for name, values in current_filters.items())
+    planned_filters = {name: list(values) for name, values in current_filters.items()}
     queries = []
 
     for param, desired_values in desired_filters.items():
@@ -300,49 +253,20 @@ def plan_filter_changes(desired_filters, current_filters, query_builder):
     }
 
 
-def build_mysql_filter_query(filter_name, value_kind, values, channel=''):
-    values_sql = _build_mysql_filter_values(value_kind, values)
-    query = 'CHANGE REPLICATION FILTER %s = (%s)' % (filter_name, values_sql)
-
-    if channel:
-        query += ' FOR CHANNEL %s' % _quote_sql_string(channel)
-
-    return {
-        'sql': query,
-        'params': (),
-        'display': query,
-    }
-
-
-def build_mariadb_set_query(variable_name, values):
+def build_filter_query(param, values):
     value = ','.join(normalize_filter_values(values))
-    identifier = quote_identifier(variable_name, 'vars')
-    query = 'SET GLOBAL %s = %%s' % identifier
+    identifier = quote_identifier(param, 'vars')
+    query = f'SET GLOBAL {identifier} = %s'
 
     return {
         'sql': query,
         'params': (value,),
-        'display': 'SET GLOBAL %s = %s' % (identifier, _quote_sql_string(value)),
+        'display': f'SET GLOBAL {identifier} = {_quote_sql_string(value)}',
     }
 
 
-def build_mysql_query_from_param(param, values, channel=''):
-    definition = FILTER_DEFINITIONS[param]
-    return build_mysql_filter_query(
-        definition['mysql_name'],
-        definition['value_kind'],
-        values,
-        channel=channel,
-    )
-
-
-def build_mariadb_query_from_param(param, values):
-    definition = FILTER_DEFINITIONS[param]
-    return build_mariadb_set_query(definition['mariadb_name'], values)
-
-
 def _empty_filters():
-    return dict((name, []) for name in FILTER_DEFINITIONS)
+    return {name: [] for name in FILTER_VALUE_KINDS}
 
 
 def _split_filter_rule(value):
@@ -352,19 +276,9 @@ def _split_filter_rule(value):
     return [item.strip() for item in value.split(',')]
 
 
-def _build_mysql_filter_values(value_kind, values):
-    normalized = normalize_filter_values(values)
-    if not normalized:
-        return ''
-
-    if value_kind == 'pattern':
-        return ','.join(_quote_sql_string(value) for value in normalized)
-
-    return ','.join(quote_identifier(value, value_kind) for value in normalized)
-
-
 def _quote_sql_string(value):
-    return "'%s'" % value.replace('\\', '\\\\').replace("'", "''")
+    escaped_value = value.replace('\\', '\\\\').replace("'", "''")
+    return f"'{escaped_value}'"
 
 
 def _uses_database_table_syntax(value):
@@ -372,32 +286,17 @@ def _uses_database_table_syntax(value):
     return bool(separator and database_name and table_name and '.' not in table_name)
 
 
-def get_mysql_filter_rows(cursor, channel=''):
-    if channel:
-        cursor.execute(
-            'SELECT CHANNEL_NAME, FILTER_NAME, FILTER_RULE '
-            'FROM performance_schema.replication_applier_filters WHERE CHANNEL_NAME = %s',
-            (channel,),
-        )
-    else:
-        cursor.execute(
-            'SELECT FILTER_NAME, FILTER_RULE FROM performance_schema.replication_applier_global_filters'
-        )
-
-    return cursor.fetchall()
-
-
 def supports_connection_name(server_version):
     return LooseVersion(server_version) >= LooseVersion('10.0.1')
 
 
-def get_mariadb_filter_values(module, cursor, server_version, connection_name=''):
+def get_filter_values(module, cursor, server_version, connection_name=''):
     if connection_name and not supports_connection_name(server_version):
         module.fail_json(msg='connection_name requires MariaDB 10.0.1 or newer')
 
     if connection_name:
         replica_term = 'REPLICA' if LooseVersion(server_version) >= LooseVersion('10.5.1') else 'SLAVE'
-        cursor.execute('SHOW %s %s STATUS' % (replica_term, _quote_sql_string(connection_name)))
+        cursor.execute(f'SHOW {replica_term} {_quote_sql_string(connection_name)} STATUS')
         rows = cursor.fetchall()
         if rows:
             row = rows[0]
@@ -409,14 +308,13 @@ def get_mariadb_filter_values(module, cursor, server_version, connection_name=''
                 'replicate_wild_do_table': row.get('Replicate_Wild_Do_Table', ''),
                 'replicate_wild_ignore_table': row.get('Replicate_Wild_Ignore_Table', ''),
             }
-        return dict((param, '') for param in FILTER_DEFINITIONS)
+        return {param: '' for param in FILTER_VALUE_KINDS}
 
     variables = {}
-    for definition in FILTER_DEFINITIONS.values():
-        variable_name = definition['mariadb_name']
-        cursor.execute('SELECT @@GLOBAL.%s AS Value' % variable_name)
+    for param in FILTER_VALUE_KINDS:
+        cursor.execute(f'SELECT @@GLOBAL.{param} AS Value')
         rows = cursor.fetchall()
-        variables[variable_name] = _extract_variable_value(rows)
+        variables[param] = _extract_variable_value(rows)
 
     return variables
 
@@ -435,115 +333,80 @@ def _extract_variable_value(rows):
     return row[1]
 
 
-class MySQLReplicationFilter(object):
-    def __init__(self, module, cursor, server_implementation, server_version):
-        self.module = module
-        self.cursor = cursor
-        self.server_implementation = server_implementation
-        self.server_version = server_version
+def apply_filters(module, cursor, server_version, desired_filters, connection_name=''):
+    validate_filters(module, desired_filters)
+    check_input(module, connection_name)
 
-    def apply(self, desired_filters, channel='', connection_name=''):
-        self.validate_filters(desired_filters)
-        self.validate_target(channel, connection_name)
+    planned = plan_filter_changes(
+        desired_filters,
+        normalize_filter_variables(get_filter_values(
+            module,
+            cursor,
+            server_version,
+            connection_name=connection_name,
+        )),
+        build_filter_query,
+    )
 
-        if self.server_implementation == 'mysql':
-            def build_query(param, values):
-                return build_mysql_query_from_param(param, values, channel=channel)
+    if not module.check_mode:
+        execute_queries(cursor, planned['queries'], connection_name=connection_name)
 
-            planned = plan_filter_changes(
-                desired_filters,
-                normalize_mysql_filter_rows(get_mysql_filter_rows(self.cursor, channel=channel)),
-                build_query,
+    return {
+        'changed': planned['changed'],
+        'queries': [query['display'] for query in planned['queries']],
+        'filters': planned['filters'],
+    }
+
+
+def execute_queries(cursor, queries, connection_name=''):
+    if connection_name:
+        cursor.execute('SET @@default_master_connection = %s', (connection_name,))
+        cursor.fetchall()
+
+    try:
+        for query in queries:
+            cursor.execute(query['sql'], query['params'])
+            cursor.fetchall()
+    finally:
+        if connection_name:
+            cursor.execute('SET @@default_master_connection = %s', ('',))
+            cursor.fetchall()
+
+
+def validate_filters(module, desired_filters):
+    for param, values in desired_filters.items():
+        if values is None:
+            continue
+        check_input(module, values)
+        values_with_commas = [value for value in values if ',' in value]
+        if values_with_commas:
+            module.fail_json(
+                msg=f"replication filter values cannot contain commas: {', '.join(values_with_commas)}"
             )
-        elif self.server_implementation == 'mariadb':
-            planned = plan_filter_changes(
-                desired_filters,
-                normalize_mariadb_filter_values(get_mariadb_filter_values(
-                    self.module,
-                    self.cursor,
-                    self.server_version,
-                    connection_name=connection_name,
-                )),
-                build_mariadb_query_from_param,
-            )
-        else:
-            self.module.fail_json(
-                msg='mysql_replication_filter supports only MySQL or MariaDB, got "%s"' % self.server_implementation
-            )
-
-        if not self.module.check_mode:
-            self.execute_queries(planned['queries'], connection_name=connection_name)
-
-        return {
-            'changed': planned['changed'],
-            'queries': [query['display'] for query in planned['queries']],
-            'filters': planned['filters'],
-        }
-
-    def execute_queries(self, queries, connection_name=''):
-        if self.server_implementation == 'mariadb' and connection_name:
-            self.cursor.execute('SET @@default_master_connection = %s', (connection_name,))
-            self.cursor.fetchall()
-
-        try:
-            for query in queries:
-                if query['params']:
-                    self.cursor.execute(query['sql'], query['params'])
-                else:
-                    self.cursor.execute(query['sql'])
-                self.cursor.fetchall()
-        finally:
-            if self.server_implementation == 'mariadb' and connection_name:
-                self.cursor.execute('SET @@default_master_connection = %s', ('',))
-                self.cursor.fetchall()
-
-    def validate_filters(self, desired_filters):
-        for param, values in desired_filters.items():
-            if values is None:
-                continue
-            check_input(self.module, values)
-            values_with_commas = [value for value in values if ',' in value]
-            if values_with_commas:
-                self.module.fail_json(
-                    msg='replication filter values cannot contain commas: %s' % ', '.join(values_with_commas)
+        if FILTER_VALUE_KINDS[param] in ('table', 'pattern'):
+            invalid_values = [value for value in values if not _uses_database_table_syntax(value)]
+            if invalid_values:
+                module.fail_json(
+                    msg=f"{param} values must use database.table syntax: {', '.join(invalid_values)}"
                 )
-            if FILTER_DEFINITIONS[param]['value_kind'] in ('table', 'pattern'):
-                invalid_values = [value for value in values if not _uses_database_table_syntax(value)]
-                if invalid_values:
-                    self.module.fail_json(
-                        msg='%s values must use database.table syntax: %s' % (param, ', '.join(invalid_values))
-                    )
-
-    def validate_target(self, channel, connection_name):
-        check_input(self.module, channel, connection_name)
-
-        if self.server_implementation == 'mysql' and connection_name:
-            self.module.fail_json(msg='connection_name is supported only for MariaDB')
-
-        if self.server_implementation == 'mariadb' and channel:
-            self.module.fail_json(msg='channel is supported only for MySQL')
 
 
 def main():
     argument_spec = common_argument_spec()
-    for name in FILTER_DEFINITIONS:
-        argument_spec[name] = dict(type='list', elements='str')
+    for name in FILTER_VALUE_KINDS:
+        argument_spec[name] = {'type': 'list', 'elements': 'str'}
 
-    argument_spec.update(
-        channel=dict(type='str'),
-        connection_name=dict(type='str'),
-    )
+    argument_spec['connection_name'] = {'type': 'str'}
 
     module = AnsibleModule(
         argument_spec=argument_spec,
-        mutually_exclusive=[['channel', 'connection_name']],
         supports_check_mode=True,
     )
 
     if driver is None:
         module.fail_json(msg=driver_fail_msg)
 
-    desired_filters = dict((name, module.params[name]) for name in FILTER_DEFINITIONS)
+    desired_filters = {name: module.params[name] for name in FILTER_VALUE_KINDS}
     if not any(values is not None for values in desired_filters.values()):
         module.fail_json(msg='at least one replication filter option must be provided')
 
@@ -570,32 +433,27 @@ def main():
             connect_timeout=connect_timeout,
             check_hostname=check_hostname,
         )
-    except Exception as e:
-        module.fail_json(
+    except Exception as e:  # noqa: BLE001 - Report all connection setup failures through Ansible.
+        return module.fail_json(
             msg=(
                 "unable to connect to database, check login_user and "
-                "login_password are correct or %s has the credentials. "
-                "Exception message: %s" % (config_file, to_native(e))
+                f"login_password are correct or {config_file} has the credentials. "
+                f"Exception message: {to_native(e)}"
             )
         )
 
-    executor = MySQLReplicationFilter(
-        module,
-        cursor,
-        'mariadb',
-        get_server_version(cursor),
-    )
-
     try:
         module.exit_json(
-            **executor.apply(
+            **apply_filters(
+                module,
+                cursor,
+                get_server_version(cursor),
                 desired_filters,
-                channel=module.params['channel'],
                 connection_name=module.params['connection_name'],
             )
         )
     except ValueError as e:
-        module.fail_json(msg='invalid replication filter request: %s' % to_native(e))
+        module.fail_json(msg=f'invalid replication filter request: {to_native(e)}')
 
 
 if __name__ == '__main__':
