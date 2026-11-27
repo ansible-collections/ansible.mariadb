@@ -1,11 +1,16 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import (absolute_import, division, print_function)
+from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
 import pytest
-
-from ansible_collections.ansible.mariadb.plugins.modules.mariadb_slow_log import MySQLSlowLog, typedvalue
+from ansible_collections.ansible.mariadb.plugins.modules.mariadb_slow_log import (
+    configure_slow_log,
+    normalize_log_output,
+    read_setting,
+    typedvalue,
+)
 
 
 class FakeCursor(object):
@@ -53,29 +58,23 @@ def test_typedvalue_raises_type_error_for_none():
 
 @pytest.mark.parametrize('value', ['', 'invalid'])
 def test_normalize_log_output_rejects_empty_and_invalid_values(value):
-    slow_log = MySQLSlowLog(ModuleStub(), FakeCursor({}), 'mysql')
-
     with pytest.raises(RuntimeError) as exc_info:
-        slow_log.normalize_log_output(value)
+        normalize_log_output(ModuleStub(), value)
 
     assert str(exc_info.value) == 'log_output must be FILE, TABLE, NONE, or FILE,TABLE'
 
 
 @pytest.mark.parametrize('value', ['NONE,FILE', 'TABLE,NONE'])
 def test_normalize_log_output_rejects_none_combined_with_other_values(value):
-    slow_log = MySQLSlowLog(ModuleStub(), FakeCursor({}), 'mysql')
-
     with pytest.raises(RuntimeError) as exc_info:
-        slow_log.normalize_log_output(value)
+        normalize_log_output(ModuleStub(), value)
 
     assert str(exc_info.value) == 'log_output cannot combine NONE with other values'
 
 
 def test_read_setting_fails_when_variable_is_not_available():
-    slow_log = MySQLSlowLog(ModuleStub(), FakeCursor({}), 'mysql')
-
     with pytest.raises(RuntimeError) as exc_info:
-        slow_log.read_setting('log_output')
+        read_setting(ModuleStub(), FakeCursor({}), 'log_output')
 
     assert str(exc_info.value) == 'Slow log setting "log_output" is not available on this server.'
 
@@ -89,9 +88,7 @@ def test_configure_returns_unchanged_when_settings_already_match():
         'min_examined_row_limit': '100',
     })
 
-    slow_log = MySQLSlowLog(ModuleStub(), cursor, 'mysql')
-
-    result = slow_log.configure({
+    result = configure_slow_log(ModuleStub(), cursor, {
         'enabled': True,
         'long_query_time': 2.0,
         'log_output': 'FILE',
@@ -119,9 +116,7 @@ def test_configure_in_check_mode_predicts_changes_without_writes():
         'min_examined_row_limit': '0',
     })
 
-    slow_log = MySQLSlowLog(ModuleStub(), cursor, 'mysql')
-
-    result = slow_log.configure({
+    result = configure_slow_log(ModuleStub(), cursor, {
         'enabled': True,
         'log_output': 'FILE',
     }, flush=True, check_mode=True)
@@ -147,10 +142,8 @@ def test_configure_fails_when_flush_is_requested_without_file_output():
         'min_examined_row_limit': '100',
     })
 
-    slow_log = MySQLSlowLog(ModuleStub(), cursor, 'mysql')
-
     with pytest.raises(RuntimeError) as exc_info:
-        slow_log.configure({}, flush=True)
+        configure_slow_log(ModuleStub(), cursor, {}, flush=True)
 
     assert 'flush requires FILE log_output' in str(exc_info.value)
 
@@ -164,9 +157,7 @@ def test_configure_uses_mariadb_aliases():
         'log_slow_min_examined_row_limit': '25',
     })
 
-    slow_log = MySQLSlowLog(ModuleStub(), cursor, 'mariadb')
-
-    result = slow_log.configure({
+    result = configure_slow_log(ModuleStub(), cursor, {
         'enabled': True,
         'long_query_time': 1.5,
         'log_output': 'TABLE,FILE',
@@ -193,9 +184,7 @@ def test_configure_appends_flush_after_setting_queries():
         'min_examined_row_limit': '100',
     })
 
-    slow_log = MySQLSlowLog(ModuleStub(), cursor, 'mysql')
-
-    result = slow_log.configure({
+    result = configure_slow_log(ModuleStub(), cursor, {
         'enabled': True,
     }, flush=True)
 
@@ -216,9 +205,7 @@ def test_configure_treats_string_boolean_values_as_idempotent():
         'min_examined_row_limit': '100',
     })
 
-    slow_log = MySQLSlowLog(ModuleStub(), cursor, 'mysql')
-
-    result = slow_log.configure({
+    result = configure_slow_log(ModuleStub(), cursor, {
         'enabled': True,
         'log_queries_not_using_indexes': False,
     })
