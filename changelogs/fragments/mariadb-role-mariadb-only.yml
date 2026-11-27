@@ -1,0 +1,2 @@
+removed_features:
+  - mariadb_role - remove the MySQL-only ``set_default_role_all`` option, which was silently ignored for MariaDB.

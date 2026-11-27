@@ -14,8 +14,7 @@ module: mariadb_role
 short_description: Adds, removes, or updates a MariaDB role
 
 description:
-   - This module only supports MariaDB; all MySQL-related options will be removed in the next releases.
-     Use the C(ansible.mysql) collection for MySQL automation.
+   - This module only supports MariaDB. Use the C(ansible.mysql) collection for MySQL automation.
    - Adds, removes, or updates a MariaDB role.
    - Roles are supported MariaDB 10.0.5.
 
@@ -86,19 +85,11 @@ options:
 
   detach_members:
     description:
-      - Detaches members defined by the I(members) option from the role
+      - Detaches members defined by I(members) option from the role
         instead of overwriting all the current members.
       - Mutually exclusive with the I(append_members) and I(admin) option.
     type: bool
     default: false
-
-  set_default_role_all:
-    description:
-      - Is not supported by MariaDB and is silently ignored when working with MariaDB.
-      - If C(yes), runs B(SET DEFAULT ROLE ALL TO) each of the I(members) when changed.
-      - If you want to avoid this behavior, set this option to C(no) explicitly.
-    type: bool
-    default: true
 
   state:
     description:
@@ -144,9 +135,6 @@ options:
 
 notes:
   - Roles are supported since MariaDB 10.0.5.
-  - Pay attention that the module runs C(SET DEFAULT ROLE ALL TO)
-    all the I(members) passed by default when the state has changed.
-    If you want to avoid this behavior, set I(set_default_role_all) to C(no).
 
 attributes:
   check_mode:
@@ -192,7 +180,6 @@ EXAMPLES = r'''
 
 # Create a role developers with all database privileges
 # and add alice and bob as members.
-# The statement 'SET DEFAULT ROLE ALL' to them will be run.
 - name: Create role developers, add members
   ansible.mariadb.mariadb_role:
     name: developers
@@ -201,16 +188,6 @@ EXAMPLES = r'''
     members:
       - 'alice@%'
       - 'bob@%'
-
-- name: Same as above but do not run SET DEFAULT ROLE ALL TO each member
-  ansible.mariadb.mariadb_role:
-    name: developers
-    state: present
-    priv: '*.*:ALL'
-    members:
-      - 'alice@%'
-      - 'bob@%'
-    set_default_role_all: false
 
 # Assuming that the role developers exists,
 # add john to the current members
@@ -368,256 +345,122 @@ def normalize_users(module, users):
                 normalized_users.append((tmp[0], tmp[1]))
 
         except Exception as e:
-            msg = ('Error occured while parsing the name "%s": %s. '
+            msg = (f'Error occured while parsing the name "{user}": {to_native(e)}. '
                    'It must be in the format "username" or '
-                   '"username@hostname" ' % (user, to_native(e)))
+                   '"username@hostname" ')
             module.fail_json(msg=msg)
 
     return normalized_users
 
 
-class DbServer():
-    """Class to fetch information from a database.
-
-    Args:
-        module (AnsibleModule): Object of the AnsibleModule class.
-        cursor (cursor): Cursor object of a database Python connector.
-
-    Attributes:
-        module (AnsibleModule): Object of the AnsibleModule class.
-        cursor (cursor): Cursor object of a database Python connector.
-        mariadb (bool): True if MariaDB, False otherwise.
-        roles_supported (bool): True if roles are supported, False otherwise.
-        users (set): Set of users existing in a DB in the form (username, hostname).
-    """
-    def __init__(self, module, cursor):
-        self.module = module
-        self.cursor = cursor
-        self.users = set(self.__get_users())
-
-    def check_users_in_db(self, users):
-        """Check if users exist in a database.
-
-        Args:
-            users (list): List of tuples (username, hostname) to check.
-        """
-        for user in users:
-            if user not in self.users:
-                msg = 'User / role `%s` with host `%s` does not exist' % (user[0], user[1])
-                self.module.fail_json(msg=msg)
-
-    def filter_existing_users(self, users):
-        for user in users:
-            if user in self.users:
-                yield user
-
-    def __get_users(self):
-        """Get users.
-
-        Returns:
-            list: List of tuples (username, hostname).
-        """
-        self.cursor.execute('SELECT User, Host FROM mysql.user')
-        return self.cursor.fetchall()
-
-    def get_users(self):
-        """Get set of tuples (username, hostname) existing in a DB.
-
-        Returns:
-            self.users: Attribute value.
-        """
-        return self.users
-
-    def get_grants(self, user, host):
-        """Get grants.
-
-        Args:
-            user (str): User name
-            host (str): Host name
-
-        Returns:
-            list: List of tuples like [(grant1,), (grant2,), ... ].
-        """
-        if host:
-            self.cursor.execute('SHOW GRANTS FOR %s@%s', (user, host))
-        else:
-            self.cursor.execute('SHOW GRANTS FOR %s', (user,))
-
-        return self.cursor.fetchall()
+def get_users(cursor):
+    """Get users and roles as a set of (username, hostname) tuples."""
+    cursor.execute('SELECT User, Host FROM mysql.user')
+    return set(cursor.fetchall())
 
 
-class MySQLQueryBuilder():
-    """Class to build and return queries specific to MySQL.
-
-    Args:
-        name (str): Role name.
-        host (str): Role host.
-
-    Attributes:
-        name (str): Role name.
-        host (str): Role host.
-    """
-    def __init__(self, name, host):
-        self.name = name
-        self.host = host
-
-    def role_exists(self):
-        """Return a query to check if a role with self.name and self.host exists in a database.
-
-        Returns:
-            tuple: (query_string, tuple_containing_parameters).
-        """
-        return 'SELECT count(*) FROM mysql.user WHERE user = %s AND host = %s', (self.name, self.host)
-
-    def role_grant(self, user):
-        """Return a query to grant a role to a user or a role.
-
-        Args:
-            user (tuple): User / role to grant the role to in the form (username, hostname).
-
-        Returns:
-            tuple: (query_string, tuple_containing_parameters).
-        """
-        if user[1]:
-            return 'GRANT %s@%s TO %s@%s', (self.name, self.host, user[0], user[1])
-        else:
-            return 'GRANT %s@%s TO %s', (self.name, self.host, user[0])
-
-    def role_revoke(self, user):
-        """Return a query to revoke a role from a user or role.
-
-        Args:
-            user (tuple): User / role to revoke the role from in the form (username, hostname).
-
-        Returns:
-            tuple: (query_string, tuple_containing_parameters).
-        """
-        if user[1]:
-            return 'REVOKE %s@%s FROM %s@%s', (self.name, self.host, user[0], user[1])
-        else:
-            return 'REVOKE %s@%s FROM %s', (self.name, self.host, user[0])
-
-    def role_create(self, admin=None):
-        """Return a query to create a role.
-
-        Args:
-            admin (tuple): Admin user in the form (username, hostname).
-                Because it is not supported by MySQL, we ignore it.
-
-        Returns:
-            tuple: (query_string, tuple_containing_parameters).
-        """
-        return 'CREATE ROLE %s', (self.name,)
+def check_users_in_db(module, users, existing_users):
+    """Fail if any user in users does not exist in existing_users."""
+    for user in users:
+        if user not in existing_users:
+            msg = f'User / role `{user[0]}` with host `{user[1]}` does not exist'
+            module.fail_json(msg=msg)
 
 
-class MariaDBQueryBuilder():
-    """Class to build and return queries specific to MariaDB.
+def filter_existing_users(users, existing_users):
+    """Return only users present in existing_users."""
+    return [user for user in users if user in existing_users]
+
+
+def role_exists(name):
+    """Return a query to check if a role with the given name exists in a database.
 
     Args:
         name (str): Role name.
 
-    Attributes:
-        name (str): Role name.
+    Returns:
+        tuple: (query_string, tuple_containing_parameters).
     """
-    def __init__(self, name):
-        self.name = name
+    return "SELECT count(*) FROM mysql.user WHERE user = %s AND is_role  = 'Y'", (name,)
 
-    def role_exists(self):
-        """Return a query to check if a role with self.name exists in a database.
 
-        Returns:
-            tuple: (query_string, tuple_containing_parameters).
-        """
-        return "SELECT count(*) FROM mysql.user WHERE user = %s AND is_role  = 'Y'", (self.name,)
+def role_grant(name, user):
+    """Return a query to grant a role to a user or role.
 
-    def role_grant(self, user):
-        """Return a query to grant a role to a user or role.
+    Args:
+        name (str): Role name.
+        user (tuple): User / role to grant the role to in the form (username, hostname).
 
-        Args:
-            user (tuple): User / role to grant the role to in the form (username, hostname).
+    Returns:
+        tuple: (query_string, tuple_containing_parameters).
+    """
+    if user[1]:
+        return 'GRANT %s TO %s@%s', (name, user[0], user[1])
+    else:
+        return 'GRANT %s TO %s', (name, user[0])
 
-        Returns:
-            tuple: (query_string, tuple_containing_parameters).
-        """
-        if user[1]:
-            return 'GRANT %s TO %s@%s', (self.name, user[0], user[1])
-        else:
-            return 'GRANT %s TO %s', (self.name, user[0])
 
-    def role_revoke(self, user):
-        """Return a query to revoke a role from a user or role.
+def role_revoke(name, user):
+    """Return a query to revoke a role from a user or role.
 
-        Args:
-            user (tuple): User / role to revoke the role from in the form (username, hostname).
+    Args:
+        name (str): Role name.
+        user (tuple): User / role to revoke the role from in the form (username, hostname).
 
-        Returns:
-            tuple: (query_string, tuple_containing_parameters).
-        """
-        if user[1]:
-            return 'REVOKE %s FROM %s@%s', (self.name, user[0], user[1])
-        else:
-            return 'REVOKE %s FROM %s', (self.name, user[0])
+    Returns:
+        tuple: (query_string, tuple_containing_parameters).
+    """
+    if user[1]:
+        return 'REVOKE %s FROM %s@%s', (name, user[0], user[1])
+    else:
+        return 'REVOKE %s FROM %s', (name, user[0])
 
-    def role_create(self, admin=None):
-        """Return a query to create a role.
 
-        Args:
-            admin (tuple): Admin user in the form (username, hostname).
+def role_create(name, admin=None):
+    """Return a query to create a role.
 
-        Returns:
-            tuple: (query_string, tuple_containing_parameters).
-        """
-        if not admin:
-            return 'CREATE ROLE %s', (self.name,)
+    Args:
+        name (str): Role name.
+        admin (tuple): Admin user in the form (username, hostname).
 
-        if admin[1]:
-            return 'CREATE ROLE %s WITH ADMIN %s@%s', (self.name, admin[0], admin[1])
-        else:
-            return 'CREATE ROLE %s WITH ADMIN %s', (self.name, admin[0])
+    Returns:
+        tuple: (query_string, tuple_containing_parameters).
+    """
+    if not admin:
+        return 'CREATE ROLE %s', (name,)
+
+    if admin[1]:
+        return 'CREATE ROLE %s WITH ADMIN %s@%s', (name, admin[0], admin[1])
+    else:
+        return 'CREATE ROLE %s WITH ADMIN %s', (name, admin[0])
 
 
 class Role():
-    """Class to work with MySQL role objects.
+    """Class to work with MariaDB role objects.
 
     Args:
         module (AnsibleModule): Object of the AnsibleModule class.
         cursor (cursor): Cursor object of a database Python connector.
         name (str): Role name.
-        server (DbServer): Object of the DbServer class.
 
     Attributes:
         module (AnsibleModule): Object of the AnsibleModule class.
         cursor (cursor): Cursor object of a database Python connector.
         name (str): Role name.
-        server (DbServer): Object of the DbServer class.
         host (str): Role's host.
-        full_name (str): Role's full name.
         exists (bool): Indicates if a role exists or not.
         members (set): Set of current role's members.
     """
-    def __init__(self, module, cursor, name, server):
+    def __init__(self, module, cursor, name):
         self.module = module
         self.cursor = cursor
         self.name = name
-        self.server = server
-        self.q_builder = MariaDBQueryBuilder(self.name)
-        self.full_name = '`%s`' % self.name
         self.host = ''
         self.exists = self.__role_exists()
         self.members = set()
 
         if self.exists:
             self.members = self.__get_members()
-
-    def __set_default_role_all(self, user):
-        """Run 'SET DEFAULT ROLE ALL TO' a user.
-
-        The command is not supported by MariaDB, ignored.
-
-        Args:
-            user (tuple): User / role to run the command against in the form (username, hostname).
-        """
-        pass
 
     def __get_admin(self):
         """Get a current admin of a role.
@@ -646,9 +489,9 @@ class Role():
 
         if (admin_user, admin_host) != current_admin:
             msg = ('The "admin" option value and the current '
-                   'roles admin (%s@%s) don not match. Ignored. '
+                   f'roles admin ({current_admin[0]}@{current_admin[1]}) don not match. Ignored. '
                    'To change the admin, you need to drop and create the '
-                   'role again.' % (current_admin[0], current_admin[1]))
+                   'role again.')
             self.module.warn(msg)
 
     def __role_exists(self):
@@ -657,11 +500,10 @@ class Role():
         Returns:
             bool: True if the role exists, False if it does not.
         """
-        self.cursor.execute(*self.q_builder.role_exists())
+        self.cursor.execute(*role_exists(self.name))
         return self.cursor.fetchone()[0] > 0
 
-    def add(self, users, privs, check_mode=False, admin=False,
-            set_default_role_all=True):
+    def add(self, users, privs, check_mode=False, admin=False):
         """Add a role.
 
         Args:
@@ -669,7 +511,6 @@ class Role():
             privs (str): String containing privileges.
             check_mode (bool): If True, just checks and does nothing.
             admin (tuple): Role's admin. Contains (username, hostname).
-            set_default_role_all (bool): If True, runs SET DEFAULT ROLE ALL TO each member.
 
         Returns:
             bool: True if the state has changed, False if has not.
@@ -679,10 +520,11 @@ class Role():
                 return True
             return False
 
-        self.cursor.execute(*self.q_builder.role_create(admin))
+        self.cursor.execute(*role_create(self.name, admin))
+        self.exists = True
 
         if users:
-            self.update_members(users, set_default_role_all=set_default_role_all)
+            self.update_members(users)
 
         if privs:
             for db_table, priv in privs.items():
@@ -707,10 +549,11 @@ class Role():
             return True
 
         self.cursor.execute('DROP ROLE %s', (self.name,))
+        self.exists = False
+        self.members.clear()
         return True
 
-    def update_members(self, users, check_mode=False, append_members=False,
-                       set_default_role_all=True):
+    def update_members(self, users, check_mode=False, append_members=False):
         """Add users to a role.
 
         Args:
@@ -718,7 +561,6 @@ class Role():
             check_mode (bool): If True, just checks and does nothing.
             append_members (bool): If True, adds new members passed through users
                 not touching current members.
-            set_default_role_all (bool): If True, runs SET DEFAULT ROLE ALL TO each member.
 
         Returns:
             bool: True if the state has changed, False if has not.
@@ -732,17 +574,15 @@ class Role():
                 if check_mode:
                     return True
 
-                self.cursor.execute(*self.q_builder.role_grant(user))
-
-                if set_default_role_all:
-                    self.__set_default_role_all(user)
+                self.cursor.execute(*role_grant(self.name, user))
+                self.members.add(user)
 
                 changed = True
 
         if append_members:
             return changed
 
-        for user in self.members:
+        for user in self.members.copy():
             if user not in users and user != ('root', 'localhost'):
                 changed = self.__remove_member(user, check_mode)
 
@@ -781,14 +621,14 @@ class Role():
         if check_mode:
             return True
 
-        self.cursor.execute(*self.q_builder.role_revoke(user))
+        self.cursor.execute(*role_revoke(self.name, user))
+        self.members.discard(user)
 
         return True
 
     def update(self, users, privs, check_mode=False,
                append_privs=False, subtract_privs=False,
-               append_members=False, detach_members=False,
-               admin=False, set_default_role_all=True):
+               append_members=False, detach_members=False, admin=False):
         """Update a role.
 
         Update a role if needed.
@@ -808,7 +648,6 @@ class Role():
                 not touching current members.
             detach_members (bool): If True, removes members passed through users from a role.
             admin (tuple): Role's admin. Contains (username, hostname).
-            set_default_role_all (bool): If True, runs SET DEFAULT ROLE ALL TO each member.
 
         Returns:
             bool: True if the state has changed, False if has not.
@@ -822,8 +661,7 @@ class Role():
 
             else:
                 members_changed = self.update_members(users, check_mode=check_mode,
-                                                      append_members=append_members,
-                                                      set_default_role_all=set_default_role_all)
+                                                      append_members=append_members)
 
         if privs:
             changed = _privileges_mod(
@@ -861,7 +699,6 @@ def main():
         append_members=dict(type='bool', default=False),
         detach_members=dict(type='bool', default=False),
         check_implicit_admin=dict(type='bool', default=False),
-        set_default_role_all=dict(type='bool', default=True),
         members_must_exist=dict(type='bool', default=True),
         column_case_sensitive=dict(type='bool', default=True),
         sql_log_bin=dict(type='bool', default=True),
@@ -897,14 +734,13 @@ def main():
     ssl_ca = module.params['ca_cert']
     check_hostname = module.params['check_hostname']
     db = ''
-    set_default_role_all = module.params['set_default_role_all']
     members_must_exist = module.params['members_must_exist']
     column_case_sensitive = module.params['column_case_sensitive']
     sql_log_bin = module.params['sql_log_bin']
 
     if priv and not isinstance(priv, (str, dict)):
         msg = ('The "priv" parameter must be str or dict '
-               'but %s was passed' % type(priv))
+               f'but {type(priv)} was passed')
         module.fail_json(msg=msg)
 
     if priv and isinstance(priv, dict):
@@ -935,8 +771,8 @@ def main():
     except Exception as e:
         module.fail_json(msg='unable to connect to database, '
                              'check login_user and login_password '
-                             'are correct or %s has the credentials. '
-                             'Exception message: %s' % (config_file, to_native(e)))
+                             f'are correct or {config_file} has the credentials. '
+                             f'Exception message: {to_native(e)}')
 
     if not sql_log_bin:
         cursor.execute("SET SQL_LOG_BIN=0;")
@@ -953,23 +789,23 @@ def main():
         try:
             priv = privileges_unpack(priv, mode, column_case_sensitive, ensure_usage=not subtract_privs)
         except Exception as e:
-            module.fail_json(msg='Invalid privileges string: %s' % to_native(e))
+            module.fail_json(msg=f'Invalid privileges string: {to_native(e)}')
 
-    server = DbServer(module, cursor)
+    existing_users = get_users(cursor)
 
     if admin:
         admin = normalize_users(module, [admin])[0]
-        server.check_users_in_db([admin])
+        check_users_in_db(module, [admin], existing_users)
 
     if members:
         members = normalize_users(module, members)
         if members_must_exist:
-            server.check_users_in_db(members)
+            check_users_in_db(module, members, existing_users)
         else:
-            members = list(server.filter_existing_users(members))
+            members = filter_existing_users(members, existing_users)
 
     # Main job starts here
-    role = Role(module, cursor, name, server)
+    role = Role(module, cursor, name)
 
     try:
         if state == 'present':
@@ -978,13 +814,11 @@ def main():
                     priv = None  # avoid granting unwanted privileges
                 if detach_members:
                     members = None  # avoid adding unwanted members
-                changed = role.add(members, priv, module.check_mode, admin,
-                                   set_default_role_all)
+                changed = role.add(members, priv, module.check_mode, admin)
 
             else:
                 changed = role.update(members, priv, module.check_mode, append_privs, subtract_privs,
-                                      append_members, detach_members, admin,
-                                      set_default_role_all)
+                                      append_members, detach_members, admin)
 
         elif state == 'absent':
             changed = role.drop(module.check_mode)
