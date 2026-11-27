@@ -353,74 +353,23 @@ def normalize_users(module, users):
     return normalized_users
 
 
-class DbServer():
-    """Class to fetch information from a database.
+def get_users(cursor):
+    """Get users and roles as a set of (username, hostname) tuples."""
+    cursor.execute('SELECT User, Host FROM mysql.user')
+    return set(cursor.fetchall())
 
-    Args:
-        module (AnsibleModule): Object of the AnsibleModule class.
-        cursor (cursor): Cursor object of a database Python connector.
 
-    Attributes:
-        module (AnsibleModule): Object of the AnsibleModule class.
-        cursor (cursor): Cursor object of a database Python connector.
-        mariadb (bool): True if MariaDB, False otherwise.
-        roles_supported (bool): True if roles are supported, False otherwise.
-        users (set): Set of users existing in a DB in the form (username, hostname).
-    """
-    def __init__(self, module, cursor):
-        self.module = module
-        self.cursor = cursor
-        self.users = set(self.__get_users())
+def check_users_in_db(module, users, existing_users):
+    """Fail if any user in users does not exist in existing_users."""
+    for user in users:
+        if user not in existing_users:
+            msg = f'User / role `{user[0]}` with host `{user[1]}` does not exist'
+            module.fail_json(msg=msg)
 
-    def check_users_in_db(self, users):
-        """Check if users exist in a database.
 
-        Args:
-            users (list): List of tuples (username, hostname) to check.
-        """
-        for user in users:
-            if user not in self.users:
-                msg = f'User / role `{user[0]}` with host `{user[1]}` does not exist'
-                self.module.fail_json(msg=msg)
-
-    def filter_existing_users(self, users):
-        for user in users:
-            if user in self.users:
-                yield user
-
-    def __get_users(self):
-        """Get users.
-
-        Returns:
-            list: List of tuples (username, hostname).
-        """
-        self.cursor.execute('SELECT User, Host FROM mysql.user')
-        return self.cursor.fetchall()
-
-    def get_users(self):
-        """Get set of tuples (username, hostname) existing in a DB.
-
-        Returns:
-            self.users: Attribute value.
-        """
-        return self.users
-
-    def get_grants(self, user, host):
-        """Get grants.
-
-        Args:
-            user (str): User name
-            host (str): Host name
-
-        Returns:
-            list: List of tuples like [(grant1,), (grant2,), ... ].
-        """
-        if host:
-            self.cursor.execute('SHOW GRANTS FOR %s@%s', (user, host))
-        else:
-            self.cursor.execute('SHOW GRANTS FOR %s', (user,))
-
-        return self.cursor.fetchall()
+def filter_existing_users(users, existing_users):
+    """Return only users present in existing_users."""
+    return [user for user in users if user in existing_users]
 
 
 def role_exists(name):
@@ -493,24 +442,19 @@ class Role():
         module (AnsibleModule): Object of the AnsibleModule class.
         cursor (cursor): Cursor object of a database Python connector.
         name (str): Role name.
-        server (DbServer): Object of the DbServer class.
 
     Attributes:
         module (AnsibleModule): Object of the AnsibleModule class.
         cursor (cursor): Cursor object of a database Python connector.
         name (str): Role name.
-        server (DbServer): Object of the DbServer class.
         host (str): Role's host.
-        full_name (str): Role's full name.
         exists (bool): Indicates if a role exists or not.
         members (set): Set of current role's members.
     """
-    def __init__(self, module, cursor, name, server):
+    def __init__(self, module, cursor, name):
         self.module = module
         self.cursor = cursor
         self.name = name
-        self.server = server
-        self.full_name = f'`{self.name}`'
         self.host = ''
         self.exists = self.__role_exists()
         self.members = set()
@@ -577,6 +521,7 @@ class Role():
             return False
 
         self.cursor.execute(*role_create(self.name, admin))
+        self.exists = True
 
         if users:
             self.update_members(users)
@@ -604,6 +549,8 @@ class Role():
             return True
 
         self.cursor.execute('DROP ROLE %s', (self.name,))
+        self.exists = False
+        self.members.clear()
         return True
 
     def update_members(self, users, check_mode=False, append_members=False):
@@ -628,13 +575,14 @@ class Role():
                     return True
 
                 self.cursor.execute(*role_grant(self.name, user))
+                self.members.add(user)
 
                 changed = True
 
         if append_members:
             return changed
 
-        for user in self.members:
+        for user in self.members.copy():
             if user not in users and user != ('root', 'localhost'):
                 changed = self.__remove_member(user, check_mode)
 
@@ -674,6 +622,7 @@ class Role():
             return True
 
         self.cursor.execute(*role_revoke(self.name, user))
+        self.members.discard(user)
 
         return True
 
@@ -842,21 +791,21 @@ def main():
         except Exception as e:
             module.fail_json(msg=f'Invalid privileges string: {to_native(e)}')
 
-    server = DbServer(module, cursor)
+    existing_users = get_users(cursor)
 
     if admin:
         admin = normalize_users(module, [admin])[0]
-        server.check_users_in_db([admin])
+        check_users_in_db(module, [admin], existing_users)
 
     if members:
         members = normalize_users(module, members)
         if members_must_exist:
-            server.check_users_in_db(members)
+            check_users_in_db(module, members, existing_users)
         else:
-            members = list(server.filter_existing_users(members))
+            members = filter_existing_users(members, existing_users)
 
     # Main job starts here
-    role = Role(module, cursor, name, server)
+    role = Role(module, cursor, name)
 
     try:
         if state == 'present':

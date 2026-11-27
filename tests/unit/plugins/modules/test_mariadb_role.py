@@ -3,9 +3,15 @@
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
 
+from unittest.mock import Mock
+
 import pytest
 
 from ansible_collections.ansible.mariadb.plugins.modules.mariadb_role import (
+    Role,
+    check_users_in_db,
+    filter_existing_users,
+    get_users,
     normalize_users,
     role_create,
     role_exists,
@@ -13,7 +19,7 @@ from ansible_collections.ansible.mariadb.plugins.modules.mariadb_role import (
     role_revoke,
 )
 
-# TODO: Also cover DbServer and Role classes
+# TODO: Add broader Role coverage
 
 
 class Module():
@@ -103,3 +109,63 @@ def test_normalize_users_failing(input_, err_msg):
 
     normalize_users(module, input_)
     assert err_msg in module.msg
+
+
+def test_get_users():
+    cursor = Mock()
+    cursor.fetchall.return_value = [('user0', 'localhost')]
+
+    assert get_users(cursor) == {('user0', 'localhost')}
+    cursor.execute.assert_called_once_with('SELECT User, Host FROM mysql.user')
+
+
+def test_check_users_in_db():
+    test_module = Module()
+
+    check_users_in_db(test_module, [('missing', '')], {('existing', '')})
+
+    assert test_module.msg == 'User / role `missing` with host `` does not exist'
+
+
+def test_filter_existing_users():
+    users = [('existing', ''), ('missing', '')]
+
+    assert filter_existing_users(users, {('existing', '')}) == [('existing', '')]
+
+
+def test_role_members_cache_is_updated_after_grant():
+    cursor = Mock()
+    cursor.fetchone.return_value = (1,)
+    cursor.fetchall.return_value = []
+    role = Role(module, cursor, 'role0')
+
+    role.update_members([('user0', '')], append_members=True)
+
+    assert role.members == {('user0', '')}
+
+
+def test_role_members_cache_is_updated_after_replacement():
+    cursor = Mock()
+    cursor.fetchone.return_value = (1,)
+    cursor.fetchall.return_value = [('old_user', '')]
+    role = Role(module, cursor, 'role0')
+
+    role.update_members([('new_user', '')])
+
+    assert role.members == {('new_user', '')}
+
+
+def test_role_exists_cache_is_updated_after_create_and_drop():
+    cursor = Mock()
+    cursor.fetchone.return_value = (0,)
+    role = Role(module, cursor, 'role0')
+
+    role.add([('user0', '')], None)
+
+    assert role.exists is True
+    assert role.members == {('user0', '')}
+
+    role.drop()
+
+    assert role.exists is False
+    assert role.members == set()
